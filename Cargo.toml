@@ -1,6 +1,6 @@
 [package]
 name = "gearley"
-version = "0.0.0"
+version = "0.0.1"
 
 authors = [ "Piotr Czarnecki <pioczarn@gmail.com>" ]
 description = "An Earley parser engine."

@@ -9,7 +9,7 @@ extern crate gearley;
 mod grammars;
 
 use gearley::forest::{Bocage, Traversal, NullForest};
-use gearley::forest::depth_first::{NullOrder, ArrayEvaluator, ArrayStore, ActionClosureEvaluator};
+use gearley::forest::depth_first::{NullOrder, ArrayEvaluator, ValueArray, ActionClosureEvaluator};
 use gearley::recognizer::Recognizer;
 
 use grammars::*;
@@ -28,13 +28,13 @@ fn bench_ambiguous_arithmetic(b: &mut test::Bencher) {
     let cfg = external.into_internal_grammar();
 
     b.iter(|| {
-        let arena = ArrayStore::new();
+        let values = ValueArray::new();
         let closures = ActionClosureEvaluator::new(
             ambiguous_arith::leaf,
             ambiguous_arith::rule,
             |_, _: &mut _| unreachable!()
         );
-        let mut evaluator = ArrayEvaluator::new(&arena, closures);
+        let mut evaluator = ArrayEvaluator::new(&values, closures);
         let bocage = Bocage::new(&cfg);
         let mut rec = Recognizer::new(&cfg, &bocage);
         rec.parse(tokens);
@@ -54,9 +54,9 @@ fn bench_evaluate_precedenced_arith(b: &mut test::Bencher) {
     let sum_tokens = test::black_box(SUM_TOKENS);
 
     b.iter(|| {
-        let arena = ArrayStore::new();
+        let values = ValueArray::new();
         let mut evaluator = ArrayEvaluator::new(
-            &arena,
+            &values,
             ActionClosureEvaluator::new(
                 precedenced_arith::leaf,
                 precedenced_arith::rule,
@@ -91,35 +91,7 @@ fn bench_recognize_precedenced_arith(b: &mut test::Bencher) {
 
     b.iter(|| {
         let null_forest = NullForest;
-        let mut recce = Recognizer::new(&grammar, &null_forest);
-        test::black_box(&recce.parse(sum_tokens));
+        let mut recognizer = Recognizer::new(&grammar, &null_forest);
+        test::black_box(&recognizer.parse(sum_tokens));
     })
 }
-
-// #[bench]
-// fn bench_eval_sum(b: &mut test::Bencher) {
-//     let external = precedenced_arith::grammar();
-//     let cfg = external.into_internal_grammar();
-//     let sum_tokens = test::black_box(SUM_TOKENS);
-
-//     b.iter(|| {
-//         let arena = ArrayStore::new();
-//         let evaluator = ArrayEvaluator::new(
-//             &arena,
-//             ClosureActionEvaluator::new(
-//                 precedenced_arith::leaf,
-//                 precedenced_arith::rule,
-//                 |_, _: &mut _| unreachable!()
-//             )
-//         );
-//         let bocage = Bocage::new(&cfg);
-//         let mut rec = Recognizer::new(&cfg, &bocage);
-//         rec.parse(sum_tokens);
-//         let mut traversal = Traversal::new(&bocage, NullOrder::new());
-//         let results = traversal.traverse(
-//             rec.finished_node(),
-//             evaluator,
-//         );
-//         test::black_box(results);
-//     })
-// }
