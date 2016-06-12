@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `FollowSets` struct in crate `cfg`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, FollowSets">
+
+    <title>cfg::prediction::FollowSets - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../index.html'>cfg</a>::<wbr><a href='index.html'>prediction</a></p><script>window.sidebarCurrent = {name: 'FollowSets', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>cfg</a>::<wbr><a href='index.html'>prediction</a>::<wbr><a class='struct' href=''>FollowSets</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-932' class='srclink' href='../../src/cfg/prediction/follow.rs.html#11-14' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct FollowSets {
+    // some fields omitted
+}</pre><div class='docblock'><p>FOLLOW sets.</p>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../cfg/prediction/struct.FollowSets.html' title='cfg::prediction::FollowSets'>FollowSets</a></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>&lt;'a, G&gt;(grammar: &amp;'a G, start_sym: <a class='struct' href='../../cfg/struct.Symbol.html' title='cfg::Symbol'>Symbol</a>, first_sets: &amp;<a class='struct' href='../../cfg/prediction/struct.FirstSets.html' title='cfg::prediction::FirstSets'>FirstSets</a>) -&gt; Self <span class='where'>where G: <a class='trait' href='../../cfg/trait.ContextFree.html' title='cfg::ContextFree'>ContextFree</a>, &amp;'a G: <a class='trait' href='../../cfg/trait.ContextFreeRef.html' title='cfg::ContextFreeRef'>ContextFreeRef</a>&lt;'a, Target=G&gt;</span></code></h4>
+<div class='docblock'><p>Compute all FOLLOW sets of the grammar.
+Returns FollowSets.</p>
+</div><h4 id='method.follow_sets' class='method'><code>fn <a href='#method.follow_sets' class='fnname'>follow_sets</a>(&amp;self) -&gt; &amp;<a class='type' href='../../cfg/prediction/type.PerSymbolSets.html' title='cfg::prediction::PerSymbolSets'>PerSymbolSets</a></code></h4>
+<div class='docblock'><p>Returns a reference to FOLLOW sets.</p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "cfg";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

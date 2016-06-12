@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Symbol","A common grammar symbol type."]]});

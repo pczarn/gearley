@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Separator","The separator symbol and mode of separation in a sequence, or `Null` for no separation."]],"mod":[["builder","Sequence rules can be built with the builder pattern."],["destination","Sequence destination."],["rewrite","Rewrites sequence rules into production rules."]],"struct":[["Sequence","Sequence rule representation."]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["CycleParticipants","An iterator over the grammar's useless rules."],["Cycles","Provides information about cycles among unit derivations in the grammar. There are two ways of pruning cycles."]]});

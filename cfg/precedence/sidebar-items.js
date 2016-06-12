@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Associativity","Specifies the associativity of an operator."]],"struct":[["PrecedencedRuleBuilder","Precedenced rules are built in series of rule alternatives with equal precedence."]]});

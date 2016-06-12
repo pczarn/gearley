@@ -1,0 +1,1 @@
+initSidebarItems({"trait":[["SequenceDestination","Trait for storing sequence rules in containers, with potential rewrites."]]});

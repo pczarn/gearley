@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `PrecedencedRuleBuilder` struct in crate `cfg`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, PrecedencedRuleBuilder">
+
+    <title>cfg::precedence::PrecedencedRuleBuilder - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../index.html'>cfg</a>::<wbr><a href='index.html'>precedence</a></p><script>window.sidebarCurrent = {name: 'PrecedencedRuleBuilder', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>cfg</a>::<wbr><a href='index.html'>precedence</a>::<wbr><a class='struct' href=''>PrecedencedRuleBuilder</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-729' class='srclink' href='../../src/cfg/precedence.rs.html#29-42' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct PrecedencedRuleBuilder&lt;D, Hs = <a class='struct' href='../../cfg/history/struct.NullHistorySource.html' title='cfg::history::NullHistorySource'>NullHistorySource</a>&gt; <span class='where'>where D: <a class='trait' href='../../cfg/rule/container/trait.RuleContainer.html' title='cfg::rule::container::RuleContainer'>RuleContainer</a>, D::History: <a class='trait' href='../../cfg/history/trait.AssignPrecedence.html' title='cfg::history::AssignPrecedence'>AssignPrecedence</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html' title='core::default::Default'>Default</a></span> {
+    // some fields omitted
+}</pre><div class='docblock'><p>Precedenced rules are built in series of rule alternatives with equal precedence.</p>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;D&gt; <a class='struct' href='../../cfg/precedence/struct.PrecedencedRuleBuilder.html' title='cfg::precedence::PrecedencedRuleBuilder'>PrecedencedRuleBuilder</a>&lt;D&gt; <span class='where'>where D: <a class='trait' href='../../cfg/rule/container/trait.RuleContainer.html' title='cfg::rule::container::RuleContainer'>RuleContainer</a>, D::History: <a class='trait' href='../../cfg/history/trait.AssignPrecedence.html' title='cfg::history::AssignPrecedence'>AssignPrecedence</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html' title='core::default::Default'>Default</a></span></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(rules: D, lhs: <a class='struct' href='../../cfg/struct.Symbol.html' title='cfg::Symbol'>Symbol</a>) -&gt; Self</code></h4>
+<div class='docblock'><p>Returns a precedenced rule builder.</p>
+</div></div><h3 class='impl'><code>impl&lt;D, Hs&gt; <a class='struct' href='../../cfg/precedence/struct.PrecedencedRuleBuilder.html' title='cfg::precedence::PrecedencedRuleBuilder'>PrecedencedRuleBuilder</a>&lt;D, Hs&gt; <span class='where'>where D: <a class='trait' href='../../cfg/rule/container/trait.RuleContainer.html' title='cfg::rule::container::RuleContainer'>RuleContainer</a>, D::History: <a class='trait' href='../../cfg/history/trait.AssignPrecedence.html' title='cfg::history::AssignPrecedence'>AssignPrecedence</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html' title='core::default::Default'>Default</a></span></code></h3><div class='impl-items'><h4 id='method.default_history' class='method'><code>fn <a href='#method.default_history' class='fnname'>default_history</a>&lt;Hs2&gt;(self, state: Hs2) -&gt; <a class='struct' href='../../cfg/precedence/struct.PrecedencedRuleBuilder.html' title='cfg::precedence::PrecedencedRuleBuilder'>PrecedencedRuleBuilder</a>&lt;D, Hs2&gt;</code></h4>
+<div class='docblock'><p>Sets the default history source.</p>
+</div><h4 id='method.precedenced_rule' class='method'><code>fn <a href='#method.precedenced_rule' class='fnname'>precedenced_rule</a>(self, lhs: <a class='struct' href='../../cfg/struct.Symbol.html' title='cfg::Symbol'>Symbol</a>) -&gt; <a class='struct' href='../../cfg/precedence/struct.PrecedencedRuleBuilder.html' title='cfg::precedence::PrecedencedRuleBuilder'>PrecedencedRuleBuilder</a>&lt;D, Hs&gt;</code></h4>
+<div class='docblock'><p>Starts building a new precedenced rule. The differences in precedence among rules only
+matter within a particular precedenced rule.</p>
+</div><h4 id='method.rule' class='method'><code>fn <a href='#method.rule' class='fnname'>rule</a>(self, lhs: <a class='struct' href='../../cfg/struct.Symbol.html' title='cfg::Symbol'>Symbol</a>) -&gt; <a class='struct' href='../../cfg/rule/builder/struct.RuleBuilder.html' title='cfg::rule::builder::RuleBuilder'>RuleBuilder</a>&lt;D, Hs&gt;</code></h4>
+<div class='docblock'><p>Starts building a new grammar rule.</p>
+</div><h4 id='method.history' class='method'><code>fn <a href='#method.history' class='fnname'>history</a>(self, history: D::History) -&gt; Self</code></h4>
+<div class='docblock'><p>Assigns the rule history, which is used on the next call to <code>rhs</code>, unless overwritten by
+a call to <code>rhs_with_history</code>.</p>
+</div><h4 id='method.rhs' class='method'><code>fn <a href='#method.rhs' class='fnname'>rhs</a>&lt;S&gt;(self, syms: S) -&gt; Self <span class='where'>where S: <a class='trait' href='https://doc.rust-lang.org/nightly/core/convert/trait.AsRef.html' title='core::convert::AsRef'>AsRef</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[</a><a class='struct' href='../../cfg/struct.Symbol.html' title='cfg::Symbol'>Symbol</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>&gt;, Hs: <a class='trait' href='../../cfg/history/trait.HistorySource.html' title='cfg::history::HistorySource'>HistorySource</a>&lt;D::History&gt;</span></code></h4>
+<div class='docblock'><p>Creates a rule alternative. If history wasn&#39;t provided, the rule has the <code>Default</code> history.</p>
+</div><h4 id='method.rhs_with_history' class='method'><code>fn <a href='#method.rhs_with_history' class='fnname'>rhs_with_history</a>&lt;S&gt;(self, syms: S, history: D::History) -&gt; Self <span class='where'>where S: <a class='trait' href='https://doc.rust-lang.org/nightly/core/convert/trait.AsRef.html' title='core::convert::AsRef'>AsRef</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>[</a><a class='struct' href='../../cfg/struct.Symbol.html' title='cfg::Symbol'>Symbol</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>&gt;</span></code></h4>
+<div class='docblock'><p>Creates a rule alternative with the given RHS and history.</p>
+</div><h4 id='method.associativity' class='method'><code>fn <a href='#method.associativity' class='fnname'>associativity</a>(self, assoc: <a class='enum' href='../../cfg/precedence/enum.Associativity.html' title='cfg::precedence::Associativity'>Associativity</a>) -&gt; Self <span class='where'>where D::History: <a class='trait' href='../../cfg/history/trait.AssignPrecedence.html' title='cfg::history::AssignPrecedence'>AssignPrecedence</a></span></code></h4>
+<div class='docblock'><p>Assigns the associativity, which influences the next call to <code>rhs</code> or <code>rhs_with_history</code>.</p>
+</div><h4 id='method.lower_precedence' class='method'><code>fn <a href='#method.lower_precedence' class='fnname'>lower_precedence</a>(self) -&gt; Self</code></h4>
+<div class='docblock'><p>Assigns lower precedence to rule alternatives that are built after this call.</p>
+</div></div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl&lt;D, Hs&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.Drop.html' title='core::ops::Drop'>Drop</a> for <a class='struct' href='../../cfg/precedence/struct.PrecedencedRuleBuilder.html' title='cfg::precedence::PrecedencedRuleBuilder'>PrecedencedRuleBuilder</a>&lt;D, Hs&gt; <span class='where'>where D: <a class='trait' href='../../cfg/rule/container/trait.RuleContainer.html' title='cfg::rule::container::RuleContainer'>RuleContainer</a>, D::History: <a class='trait' href='../../cfg/history/trait.AssignPrecedence.html' title='cfg::history::AssignPrecedence'>AssignPrecedence</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html' title='core::default::Default'>Default</a></span></code></h3><div class='impl-items'><h4 id='method.drop' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/ops/trait.Drop.html#tymethod.drop' class='fnname'>drop</a>(&amp;mut self)</code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "cfg";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

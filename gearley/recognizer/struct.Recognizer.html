@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Recognizer` struct in crate `gearley`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Recognizer">
+
+    <title>gearley::recognizer::Recognizer - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../index.html'>gearley</a>::<wbr><a href='index.html'>recognizer</a></p><script>window.sidebarCurrent = {name: 'Recognizer', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>gearley</a>::<wbr><a href='index.html'>recognizer</a>::<wbr><a class='struct' href=''>Recognizer</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-1855' class='srclink' href='../../src/gearley/src/recognizer.rs.html#18-51' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Recognizer&lt;'f, 'g, F = <a class='struct' href='../../gearley/forest/null_forest/struct.NullForest.html' title='gearley::forest::null_forest::NullForest'>NullForest</a>&gt; <span class='where'>where F: <a class='trait' href='../../gearley/forest/trait.Forest.html' title='gearley::forest::Forest'>Forest</a>&lt;'f&gt; + 'f</span> {
+    // some fields omitted
+}</pre><div class='docblock'><p>The recognizer implements the Earley algorithm. It parses the given input according
+to the <code>grammar</code>. The <code>forest</code> is used to construct a parse result.</p>
+
+<p>To save memory, it only retains those parts of the Earley table that may be useful
+in the future.</p>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;'f, 'g, F&gt; <a class='struct' href='../../gearley/recognizer/struct.Recognizer.html' title='gearley::recognizer::Recognizer'>Recognizer</a>&lt;'f, 'g, F&gt; <span class='where'>where F: <a class='trait' href='../../gearley/forest/trait.Forest.html' title='gearley::forest::Forest'>Forest</a>&lt;'f&gt; + 'f</span></code></h3><div class='impl-items'><h4 id='method.trace' class='method'><code>fn <a href='#method.trace' class='fnname'>trace</a>(&amp;self) -&gt; <a class='struct' href='../../gearley/events/struct.Tracing.html' title='gearley::events::Tracing'>Tracing</a>&lt;F::NodeRef&gt;</code></h4>
+<h4 id='method.events' class='method'><code>fn <a href='#method.events' class='fnname'>events</a>(&amp;self) -&gt; <a class='struct' href='../../gearley/events/struct.Events.html' title='gearley::events::Events'>Events</a>&lt;F::NodeRef&gt;</code></h4>
+<h4 id='method.minimal_distances' class='method'><code>fn <a href='#method.minimal_distances' class='fnname'>minimal_distances</a>(&amp;self) -&gt; <a class='struct' href='../../gearley/events/struct.Distances.html' title='gearley::events::Distances'>Distances</a>&lt;F::NodeRef&gt;</code></h4>
+<h4 id='method.expected_terminals' class='method'><code>fn <a href='#method.expected_terminals' class='fnname'>expected_terminals</a>(&amp;self) -&gt; <a class='struct' href='../../gearley/events/struct.ExpectedTerminals.html' title='gearley::events::ExpectedTerminals'>ExpectedTerminals</a>&lt;F::NodeRef&gt;</code></h4>
+</div><h3 class='impl'><code>impl&lt;'f, 'g, F&gt; <a class='struct' href='../../gearley/recognizer/struct.Recognizer.html' title='gearley::recognizer::Recognizer'>Recognizer</a>&lt;'f, 'g, F&gt; <span class='where'>where F: <a class='trait' href='../../gearley/forest/trait.Forest.html' title='gearley::forest::Forest'>Forest</a>&lt;'f&gt; + 'f</span></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(grammar: &amp;'g <a class='struct' href='../../gearley/grammar/struct.InternalGrammar.html' title='gearley::grammar::InternalGrammar'>InternalGrammar</a>, forest: &amp;'f F) -&gt; <a class='struct' href='../../gearley/recognizer/struct.Recognizer.html' title='gearley::recognizer::Recognizer'>Recognizer</a>&lt;'f, 'g, F&gt;</code></h4>
+<div class='docblock'><p>Creates a new recognizer for a given grammar and forest. The recognizer has an initial
+Earley set that predicts the grammar&#39;s start symbol.</p>
+</div><h4 id='method.predict' class='method'><code>fn <a href='#method.predict' class='fnname'>predict</a>(&amp;mut self, symbol: <a class='struct' href='../../cfg/symbol/repr/struct.Symbol.html' title='cfg::symbol::repr::Symbol'>Symbol</a>)</code></h4>
+<div class='docblock'><p>Makes the current Earley set predict a given symbol.</p>
+</div><h4 id='method.scan' class='method'><code>fn <a href='#method.scan' class='fnname'>scan</a>(&amp;mut self, symbol: <a class='struct' href='../../cfg/symbol/repr/struct.Symbol.html' title='cfg::symbol::repr::Symbol'>Symbol</a>, value: F::LeafValue)</code></h4>
+<div class='docblock'><p>Reads a token. Creates a leaf bocage node with the given value. After reading one or more
+tokens, the parse can be advanced.</p>
+</div><h4 id='method.advance' class='method'><code>fn <a href='#method.advance' class='fnname'>advance</a>(&amp;mut self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<div class='docblock'><p>Advances the parse. Calling this method may set the finished node, which can be accessed
+through the <code>finished_node</code> method.</p>
+</div><h4 id='method.advance_without_completion' class='method'><code>fn <a href='#method.advance_without_completion' class='fnname'>advance_without_completion</a>(&amp;mut self)</code></h4>
+<div class='docblock'><p>Advances the parse. Omits the completion pass, which should be done through
+the <code>completions</code> method. Keep in mind that calling this method may not set
+the finished node, which should be tracked externally.</p>
+</div><h4 id='method.is_exhausted' class='method'><code>fn <a href='#method.is_exhausted' class='fnname'>is_exhausted</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<div class='docblock'><p>Checks whether the recognizer is exhausted. The recognizer is exhausted when it can&#39;t accept
+more input.</p>
+</div><h4 id='method.completions' class='method'><code>fn <a href='#method.completions' class='fnname'>completions</a>&lt;'r&gt;(&amp;'r mut self) -&gt; <a class='struct' href='../../gearley/recognizer/struct.Completions.html' title='gearley::recognizer::Completions'>Completions</a>&lt;'f, 'g, 'r, F&gt;</code></h4>
+<div class='docblock'><p>Provides access to completions, which can be used to perform a completion pass.</p>
+</div><h4 id='method.complete' class='method'><code>fn <a href='#method.complete' class='fnname'>complete</a>(&amp;mut self, set_id: <a class='type' href='../../gearley/item/type.Origin.html' title='gearley::item::Origin'>Origin</a>, sym: <a class='struct' href='../../cfg/symbol/repr/struct.Symbol.html' title='cfg::symbol::repr::Symbol'>Symbol</a>, rhs_link: F::NodeRef)</code></h4>
+<div class='docblock'><p>Complete items.</p>
+</div><h4 id='method.reset' class='method'><code>fn <a href='#method.reset' class='fnname'>reset</a>(&amp;mut self)</code></h4>
+<div class='docblock'><p>Resets the recognizer to its initial state by removing all contents.</p>
+</div><h4 id='method.is_finished' class='method'><code>fn <a href='#method.is_finished' class='fnname'>is_finished</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<div class='docblock'><p>Checks whether there is a valid parse that ends at the current
+position.</p>
+</div><h4 id='method.finished_node' class='method'><code>fn <a href='#method.finished_node' class='fnname'>finished_node</a>(&amp;self) -&gt; F::NodeRef</code></h4>
+<div class='docblock'><p>Retrieves the bocage node that represents the parse that has finished at the current
+location.</p>
+
+<h1 id='panics' class='section-header'><a href='#panics'>Panics</a></h1>
+<p>Panics when the parse has not finished at the current location.</p>
+</div><h4 id='method.raw_predicted_items' class='method'><code>fn <a href='#method.raw_predicted_items' class='fnname'>raw_predicted_items</a>(&amp;self) -&gt; <a class='struct' href='../../gearley/events/struct.RawPredictedItems.html' title='gearley::events::RawPredictedItems'>RawPredictedItems</a></code></h4>
+<div class='docblock'><p>Accesses predicted items.</p>
+</div><h4 id='method.raw_medial_items' class='method'><code>fn <a href='#method.raw_medial_items' class='fnname'>raw_medial_items</a>(&amp;self) -&gt; <a class='type' href='../../gearley/events/type.RawMedialItems.html' title='gearley::events::RawMedialItems'>RawMedialItems</a>&lt;F::NodeRef&gt;</code></h4>
+<div class='docblock'><p>Accesses medial items.</p>
+</div><h4 id='method.earleme' class='method'><code>fn <a href='#method.earleme' class='fnname'>earleme</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<div class='docblock'><p>Returns the current location number.</p>
+</div><h4 id='method.grammar' class='method'><code>fn <a href='#method.grammar' class='fnname'>grammar</a>(&amp;self) -&gt; &amp;'g <a class='struct' href='../../gearley/grammar/struct.InternalGrammar.html' title='gearley::grammar::InternalGrammar'>InternalGrammar</a></code></h4>
+<div class='docblock'><p>Returns a reference to the internal grammar.</p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "gearley";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["SequenceRuleBuilder","Sequence rule builder."]]});

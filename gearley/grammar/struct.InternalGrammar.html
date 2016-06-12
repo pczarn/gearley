@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `InternalGrammar` struct in crate `gearley`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, InternalGrammar">
+
+    <title>gearley::grammar::InternalGrammar - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../index.html'>gearley</a>::<wbr><a href='index.html'>grammar</a></p><script>window.sidebarCurrent = {name: 'InternalGrammar', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>gearley</a>::<wbr><a href='index.html'>grammar</a>::<wbr><a class='struct' href=''>InternalGrammar</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-1168' class='srclink' href='../../src/gearley/src/grammar.rs.html#217-236' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct InternalGrammar {
+    // some fields omitted
+}</pre><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../gearley/grammar/struct.InternalGrammar.html' title='gearley::grammar::InternalGrammar'>InternalGrammar</a></code></h3><div class='impl-items'><h4 id='method.from_grammar' class='method'><code>fn <a href='#method.from_grammar' class='fnname'>from_grammar</a>(grammar: &amp;<a class='struct' href='../../gearley/grammar/struct.Grammar.html' title='gearley::grammar::Grammar'>Grammar</a>) -&gt; Self</code></h4>
+<h4 id='method.from_binarized_grammar' class='method'><code>fn <a href='#method.from_binarized_grammar' class='fnname'>from_binarized_grammar</a>(grammar: <a class='struct' href='../../gearley/grammar/struct.BinarizedGrammar.html' title='gearley::grammar::BinarizedGrammar'>BinarizedGrammar</a>) -&gt; Self</code></h4>
+<h4 id='method.from_proper_binarized_grammar' class='method'><code>fn <a href='#method.from_proper_binarized_grammar' class='fnname'>from_proper_binarized_grammar</a>(grammar: <a class='struct' href='../../gearley/grammar/struct.BinarizedGrammar.html' title='gearley::grammar::BinarizedGrammar'>BinarizedGrammar</a>) -&gt; Self</code></h4>
+<h4 id='method.from_processed_grammar' class='method'><code>fn <a href='#method.from_processed_grammar' class='fnname'>from_processed_grammar</a>(grammar: <a class='struct' href='../../gearley/grammar/struct.BinarizedGrammar.html' title='gearley::grammar::BinarizedGrammar'>BinarizedGrammar</a>, nulling: <a class='struct' href='../../gearley/grammar/struct.BinarizedGrammar.html' title='gearley::grammar::BinarizedGrammar'>BinarizedGrammar</a>) -&gt; Self</code></h4>
+<h4 id='method.from_processed_grammar_with_maps' class='method'><code>fn <a href='#method.from_processed_grammar_with_maps' class='fnname'>from_processed_grammar_with_maps</a>(grammar: <a class='struct' href='../../gearley/grammar/struct.BinarizedGrammar.html' title='gearley::grammar::BinarizedGrammar'>BinarizedGrammar</a>, maps: <a class='struct' href='../../cfg/remap/struct.Mapping.html' title='cfg::remap::Mapping'>Mapping</a>, nulling: <a class='struct' href='../../gearley/grammar/struct.BinarizedGrammar.html' title='gearley::grammar::BinarizedGrammar'>BinarizedGrammar</a>) -&gt; Self</code></h4>
+<h4 id='method.to_parts' class='method'><code>fn <a href='#method.to_parts' class='fnname'>to_parts</a>(&amp;self) -&gt; <a class='struct' href='../../gearley/grammar/struct.InternalGrammarParts.html' title='gearley::grammar::InternalGrammarParts'>InternalGrammarParts</a></code></h4>
+<h4 id='method.from_parts' class='method'><code>fn <a href='#method.from_parts' class='fnname'>from_parts</a>(parts: <a class='struct' href='../../gearley/grammar/struct.InternalGrammarParts.html' title='gearley::grammar::InternalGrammarParts'>InternalGrammarParts</a>) -&gt; Self</code></h4>
+<h4 id='method.as_slices_mut' class='method'><code>fn <a href='#method.as_slices_mut' class='fnname'>as_slices_mut</a>(&amp;mut self) -&gt; <a class='struct' href='../../gearley/grammar/struct.InternalGrammarSlicesMut.html' title='gearley::grammar::InternalGrammarSlicesMut'>InternalGrammarSlicesMut</a></code></h4>
+<h4 id='method.as_slices' class='method'><code>fn <a href='#method.as_slices' class='fnname'>as_slices</a>(&amp;self) -&gt; <a class='struct' href='../../gearley/grammar/struct.InternalGrammarSlices.html' title='gearley::grammar::InternalGrammarSlices'>InternalGrammarSlices</a></code></h4>
+<h4 id='method.prediction_matrix' class='method'><code>fn <a href='#method.prediction_matrix' class='fnname'>prediction_matrix</a>(&amp;self) -&gt; <a class='struct' href='../../bit_matrix/submatrix/struct.BitSubMatrix.html' title='bit_matrix::submatrix::BitSubMatrix'>BitSubMatrix</a></code></h4>
+<h4 id='method.inverse_prediction' class='method'><code>fn <a href='#method.inverse_prediction' class='fnname'>inverse_prediction</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='struct' href='../../gearley/grammar/struct.PredictionTransition.html' title='gearley::grammar::PredictionTransition'>PredictionTransition</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+<h4 id='method.num_syms' class='method'><code>fn <a href='#method.num_syms' class='fnname'>num_syms</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<h4 id='method.num_rules' class='method'><code>fn <a href='#method.num_rules' class='fnname'>num_rules</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<h4 id='method.num_pos' class='method'><code>fn <a href='#method.num_pos' class='fnname'>num_pos</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<h4 id='method.start_sym' class='method'><code>fn <a href='#method.start_sym' class='fnname'>start_sym</a>(&amp;self) -&gt; <a class='struct' href='../../cfg/symbol/repr/struct.Symbol.html' title='cfg::symbol::repr::Symbol'>Symbol</a></code></h4>
+<h4 id='method.has_trivial_derivation' class='method'><code>fn <a href='#method.has_trivial_derivation' class='fnname'>has_trivial_derivation</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.nulling' class='method'><code>fn <a href='#method.nulling' class='fnname'>nulling</a>(&amp;self, pos: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>) -&gt; <a class='type' href='../../gearley/grammar/type.NullingEliminated.html' title='gearley::grammar::NullingEliminated'>NullingEliminated</a></code></h4>
+<h4 id='method.events' class='method'><code>fn <a href='#method.events' class='fnname'>events</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>(</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='type' href='../../gearley/grammar/type.Event.html' title='gearley::grammar::Event'>Event</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='type' href='../../gearley/grammar/type.Event.html' title='gearley::grammar::Event'>Event</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>)</a></code></h4>
+<h4 id='method.trace' class='method'><code>fn <a href='#method.trace' class='fnname'>trace</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>[</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='type' href='../../gearley/grammar/type.ExternalDottedRule.html' title='gearley::grammar::ExternalDottedRule'>ExternalDottedRule</a>&gt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.array.html'>; 3]</a></code></h4>
+<h4 id='method.complete_over' class='method'><code>fn <a href='#method.complete_over' class='fnname'>complete_over</a>(&amp;self, dot: <a class='type' href='../../gearley/item/type.Dot.html' title='gearley::item::Dot'>Dot</a>, sym: <a class='struct' href='../../cfg/symbol/repr/struct.Symbol.html' title='cfg::symbol::repr::Symbol'>Symbol</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></code></h4>
+<h4 id='method.rules' class='method'><code>fn <a href='#method.rules' class='fnname'>rules</a>(&amp;self) -&gt; <a class='struct' href='../../gearley/grammar/struct.RuleSlices.html' title='gearley::grammar::RuleSlices'>RuleSlices</a></code></h4>
+<h4 id='method.get_rhs0' class='method'><code>fn <a href='#method.get_rhs0' class='fnname'>get_rhs0</a>(&amp;self, dot: <a class='type' href='../../gearley/item/type.Dot.html' title='gearley::item::Dot'>Dot</a>) -&gt; <a class='struct' href='../../cfg/symbol/repr/struct.Symbol.html' title='cfg::symbol::repr::Symbol'>Symbol</a></code></h4>
+<h4 id='method.get_rhs1' class='method'><code>fn <a href='#method.get_rhs1' class='fnname'>get_rhs1</a>(&amp;self, dot: <a class='type' href='../../gearley/item/type.Dot.html' title='gearley::item::Dot'>Dot</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='../../cfg/symbol/repr/struct.Symbol.html' title='cfg::symbol::repr::Symbol'>Symbol</a>&gt;</code></h4>
+<h4 id='method.get_lhs' class='method'><code>fn <a href='#method.get_lhs' class='fnname'>get_lhs</a>(&amp;self, dot: <a class='type' href='../../gearley/item/type.Dot.html' title='gearley::item::Dot'>Dot</a>) -&gt; <a class='struct' href='../../cfg/symbol/repr/struct.Symbol.html' title='cfg::symbol::repr::Symbol'>Symbol</a></code></h4>
+<h4 id='method.get_eval' class='method'><code>fn <a href='#method.get_eval' class='fnname'>get_eval</a>(&amp;self, dot: <a class='type' href='../../gearley/item/type.Dot.html' title='gearley::item::Dot'>Dot</a>) -&gt; <a class='type' href='../../gearley/grammar/type.RuleOrigin.html' title='gearley::grammar::RuleOrigin'>RuleOrigin</a></code></h4>
+<h4 id='method.eliminated_nulling_intermediate' class='method'><code>fn <a href='#method.eliminated_nulling_intermediate' class='fnname'>eliminated_nulling_intermediate</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='type' href='../../gearley/grammar/type.NullingIntermediateRule.html' title='gearley::grammar::NullingIntermediateRule'>NullingIntermediateRule</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+<h4 id='method.inverse_prediction_of' class='method'><code>fn <a href='#method.inverse_prediction_of' class='fnname'>inverse_prediction_of</a>(&amp;self, sym: <a class='struct' href='../../cfg/symbol/repr/struct.Symbol.html' title='cfg::symbol::repr::Symbol'>Symbol</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='struct' href='../../gearley/grammar/struct.PredictionTransition.html' title='gearley::grammar::PredictionTransition'>PredictionTransition</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a></code></h4>
+<h4 id='method.to_internal' class='method'><code>fn <a href='#method.to_internal' class='fnname'>to_internal</a>(&amp;self, symbol: <a class='struct' href='../../cfg/symbol/repr/struct.Symbol.html' title='cfg::symbol::repr::Symbol'>Symbol</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='../../cfg/symbol/repr/struct.Symbol.html' title='cfg::symbol::repr::Symbol'>Symbol</a>&gt;</code></h4>
+<h4 id='method.to_external' class='method'><code>fn <a href='#method.to_external' class='fnname'>to_external</a>(&amp;self, symbol: <a class='struct' href='../../cfg/symbol/repr/struct.Symbol.html' title='cfg::symbol::repr::Symbol'>Symbol</a>) -&gt; <a class='struct' href='../../cfg/symbol/repr/struct.Symbol.html' title='cfg::symbol::repr::Symbol'>Symbol</a></code></h4>
+</div><h2 id='implementations'>Trait Implementations</h2><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> for <a class='struct' href='../../gearley/grammar/struct.InternalGrammar.html' title='gearley::grammar::InternalGrammar'>InternalGrammar</a></code></h3><div class='impl-items'><h4 id='method.clone' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class='struct' href='../../gearley/grammar/struct.InternalGrammar.html' title='gearley::grammar::InternalGrammar'>InternalGrammar</a></code></h4>
+<h4 id='method.clone_from' class='method'><span class="since">1.0.0</span><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: &amp;Self)</code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "gearley";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

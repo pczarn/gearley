@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["CompletedItem",""],["Item",""]],"type":[["Dot",""],["Origin",""]]});

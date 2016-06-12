@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["BitSubMatrix","Immutable access to a range of matrix's rows."],["BitSubMatrixMut","Mutable access to a range of matrix's rows."]]});

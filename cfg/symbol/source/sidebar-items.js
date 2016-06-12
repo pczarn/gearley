@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Generate","Iterator for generating symbols."],["SymbolSource","A source of numeric symbols."]],"trait":[["SymbolContainer","Trait used to generate symbols."]]});

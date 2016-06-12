@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["builder","Grammar rules can be built with the builder pattern."],["container","Abstraction for collections of rules."]],"struct":[["Rule","Typical grammar rule representation."],["RuleRef","References rule's components."]],"trait":[["GrammarRule","Trait for rules of a context-free grammar."]]});

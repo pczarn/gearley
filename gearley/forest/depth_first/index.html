@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `depth_first` mod in crate `gearley`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, depth_first">
+
+    <title>gearley::forest::depth_first - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../index.html'>gearley</a>::<wbr><a href='../index.html'>forest</a></p><script>window.sidebarCurrent = {name: 'depth_first', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Module <a href='../../index.html'>gearley</a>::<wbr><a href='../index.html'>forest</a>::<wbr><a class='mod' href=''>depth_first</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-166' class='srclink' href='../../../src/gearley/src/forest/depth_first/mod.rs.html#1-119' title='goto source code'>[src]</a></span></h1>
+<h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
+<table><tr><td><code>pub use self::node::{<a class='struct' href='../../../gearley/forest/depth_first/node/struct.Node.html' title='gearley::forest::depth_first::node::Node'>Node</a>, <a class='enum' href='../../../gearley/forest/depth_first/node/enum.NodeInner.html' title='gearley::forest::depth_first::node::NodeInner'>Sum</a>, <a class='enum' href='../../../gearley/forest/depth_first/node/enum.NodeInner.html' title='gearley::forest::depth_first::node::NodeInner'>Product</a>, <a class='enum' href='../../../gearley/forest/depth_first/node/enum.NodeInner.html' title='gearley::forest::depth_first::node::NodeInner'>Leaf</a>, <a class='enum' href='../../../gearley/forest/depth_first/node/enum.NodeInner.html' title='gearley::forest::depth_first::node::NodeInner'>LeafWithValue</a>, <a class='enum' href='../../../gearley/forest/depth_first/node/enum.NodeInner.html' title='gearley::forest::depth_first::node::NodeInner'>Evaluated</a>, <a class='enum' href='../../../gearley/forest/depth_first/node/enum.NodeInner.html' title='gearley::forest::depth_first::node::NodeInner'>ShallowProduct</a>, <a class='struct' href='../../../gearley/forest/depth_first/node/struct.Factors.html' title='gearley::forest::depth_first::node::Factors'>Factors</a>};</code></td></tr><tr><td><code>pub use self::order::{<a class='trait' href='../../../gearley/forest/depth_first/order/trait.Order.html' title='gearley::forest::depth_first::order::Order'>Order</a>, <a class='struct' href='../../../gearley/forest/depth_first/order/struct.NullOrder.html' title='gearley::forest::depth_first::order::NullOrder'>NullOrder</a>};</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='cartesian_product/index.html'
+                                  title='gearley::forest::depth_first::cartesian_product'>cartesian_product</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='node/index.html'
+                                  title='gearley::forest::depth_first::node'>node</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='mod' href='order/index.html'
+                                  title='gearley::forest::depth_first::order'>order</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.ActionClosureEvaluator.html'
+                                  title='gearley::forest::depth_first::ActionClosureEvaluator'>ActionClosureEvaluator</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.ArrayEvaluator.html'
+                                  title='gearley::forest::depth_first::ArrayEvaluator'>ArrayEvaluator</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.Bocage.html'
+                                  title='gearley::forest::depth_first::Bocage'>Bocage</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.LeafHandle.html'
+                                  title='gearley::forest::depth_first::LeafHandle'>LeafHandle</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.NullHandle.html'
+                                  title='gearley::forest::depth_first::NullHandle'>NullHandle</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.SumBuilder.html'
+                                  title='gearley::forest::depth_first::SumBuilder'>SumBuilder</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.SumHandle.html'
+                                  title='gearley::forest::depth_first::SumHandle'>SumHandle</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.Traversal.html'
+                                  title='gearley::forest::depth_first::Traversal'>Traversal</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.ValueArray.html'
+                                  title='gearley::forest::depth_first::ValueArray'>ValueArray</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='enum' href='enum.TraversalBottom.html'
+                                  title='gearley::forest::depth_first::TraversalBottom'>TraversalBottom</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr></table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='type' href='type.NodeRef.html'
+                                  title='gearley::forest::depth_first::NodeRef'>NodeRef</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "gearley";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
+    
+    <script defer src="../../../search-index.js"></script>
+</body>
+</html>

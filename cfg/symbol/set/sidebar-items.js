@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Iter","An iterator over a symbol set."],["SymbolBitSet","A set of symbols in the form of a bit vector."]]});

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `BinarizedCfg` struct in crate `cfg`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, BinarizedCfg">
+
+    <title>cfg::BinarizedCfg - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='index.html'>cfg</a></p><script>window.sidebarCurrent = {name: 'BinarizedCfg', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='index.html'>cfg</a>::<wbr><a class='struct' href=''>BinarizedCfg</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-22' class='srclink' href='../src/cfg/binarized.rs.html#21-29' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct BinarizedCfg&lt;H = <a class='struct' href='../cfg/history/struct.NullHistory.html' title='cfg::history::NullHistory'>NullHistory</a>&gt; {
+    // some fields omitted
+}</pre><div class='docblock'><p>Representation for grammars where right-hand sides of all rules have at most two symbols.</p>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;H&gt; <a class='struct' href='../cfg/struct.BinarizedCfg.html' title='cfg::BinarizedCfg'>BinarizedCfg</a>&lt;H&gt;</code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>() -&gt; Self</code></h4>
+<div class='docblock'><p>Creates a BinarizedCfg.</p>
+</div><h4 id='method.with_sym_source' class='method'><code>fn <a href='#method.with_sym_source' class='fnname'>with_sym_source</a>(sym_source: <a class='struct' href='../cfg/symbol/source/struct.SymbolSource.html' title='cfg::symbol::source::SymbolSource'>SymbolSource</a>) -&gt; Self</code></h4>
+<div class='docblock'><p>Creates an empty BinarizedCfg with the given symbol source.</p>
+</div><h4 id='method.from_context_free' class='method'><code>fn <a href='#method.from_context_free' class='fnname'>from_context_free</a>&lt;'a, G&gt;(this: &amp;'a G) -&gt; <a class='struct' href='../cfg/struct.BinarizedCfg.html' title='cfg::BinarizedCfg'>BinarizedCfg</a>&lt;H&gt; <span class='where'>where G: <a class='trait' href='../cfg/trait.ContextFree.html' title='cfg::ContextFree'>ContextFree</a>&lt;History=H&gt;, &amp;'a G: <a class='trait' href='../cfg/trait.ContextFreeRef.html' title='cfg::ContextFreeRef'>ContextFreeRef</a>&lt;'a, Target=G&gt;, H: <a class='trait' href='../cfg/history/trait.Binarize.html' title='cfg::history::Binarize'>Binarize</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> + 'static</span></code></h4>
+<div class='docblock'><p>Creates a BinarizedCfg by binarizing a context-free grammar.</p>
+</div><h4 id='method.sort' class='method'><code>fn <a href='#method.sort' class='fnname'>sort</a>(&amp;mut self)</code></h4>
+<div class='docblock'><p>Sorts the rule array.</p>
+</div><h4 id='method.sort_by' class='method'><code>fn <a href='#method.sort_by' class='fnname'>sort_by</a>&lt;F&gt;(&amp;mut self, compare: F) <span class='where'>where F: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.FnMut.html' title='core::ops::FnMut'>FnMut</a>(&amp;BinarizedRule&lt;H&gt;, &amp;BinarizedRule&lt;H&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/cmp/enum.Ordering.html' title='core::cmp::Ordering'>Ordering</a></span></code></h4>
+<div class='docblock'><p>Sorts the rule array in place, using the argument to compare elements.</p>
+</div><h4 id='method.dedup' class='method'><code>fn <a href='#method.dedup' class='fnname'>dedup</a>(&amp;mut self)</code></h4>
+<div class='docblock'><p>Removes consecutive duplicate rules.</p>
+</div></div><h3 class='impl'><code>impl&lt;H&gt; <a class='struct' href='../cfg/struct.BinarizedCfg.html' title='cfg::BinarizedCfg'>BinarizedCfg</a>&lt;H&gt; <span class='where'>where H: <a class='trait' href='../cfg/history/trait.Binarize.html' title='cfg::history::Binarize'>Binarize</a></span></code></h3><div class='impl-items'><h4 id='method.sym' class='method'><code>fn <a href='#method.sym' class='fnname'>sym</a>&lt;T&gt;(&amp;mut self) -&gt; T <span class='where'>where T: <a class='trait' href='../cfg/symbol/source/trait.SymbolContainer.html' title='cfg::symbol::source::SymbolContainer'>SymbolContainer</a></span></code></h4>
+<div class='docblock'><p>Returns generated symbols.</p>
+</div><h4 id='method.next_sym' class='method'><code>fn <a href='#method.next_sym' class='fnname'>next_sym</a>(&amp;mut self) -&gt; <a class='struct' href='../cfg/struct.Symbol.html' title='cfg::Symbol'>Symbol</a></code></h4>
+<div class='docblock'><p>Generates a new unique symbol.</p>
+</div><h4 id='method.num_syms' class='method'><code>fn <a href='#method.num_syms' class='fnname'>num_syms</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+<div class='docblock'><p>Returns the number of symbols in use.</p>
+</div></div><h3 class='impl'><code>impl&lt;H&gt; <a class='struct' href='../cfg/struct.BinarizedCfg.html' title='cfg::BinarizedCfg'>BinarizedCfg</a>&lt;H&gt; <span class='where'>where H: <a class='trait' href='../cfg/history/trait.Binarize.html' title='cfg::history::Binarize'>Binarize</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> + <a class='trait' href='../cfg/history/trait.EliminateNulling.html' title='cfg::history::EliminateNulling'>EliminateNulling</a></span></code></h3><div class='impl-items'><h4 id='method.eliminate_nulling_rules' class='method'><code>fn <a href='#method.eliminate_nulling_rules' class='fnname'>eliminate_nulling_rules</a>(&amp;mut self) -&gt; <a class='struct' href='../cfg/struct.BinarizedCfg.html' title='cfg::BinarizedCfg'>BinarizedCfg</a>&lt;H&gt;</code></h4>
+<div class='docblock'><p>Eliminates all rules of the form <code>A ::= epsilon</code>.</p>
+
+<p>In other words, this splits off the set of nulling rules.</p>
+
+<p>The language represented by the grammar is preserved, except for the possible lack of
+the empty string. Unproductive rules aren&#39;t preserved.</p>
+</div></div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl&lt;H&gt; <a class='trait' href='../cfg/trait.ContextFree.html' title='cfg::ContextFree'>ContextFree</a> for <a class='struct' href='../cfg/struct.BinarizedCfg.html' title='cfg::BinarizedCfg'>BinarizedCfg</a>&lt;H&gt; <span class='where'>where H: <a class='trait' href='../cfg/history/trait.Binarize.html' title='cfg::history::Binarize'>Binarize</a></span></code></h3><div class='impl-items'><h4 id='method.rule' class='method'><code>fn <a href='../cfg/trait.ContextFree.html#method.rule' class='fnname'>rule</a>(&amp;mut self, lhs: <a class='struct' href='../cfg/struct.Symbol.html' title='cfg::Symbol'>Symbol</a>) -&gt; <a class='struct' href='../cfg/rule/builder/struct.RuleBuilder.html' title='cfg::rule::builder::RuleBuilder'>RuleBuilder</a>&lt;&amp;mut Self&gt;</code></h4>
+<h4 id='method.precedenced_rule' class='method'><code>fn <a href='../cfg/trait.ContextFree.html#method.precedenced_rule' class='fnname'>precedenced_rule</a>(&amp;mut self, lhs: <a class='struct' href='../cfg/struct.Symbol.html' title='cfg::Symbol'>Symbol</a>) -&gt; <a class='struct' href='../cfg/precedence/struct.PrecedencedRuleBuilder.html' title='cfg::precedence::PrecedencedRuleBuilder'>PrecedencedRuleBuilder</a>&lt;&amp;mut Self&gt; <span class='where'>where Self::<a class='trait' href='../cfg/trait.ContextFree.html' title='cfg::ContextFree'>History</a>: <a class='trait' href='../cfg/history/trait.AssignPrecedence.html' title='cfg::history::AssignPrecedence'>AssignPrecedence</a> + <a class='trait' href='https://doc.rust-lang.org/nightly/core/default/trait.Default.html' title='core::default::Default'>Default</a></span></code></h4>
+</div><h3 class='impl'><code>impl&lt;'a, H&gt; <a class='trait' href='../cfg/trait.ContextFreeRef.html' title='cfg::ContextFreeRef'>ContextFreeRef</a>&lt;'a&gt; for &amp;'a <a class='struct' href='../cfg/struct.BinarizedCfg.html' title='cfg::BinarizedCfg'>BinarizedCfg</a>&lt;H&gt; <span class='where'>where H: <a class='trait' href='../cfg/history/trait.Binarize.html' title='cfg::history::Binarize'>Binarize</a> + 'a</span></code></h3><div class='impl-items'><h4 id='associatedtype.RuleRef' class='type'><code>type <a href='../cfg/trait.ContextFreeRef.html#associatedtype.RuleRef' class='type'>RuleRef</a> = <a class='struct' href='../cfg/rule/struct.RuleRef.html' title='cfg::rule::RuleRef'>RuleRef</a>&lt;'a, H&gt;</code></h4>
+<h4 id='associatedtype.Rules' class='type'><code>type <a href='../cfg/trait.ContextFreeRef.html#associatedtype.Rules' class='type'>Rules</a> = BinarizedRules&lt;'a, H&gt;</code></h4>
+<h4 id='method.rules' class='method'><code>fn <a href='../cfg/trait.ContextFreeRef.html#tymethod.rules' class='fnname'>rules</a>(self) -&gt; Self::<a class='trait' href='../cfg/trait.ContextFreeRef.html' title='cfg::ContextFreeRef'>Rules</a></code></h4>
+</div><h3 class='impl'><code>impl&lt;'a, H&gt; <a class='trait' href='../cfg/trait.ContextFreeMut.html' title='cfg::ContextFreeMut'>ContextFreeMut</a>&lt;'a&gt; for &amp;'a mut <a class='struct' href='../cfg/struct.BinarizedCfg.html' title='cfg::BinarizedCfg'>BinarizedCfg</a>&lt;H&gt; <span class='where'>where H: <a class='trait' href='../cfg/history/trait.Binarize.html' title='cfg::history::Binarize'>Binarize</a> + 'a</span></code></h3><div class='impl-items'></div><h3 class='impl'><code>impl&lt;H&gt; <a class='trait' href='../cfg/rule/container/trait.RuleContainer.html' title='cfg::rule::container::RuleContainer'>RuleContainer</a> for <a class='struct' href='../cfg/struct.BinarizedCfg.html' title='cfg::BinarizedCfg'>BinarizedCfg</a>&lt;H&gt; <span class='where'>where H: <a class='trait' href='../cfg/history/trait.Binarize.html' title='cfg::history::Binarize'>Binarize</a></span></code></h3><div class='impl-items'><h4 id='associatedtype.History' class='type'><code>type <a href='../cfg/rule/container/trait.RuleContainer.html#associatedtype.History' class='type'>History</a> = H</code></h4>
+<h4 id='method.sym_source' class='method'><code>fn <a href='../cfg/rule/container/trait.RuleContainer.html#tymethod.sym_source' class='fnname'>sym_source</a>(&amp;self) -&gt; &amp;<a class='struct' href='../cfg/symbol/source/struct.SymbolSource.html' title='cfg::symbol::source::SymbolSource'>SymbolSource</a></code></h4>
+<h4 id='method.sym_source_mut' class='method'><code>fn <a href='../cfg/rule/container/trait.RuleContainer.html#tymethod.sym_source_mut' class='fnname'>sym_source_mut</a>(&amp;mut self) -&gt; &amp;mut <a class='struct' href='../cfg/symbol/source/struct.SymbolSource.html' title='cfg::symbol::source::SymbolSource'>SymbolSource</a></code></h4>
+<h4 id='method.retain' class='method'><code>fn <a href='../cfg/rule/container/trait.RuleContainer.html#tymethod.retain' class='fnname'>retain</a>&lt;F&gt;(&amp;mut self, f: F) <span class='where'>where F: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.FnMut.html' title='core::ops::FnMut'>FnMut</a>(<a class='struct' href='../cfg/struct.Symbol.html' title='cfg::Symbol'>Symbol</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='struct' href='../cfg/struct.Symbol.html' title='cfg::Symbol'>Symbol</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, &amp;Self::<a class='trait' href='../cfg/rule/container/trait.RuleContainer.html' title='cfg::rule::container::RuleContainer'>History</a>) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a></span></code></h4>
+<h4 id='method.add_rule' class='method'><code>fn <a href='../cfg/rule/container/trait.RuleContainer.html#tymethod.add_rule' class='fnname'>add_rule</a>(&amp;mut self, lhs: <a class='struct' href='../cfg/struct.Symbol.html' title='cfg::Symbol'>Symbol</a>, rhs: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>&amp;[</a><a class='struct' href='../cfg/struct.Symbol.html' title='cfg::Symbol'>Symbol</a><a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.slice.html'>]</a>, history: Self::<a class='trait' href='../cfg/rule/container/trait.RuleContainer.html' title='cfg::rule::container::RuleContainer'>History</a>)</code></h4>
+<h4 id='method.sym-1' class='method'><code>fn <a href='../cfg/rule/container/trait.RuleContainer.html#method.sym' class='fnname'>sym</a>&lt;T&gt;(&amp;mut self) -&gt; T <span class='where'>where T: <a class='trait' href='../cfg/symbol/source/trait.SymbolContainer.html' title='cfg::symbol::source::SymbolContainer'>SymbolContainer</a></span></code></h4>
+<h4 id='method.next_sym-1' class='method'><code>fn <a href='../cfg/rule/container/trait.RuleContainer.html#method.next_sym' class='fnname'>next_sym</a>(&amp;mut self) -&gt; <a class='struct' href='../cfg/struct.Symbol.html' title='cfg::Symbol'>Symbol</a></code></h4>
+<h4 id='method.num_syms-1' class='method'><code>fn <a href='../cfg/rule/container/trait.RuleContainer.html#method.num_syms' class='fnname'>num_syms</a>(&amp;self) -&gt; <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a></code></h4>
+</div><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl&lt;H: <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a>&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> for <a class='struct' href='../cfg/struct.BinarizedCfg.html' title='cfg::BinarizedCfg'>BinarizedCfg</a>&lt;H&gt;</code></h3><div class='impl-items'><h4 id='method.clone' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class='struct' href='../cfg/struct.BinarizedCfg.html' title='cfg::BinarizedCfg'>BinarizedCfg</a>&lt;H&gt;</code></h4>
+<h4 id='method.clone_from' class='method'><span class="since">1.0.0</span><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: &amp;Self)</code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "cfg";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
+    
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

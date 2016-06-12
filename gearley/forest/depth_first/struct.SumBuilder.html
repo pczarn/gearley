@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `SumBuilder` struct in crate `gearley`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, SumBuilder">
+
+    <title>gearley::forest::depth_first::SumBuilder - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../../index.html'>gearley</a>::<wbr><a href='../index.html'>forest</a>::<wbr><a href='index.html'>depth_first</a></p><script>window.sidebarCurrent = {name: 'SumBuilder', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../../index.html'>gearley</a>::<wbr><a href='../index.html'>forest</a>::<wbr><a href='index.html'>depth_first</a>::<wbr><a class='struct' href=''>SumBuilder</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-729' class='srclink' href='../../../src/gearley/src/forest/depth_first/sum_builder.rs.html#9-11' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct SumBuilder&lt;'a, 'f, T: 'f + <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a>, V: 'a&gt; <span class='where'>where 'a: 'f</span> {
+    // some fields omitted
+}</pre><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;'a, 'f, T, V&gt; <a class='struct' href='../../../gearley/forest/depth_first/struct.SumBuilder.html' title='gearley::forest::depth_first::SumBuilder'>SumBuilder</a>&lt;'a, 'f, T, V&gt; <span class='where'>where T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a></span></code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(arena: &amp;'f <a class='struct' href='../../../typed_arena/struct.Arena.html' title='typed_arena::Arena'>Arena</a>&lt;<a class='struct' href='../../../gearley/forest/depth_first/node/struct.Node.html' title='gearley::forest::depth_first::node::Node'>Node</a>&lt;'a, 'f, T, V&gt;&gt;, len: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; Self</code></h4>
+</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl&lt;'a, 'f, T, V&gt; <a class='trait' href='../../../gearley/forest/trait.NodeBuilder.html' title='gearley::forest::NodeBuilder'>NodeBuilder</a> for <a class='struct' href='../../../gearley/forest/depth_first/struct.SumBuilder.html' title='gearley::forest::depth_first::SumBuilder'>SumBuilder</a>&lt;'a, 'f, T, V&gt; <span class='where'>where T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Copy.html' title='core::marker::Copy'>Copy</a></span></code></h3><div class='impl-items'><h4 id='associatedtype.NodeRef' class='type'><code>type <a href='../../../gearley/forest/trait.NodeBuilder.html#associatedtype.NodeRef' class='type'>NodeRef</a> = <a class='type' href='../../../gearley/forest/depth_first/type.NodeRef.html' title='gearley::forest::depth_first::NodeRef'>NodeRef</a>&lt;'a, 'f, T, V&gt;</code></h4>
+<h4 id='method.push' class='method'><code>fn <a href='../../../gearley/forest/trait.NodeBuilder.html#tymethod.push' class='fnname'>push</a>(&amp;mut self, item: <a class='struct' href='../../../gearley/item/struct.CompletedItem.html' title='gearley::item::CompletedItem'>CompletedItem</a>&lt;Self::<a class='trait' href='../../../gearley/forest/trait.NodeBuilder.html' title='gearley::forest::NodeBuilder'>NodeRef</a>&gt;)</code></h4>
+<h4 id='method.sum' class='method'><code>fn <a href='../../../gearley/forest/trait.NodeBuilder.html#tymethod.sum' class='fnname'>sum</a>(&amp;mut self, _origin: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u32.html'>u32</a>) -&gt; Self::<a class='trait' href='../../../gearley/forest/trait.NodeBuilder.html' title='gearley::forest::NodeBuilder'>NodeRef</a></code></h4>
+<h4 id='method.reserve' class='method'><code>fn <a href='../../../gearley/forest/trait.NodeBuilder.html#tymethod.reserve' class='fnname'>reserve</a>(&amp;mut self, len: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>)</code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../../";
+        window.currentCrate = "gearley";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
+    
+    <script defer src="../../../search-index.js"></script>
+</body>
+</html>

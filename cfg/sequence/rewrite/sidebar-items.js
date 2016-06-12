@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["SequencesToProductions","Rewrites sequence rules into production rules."]]});

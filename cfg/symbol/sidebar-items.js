@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["set","Informs whether symbols are terminal or nonterminal."],["source","Source"]],"struct":[["Symbol","A common grammar symbol type."]]});

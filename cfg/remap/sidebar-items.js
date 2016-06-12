@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Mapping","Contains maps for translation between internal and external symbols."],["Remap","Remaps symbols and removes unused symbols."]]});

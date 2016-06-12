@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Usefulness","Contains the information about usefulness of the grammar's rules. Useful rules are both reachable and productive."],["UselessRule","A reference to a useless rule, together with the reason for its uselessness."],["UselessRules","An iterator over the grammar's useless rules."]]});

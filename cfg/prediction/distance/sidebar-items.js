@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["MinimalDistance","Calculation of minimum distance from one part of the grammar to another. Similar to multi-source shortest path search in a graph."]]});
