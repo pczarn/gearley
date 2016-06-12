@@ -12,9 +12,15 @@ pub struct Item<N> {
 
 #[derive(Clone, Copy, Debug)]
 pub struct CompletedItem<N> {
+    /// The dot position.
     pub dot: Dot,
+    /// The origin location.
+    /// It comes after `dot`, so that (origin, dot) can be compared in a single instruction
+    /// on little-endian systems.
     pub origin: Origin,
+    /// Left bocage node.
     pub left_node: N,
+    /// Right bocage node.
     pub right_node: Option<N>,
 }
 

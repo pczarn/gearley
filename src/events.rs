@@ -9,9 +9,9 @@ use grammar::{ExternalDottedRule, Event};
 use item::Item;
 use recognizer::Recognizer;
 
-pub type RawItems<'a, L> = slice::Iter<'a, Item<L>>;
+pub type RawMedialItems<'a, L> = slice::Iter<'a, Item<L>>;
 
-pub struct RawPredicted<'a> {
+pub struct RawPredictedItems<'a> {
     iter: row::Iter<'a>,
     idx: usize,
 }
@@ -23,7 +23,7 @@ pub struct PredictionEvents<'a, T: 'a> {
 
 pub struct MedialEvents<'a, T: 'a, N: 'a> {
     events: &'a [T],
-    items: RawItems<'a, N>,
+    items: RawMedialItems<'a, N>,
 }
 
 pub struct Events<'a, L: 'a> {
@@ -42,20 +42,20 @@ pub struct Tracing<'a, L: 'a> {
 }
 
 pub struct ExpectedTerminals<'a, N: 'a> {
-    prev_scan_iter: RawItems<'a, N>,
+    prev_scan_iter: RawMedialItems<'a, N>,
     rhs1: &'a [Option<Symbol>],
 }
 
-impl<'a> RawPredicted<'a> {
+impl<'a> RawPredictedItems<'a> {
     pub fn new(row: row::Iter<'a>) -> Self {
-        RawPredicted {
+        RawPredictedItems {
             iter: row,
             idx: 0,
         }
     }
 }
 
-impl<'a> Iterator for RawPredicted<'a> {
+impl<'a> Iterator for RawPredictedItems<'a> {
     type Item = Symbol;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -93,7 +93,7 @@ impl<'a, T> Iterator for PredictionEvents<'a, T> {
 }
 
 impl<'a, T, L> MedialEvents<'a, T, L> {
-    fn new<'b>(events: &'b [T], items: RawItems<'b, L>) -> MedialEvents<'b, T, L> {
+    fn new<'b>(events: &'b [T], items: RawMedialItems<'b, L>) -> MedialEvents<'b, T, L> {
         MedialEvents {
             events: events,
             items: items,

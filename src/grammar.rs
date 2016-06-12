@@ -29,17 +29,17 @@ use item::Dot;
 // For efficiency, the recognizer works on processed grammars. Grammars described by the user
 // are transformed to meet the following properties:
 //
-// Property (1): Right-hand-sides of all rules have at most two symbols.
+// Property (1): Right-hand-sides of all rules have at least one symbol.
+//
+// Thanks to property (2), this results in linear, not exponential increase in the
+// number of symbols and dotted rules.
+//
+// Property (2): Right-hand-sides of all rules have at most two symbols.
 //
 // That is, all rules are of the form
 // `A ::= B C`
 // or
 // `D ::= E`.
-//
-// Property (2): Right-hand-sides of all rules have at least one symbol.
-//
-// Thanks to (1), this results in linear, not exponential increase in the
-// number of symbols and dotted rules.
 //
 // Property (3): There are no cycles among unit rules.
 //
@@ -57,11 +57,21 @@ use item::Dot;
 //
 // # Similarities to other parsers
 //
-// * (1) is required for recognition in CYK parsers, and in a roundabout way for construction
+// * (1) is required by some Earley parsers, including Marpa.
+// * (2) is required for recognition in CYK parsers, and in a roundabout way for construction
 //   of bocages.
-// * (2) is required by some Earley parsers, including Marpa.
 // * (3) is required by PEG and some other parsers.
 // * (4) and (5) are specific to gearley.
+
+// # Future optimizations
+//
+// RHS0 is unused during recognition, thanks to inverse prediction tables. Move or remove it.
+// Store RHS1 and LHS in row-major instead of column-major order, so that the least significant bit
+// tells us whether a dot is medial or completed. Or don't.
+//
+// Parameterize the representation over symbol type (u32, u16, u8).
+//
+// Use independent indices into RHS1 and LHS. Add a translation table.
 
 /// Drop-in replacement for cfg::Cfg that traces relations between user-provided
 /// and internal grammars.
