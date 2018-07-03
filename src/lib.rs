@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "cargo-clippy", allow(new_without_default_derive))]
+
 extern crate optional;
 extern crate ref_slice;
 extern crate typed_arena;

@@ -47,8 +47,8 @@ impl<'a, 'f, 'g, T, V, O> Traversal<'a, 'f, 'g, T, V, O>
     pub fn new(bocage: &'f Bocage<'a, 'f, 'g, T, V>, order: O) -> Self {
         bocage.initialize();
         Traversal {
-            bocage: bocage,
-            order: order,
+            bocage,
+            order,
             dependencies_stack: Vec::with_capacity(32),
             factor_traversal: Vec::with_capacity(16),
             factor_stack: Vec::with_capacity(128),
@@ -127,7 +127,7 @@ impl<'a, 'f, 'g, T, V, O> Traversal<'a, 'f, 'g, T, V, O>
                         self.factor_stack.truncate(product_bottom + len);
                     }
                     product.set(ShallowProduct {
-                        action: action,
+                        action,
                         factor_stack_bottom: product_bottom,
                     });
                 }
@@ -180,15 +180,15 @@ impl<'a, 't, 'f, 'g, T, V> Iterator for TraverseDeps<'a, 't, 'f, T, V> where T: 
                 Evaluated { .. } => {}
                 LeafWithValue { symbol, value } => {
                     return Some(TraversalBottom::Leaf(LeafHandle {
-                        factor: factor,
+                        factor,
                         terminal: symbol,
-                        value: value,
+                        value,
                     }));
                 }
                 Leaf { symbol } => {
                     return Some(TraversalBottom::Null(NullHandle {
-                        factor: factor,
-                        symbol: symbol,
+                        factor,
+                        symbol,
                     }));
                 }
                 _ => {

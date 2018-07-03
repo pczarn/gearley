@@ -47,6 +47,7 @@ pub fn rule(rule: u32, args: &[&i32]) -> i32 {
     }
 }
 
+#[macro_export]
 macro_rules! precedenced_arith_rhs_elem {
     ('+') => (0);
     ('-') => (1);
@@ -67,6 +68,7 @@ macro_rules! precedenced_arith_rhs_elem {
     ($e:expr) => ($e);
 }
 
+#[macro_export]
 macro_rules! precedenced_arith {
     ($($e:tt)+) => (
         &[$(precedenced_arith_rhs_elem!($e) + 4,)+]

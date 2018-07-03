@@ -14,7 +14,7 @@ impl<'a, V> Factor<'a, V> {
         let start = slice.as_ptr();
         unsafe {
             Factor {
-                start: start,
+                start,
                 end: start.offset(slice.len() as isize),
                 marker: PhantomData,
             }
@@ -23,7 +23,7 @@ impl<'a, V> Factor<'a, V> {
 
     fn advance(&mut self, ptr: &mut &'a V) -> bool {
         unsafe {
-            *ptr = &*(*ptr as *const _).offset(1);
+            *ptr = &*(*ptr as *const V).offset(1);
             if *ptr as *const _ == self.end {
                 *ptr = &*self.start;
                 true
@@ -47,13 +47,17 @@ impl<'a, V> CartesianProduct<'a, V> {
         }
     }
 
-    /// Initialize the cartesian product from a production.
-    pub fn from_production<'t, 'f, T>(&mut self, production: &ProductHandle<'a, 't, 'f, T, V>)
-        where T: Copy
-    {
+    pub fn clear(&mut self) {
         self.ranges.clear();
         self.ptrs.clear();
-        let slices = production.factors.iter().map(|factor| {
+    } 
+
+    /// Multiplies the cartesian product  a production.
+    pub fn extend<'t, 'f, T>(&mut self, production: &ProductHandle<'a, 't, 'f, T, V>)
+        where T: Copy
+    {
+        let factors = production.factors.iter();
+        let slices = factors.map(|factor| {
             match factor.get() {
                 Evaluated { values } => {
                     values
@@ -96,7 +100,8 @@ fn test_cartesian_product() {
     let factors: &[NodeRef<(), i32>] = &[&a, &b, &c];
     let production = ProductHandle { action: 0, factors: factors };
     let mut cartesian_product = CartesianProduct::new();
-    cartesian_product.from_production(&production);
+    cartesian_product.clear();
+    cartesian_product.extend(&production);
     let mut result = vec![];
     loop {
         {

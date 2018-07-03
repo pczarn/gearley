@@ -18,7 +18,7 @@ fn test_trivial_grammar() {
     let start = external.sym();
     external.rule(start).rhs([]);
     external.set_start(start);
-    let cfg = external.into_internal_grammar();
+    let cfg = external.to_internal_grammar();
     let values = ValueArray::new();
     let mut evaluator = ArrayEvaluator::new(
         &values,
@@ -56,7 +56,7 @@ fn test_grammar_with_nulling_intermediate() {
             .rule(c).rhs([])
             .rule(d).rhs([]);
     external.set_start(start);
-    let cfg = external.into_internal_grammar();
+    let cfg = external.to_internal_grammar();
     let values = ValueArray::new();
     let mut evaluator = ArrayEvaluator::new(
         &values,

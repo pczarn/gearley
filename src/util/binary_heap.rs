@@ -11,6 +11,7 @@
 //! A priority queue implemented with a binary heap.
 
 #![allow(missing_docs)]
+#![cfg_attr(feature = "cargo-clippy", allow(nonminimal_bool))]
 
 use std::mem::swap;
 use std::vec::Vec;
@@ -36,13 +37,19 @@ impl<T: Clone> Clone for BinaryHeap<T> {
     }
 }
 
-impl<T: Ord> BinaryHeap<T> {
-    /// Creates an empty `BinaryHeap` as a max-heap.
-    pub fn new() -> BinaryHeap<T> {
+impl<T> Default for BinaryHeap<T> {
+    fn default() -> Self {
         BinaryHeap {
             indices: vec![],
             data: vec![],
         }
+    }
+}
+
+impl<T: Ord> BinaryHeap<T> {
+    /// Creates an empty `BinaryHeap` as a max-heap.
+    pub fn new() -> BinaryHeap<T> {
+        Default::default()
     }
 
     /// Creates an empty `BinaryHeap` with a specific capacity.
@@ -108,7 +115,7 @@ impl<T: Ord> BinaryHeap<T> {
     pub fn push(&mut self, item: T) {
         let old_indices_len = self.len();
         let old_data_len = self.data.len();
-        assert!(old_data_len as u64 <= u32::MAX as u64);
+        assert!(old_data_len as u64 <= u32::MAX.into());
         self.data.push(item);
         self.indices.push(old_data_len as u32);
         self.sift_up(0, old_indices_len);
@@ -122,7 +129,7 @@ impl<T: Ord> BinaryHeap<T> {
         while pos > start {
             let parent = (pos - 1) / 2;
             let parent_idx = self.indices[parent];
-            if element <= &self.data[parent_idx as usize] {
+            if *element <= self.data[parent_idx as usize] {
                 break;
             }
             self.indices[pos] = parent_idx;

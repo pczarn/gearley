@@ -21,7 +21,7 @@ const SUM_TOKENS: &'static [u32] = precedenced_arith!(
 #[test]
 fn test_precedenced_arith() {
     let external = precedenced_arith::grammar();
-    let cfg = external.into_internal_grammar();
+    let cfg = external.to_internal_grammar();
     let null_forest = NullForest;
     let mut rec = Recognizer::new(&cfg, &null_forest);
     rec.parse(SUM_TOKENS);
@@ -31,7 +31,7 @@ fn test_precedenced_arith() {
 fn test_ambiguous_arithmetic() {
     let tokens = ambiguous_arith!('2' '-' '0' '*' '3' '+' '1');
     let external = ambiguous_arith::grammar();
-    let cfg = external.into_internal_grammar();
+    let cfg = external.to_internal_grammar();
     let values = ValueArray::new();
     let mut evaluator = ArrayEvaluator::new(
         &values,

@@ -134,7 +134,7 @@ fn grammar() -> Grammar {
 #[bench]
 fn bench_recognize_decl_use(b: &mut test::Bencher) {
     let external = grammar();
-    let cfg = external.into_internal_grammar();
+    let cfg = external.to_internal_grammar();
 
     b.iter(|| {
         let bocage = NullForest;
@@ -147,7 +147,7 @@ fn bench_recognize_decl_use(b: &mut test::Bencher) {
 #[bench]
 fn bench_parse_decl_use(b: &mut test::Bencher) {
     let external = grammar();
-    let cfg = external.into_internal_grammar();
+    let cfg = external.to_internal_grammar();
 
     b.iter(|| {
         let bocage: Bocage<(), ()> = Bocage::new(&cfg);

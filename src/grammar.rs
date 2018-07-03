@@ -73,8 +73,9 @@ use item::Dot;
 //
 // Use independent indices into RHS1 and LHS. Add a translation table.
 
-/// Drop-in replacement for cfg::Cfg that traces relations between user-provided
+/// Drop-in replacement for `cfg::Cfg` that traces relations between user-provided
 /// and internal grammars.
+#[derive(Default)]
 pub struct Grammar {
     inherit: Cfg<History, History>,
     start: Option<Symbol>,
@@ -115,7 +116,7 @@ impl Grammar {
         }
     }
 
-    pub fn into_internal_grammar(&self) -> InternalGrammar {
+    pub fn to_internal_grammar(&self) -> InternalGrammar {
         InternalGrammar::from_grammar(self)
     }
 }
@@ -133,7 +134,7 @@ impl DerefMut for Grammar {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct BinarizedGrammar {
     inherit: BinarizedCfg<History>,
     start: Option<Symbol>,
@@ -141,10 +142,7 @@ pub struct BinarizedGrammar {
 
 impl BinarizedGrammar {
     pub fn new() -> Self {
-        BinarizedGrammar {
-            inherit: BinarizedCfg::new(),
-            start: None,
-        }
+        Self::default()
     }
 
     pub fn set_start(&mut self, start: Symbol) {
@@ -177,7 +175,7 @@ pub struct BuildHistory {
 impl BuildHistory {
     /// Creates default history.
     pub fn new(num_rules: usize) -> Self {
-        BuildHistory { num_rules: num_rules }
+        BuildHistory { num_rules }
     }
 }
 
@@ -198,7 +196,7 @@ pub struct PredictionTransition {
 
 impl PredictionTransition {
     #[inline(always)]
-    pub fn dot(&self) -> DotKind {
+    pub fn dot(self) -> DotKind {
         let top_bit = 0x8000_0000;
         if self.dot & top_bit == top_bit {
             DotKind::Completed(self.dot & !top_bit)
@@ -368,7 +366,9 @@ impl Action for History {
 impl Binarize for History {
     fn binarize<R>(&self, _rule: &R, depth: usize) -> Self {
         let none = RuleDot::none();
-        let dots = if !self.dots.is_empty() {
+        let dots = if self.dots.is_empty() {
+            [none; 3]
+        } else {
             let dot_len = self.dots.len();
             if depth == 0 {
                 if dot_len == 2 {
@@ -381,8 +381,6 @@ impl Binarize for History {
             } else {
                 [none, self.dots[dot_len - 2 - depth], none]
             }
-        } else {
-            [none; 3]
         };
 
         let origin = if depth == 0 {
@@ -392,7 +390,7 @@ impl Binarize for History {
         };
 
         History {
-            origin: origin,
+            origin,
             dots: dots[..].to_vec(),
             nullable: self.nullable,
         }
@@ -463,7 +461,7 @@ impl RewriteSequence for History {
             dot
         }).collect();
         History {
-            dots: dots,
+            dots,
             ..History::default()
         }
     }
@@ -572,18 +570,18 @@ impl InternalGrammar {
 
     pub fn from_proper_binarized_grammar(grammar: BinarizedGrammar) -> Self {
         let (grammar, nulling) = grammar.eliminate_nulling();
-        Self::from_processed_grammar(grammar, nulling)
+        Self::from_processed_grammar(grammar, &nulling)
     }
 
-    pub fn from_processed_grammar(grammar: BinarizedGrammar, nulling: BinarizedGrammar) -> Self {
+    pub fn from_processed_grammar(grammar: BinarizedGrammar, nulling: &BinarizedGrammar) -> Self {
         let (grammar, maps) = grammar.remap_symbols();
-        Self::from_processed_grammar_with_maps(grammar, maps, nulling)
+        Self::from_processed_grammar_with_maps(grammar, &maps, nulling)
     }
 
     pub fn from_processed_grammar_with_maps(
         mut grammar: BinarizedGrammar,
-        maps: Mapping,
-        nulling: BinarizedGrammar)
+        maps: &Mapping,
+        nulling: &BinarizedGrammar)
         -> Self
     {
         grammar.sort_by(|a, b| a.lhs().cmp(&b.lhs()));
@@ -599,12 +597,12 @@ impl InternalGrammar {
         }).collect::<Vec<_>>();
         let mut result = InternalGrammar::from_parts(InternalGrammarParts {
             storage: Cow::Borrowed(&[]),
-            num_syms: num_syms,
+            num_syms,
             num_internal_syms: maps.to_external.len(),
             num_external_syms: maps.to_internal.len(),
-            num_rules: num_rules,
+            num_rules,
             start_sym: grammar.get_start(),
-            trivial_derivation: trivial_derivation,
+            trivial_derivation,
             num_nulling_intermediate: nulling_intermediate.len(),
         });
         result.populate_rules(&grammar, &maps);
@@ -659,7 +657,7 @@ impl InternalGrammar {
     }
 
     fn populate_nulling_rules(&mut self, nulling_intermediate: Vec<(Symbol, Symbol, Symbol)>) {
-        let mut slices = self.as_slices_mut();
+        let slices = self.as_slices_mut();
         for (dst, src) in slices.nulling_intermediate.iter_mut().zip(nulling_intermediate) {
             *dst = src;
         }
@@ -686,7 +684,7 @@ impl InternalGrammar {
     fn populate_predictions(&mut self, inverse_prediction: Vec<Vec<PredictionTransition>>) {
         let num_syms = self.parts.num_syms;
         let mut slices = self.as_slices_mut();
-        let mut prediction_matrix = &mut slices.prediction_matrix;
+        let prediction_matrix = &mut slices.prediction_matrix;
         // Precompute DFA.
         for rule in slices.rules.rules_mut() {
             prediction_matrix.set(rule.lhs().usize(), rule.rhs0().usize(), true);
@@ -714,6 +712,7 @@ impl InternalGrammar {
         self.parts.clone()
     }
 
+    #[cfg_attr(feature = "cargo-clippy", allow(cast_ptr_alignment))]
     pub fn from_parts(mut parts: InternalGrammarParts) -> Self {
         let (len, offset) = grammar_storage_offsets(&parts);
         let end = offset[LEN_LEN];
@@ -746,7 +745,7 @@ impl InternalGrammar {
             to_external: field.8,
             to_internal: field.9,
             nulling_intermediate: field.10,
-            parts: parts,
+            parts,
         }
     }
 
@@ -765,24 +764,24 @@ impl InternalGrammar {
                 num_syms
             );
             InternalGrammarSlicesMut {
-                prediction_matrix: prediction_matrix,
+                prediction_matrix,
                 // prediction lookup
                 inverse_prediction: &mut *self.inverse_prediction,
                 inverse_prediction_index: &mut *self.inverse_prediction_index,
                 // array of events
-                events_pred: events_pred,
-                events1: events1,
-                events2: events2,
+                events_pred,
+                events1,
+                events2,
                 //
-                tracing_pred: tracing_pred,
-                tracing: tracing,
+                tracing_pred,
+                tracing,
                 // nulling
                 nulling_eliminated: &mut *self.nulling_eliminated,
                 // Unzipped rules stored in column-major order.
                 rules: RuleSlicesMut {
-                    lhs: lhs,
-                    rhs0: rhs0,
-                    rhs1: rhs1,
+                    lhs,
+                    rhs0,
+                    rhs1,
                 },
                 eval: &mut *self.eval,
                 to_external: &mut *self.to_external,
@@ -805,17 +804,17 @@ impl InternalGrammar {
                 num_syms
             );
             InternalGrammarSlices {
-                prediction_matrix: prediction_matrix,
+                prediction_matrix,
                 // prediction lookup
                 inverse_prediction: &*self.inverse_prediction,
                 inverse_prediction_index: &*self.inverse_prediction_index,
                 // array of events
                 events_prediction: events_pred,
-                events1: events1,
-                events2: events2,
+                events1,
+                events2,
                 //
-                tracing_pred: tracing_pred,
-                tracing: tracing,
+                tracing_pred,
+                tracing,
                 // nulling
                 nulling_eliminated: &*self.nulling_eliminated,
                 // Unzipped rules stored in column-major order.
@@ -898,9 +897,9 @@ impl InternalGrammar {
             let (rhs0, rest) = (*self.rules_flat).split_at(self.num_rules());
             let (rhs1, lhs) = rest.split_at(self.num_rules());
             RuleSlices {
-                lhs: lhs,
-                rhs0: rhs0,
-                rhs1: rhs1,
+                lhs,
+                rhs0,
+                rhs1,
             }
         }
     }
@@ -1035,9 +1034,9 @@ pub struct BinaryRule {
 impl BinaryRule {
     fn new(lhs: Symbol, rhs0: Symbol, rhs1: Option<Symbol>) -> Self {
         BinaryRule {
-            lhs: lhs,
-            rhs0: rhs0,
-            rhs1: rhs1,
+            lhs,
+            rhs0,
+            rhs1,
         }
     }
 
@@ -1142,9 +1141,9 @@ impl<'a> Iterator for RulesMut<'a> {
         match (self.lhs.next(), self.rhs0.next(), self.rhs1.next()) {
             (Some(lhs), Some(rhs0), Some(rhs1)) => {
                 Some(BinaryRuleMut {
-                    lhs: lhs,
-                    rhs0: rhs0,
-                    rhs1: rhs1,
+                    lhs,
+                    rhs0,
+                    rhs1,
                 })
             }
             _ => None

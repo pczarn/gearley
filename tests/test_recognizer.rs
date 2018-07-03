@@ -16,7 +16,7 @@ fn test_recognize_nested() {
     external.rule(start).rhs([nested, terminal])
             .rule(nested).rhs([terminal, terminal]);
     external.set_start(start);
-    let cfg = external.into_internal_grammar();
+    let cfg = external.to_internal_grammar();
     let bocage = NullForest;
     let mut rec = Recognizer::new(&cfg, &bocage);
     rec.parse(&[terminal.usize() as u32; 3]);
@@ -29,7 +29,7 @@ fn test_recognize_reset() {
     external.rule(start).rhs([nested, terminal])
             .rule(nested).rhs([terminal, terminal]);
     external.set_start(start);
-    let cfg = external.into_internal_grammar();
+    let cfg = external.to_internal_grammar();
     let bocage = NullForest;
     let mut rec = Recognizer::new(&cfg, &bocage);
     for _ in 0..100 {

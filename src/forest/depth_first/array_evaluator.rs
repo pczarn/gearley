@@ -11,6 +11,14 @@ pub struct ValueArray<V> {
     arena: Arena<V>,
 }
 
+impl<V> Default for ValueArray<V> {
+    fn default() -> Self {
+        ValueArray {
+            arena: Arena::new()
+        }
+    }
+}
+
 pub struct ArrayEvaluator<'a, V: 'a, E> {
     value_array: &'a ValueArray<V>,
     eval: E,
@@ -23,16 +31,16 @@ impl<V> ValueArray<V> {
         }
     }
 
-    pub fn build_slice<'a>(&'a self, len: usize) -> SliceBuilder<'a, V> {
+    pub fn build_slice(&self, len: usize) -> SliceBuilder<V> {
         SliceBuilder::new(&self.arena, len)
     }
 }
 
 impl<'a, V, E> ArrayEvaluator<'a, V, E> {
-    pub fn new(value_array: &'a ValueArray<V>, inner_evaluator: E) -> Self {
+    pub fn new(value_array: &'a ValueArray<V>, eval: E) -> Self {
         ArrayEvaluator {
-            value_array: value_array,
-            eval: inner_evaluator,
+            value_array,
+            eval,
         }
     }
 
@@ -86,7 +94,7 @@ impl<'a, T, V, E> Evaluate<'a, T, V> for ArrayEvaluator<'a, V, E>
           T: Copy
 {
     fn evaluate<'t, 'f, 'g>(&mut self, sum: SumHandle<'a, 't, 'f, 'g, T, V>) -> &'a [V] {
-        let count = sum.iter().map(|alt| alt.len()).fold(0, |acc, elem| acc + elem);
+        let count = sum.iter().map(|alt| alt.len()).sum();
         let mut slice_builder = self.value_array.build_slice(count);
         // Evaluate.
         for summand in sum.iter() {

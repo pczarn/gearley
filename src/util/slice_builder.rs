@@ -19,7 +19,7 @@ impl<'a, T> SliceBuilder<'a, T> {
         };
         unsafe {
             SliceBuilder {
-                arena: arena,
+                arena,
                 init: slice::from_raw_parts((&*uninit).as_ptr(), 0),
                 uninit_ptr: (*uninit).as_mut_ptr(),
                 uninit_end: (*uninit).as_mut_ptr().offset((*uninit).len() as isize),
@@ -57,11 +57,9 @@ impl<'a, T> SliceBuilder<'a, T> {
     }
 
     #[inline]
-    pub fn extend(&mut self, new_slice: *mut [T]) {
-        unsafe {
-            assert_eq!(self.uninit_end, (*new_slice).as_mut_ptr());
-            self.uninit_end = self.uninit_end.offset((*new_slice).len() as isize);
-        }
+    pub unsafe fn extend(&mut self, new_slice: *mut [T]) {
+        assert_eq!(self.uninit_end, (*new_slice).as_mut_ptr());
+        self.uninit_end = self.uninit_end.offset((*new_slice).len() as isize);
     }
 
     #[inline]
@@ -69,14 +67,14 @@ impl<'a, T> SliceBuilder<'a, T> {
         if self.uninit_len() < len {
             let extra_needed = len - self.uninit_len();
             let available = unsafe {
-                (&mut *self.arena.uninitialized_array()).len()
+                (&*self.arena.uninitialized_array()).len()
             };
             if available >= extra_needed {
                 // enough to reserve
-                let new_slice = unsafe {
-                    self.arena.alloc_uninitialized(extra_needed)
-                };
-                self.extend(new_slice);
+                unsafe {
+                    let new_slice = self.arena.alloc_uninitialized(extra_needed);
+                    self.extend(new_slice);
+                }
             } else {
                 *self = SliceBuilder::new(self.arena, len);
             }

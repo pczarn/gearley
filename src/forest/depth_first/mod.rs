@@ -36,7 +36,7 @@ impl<'a, 'f, 'g, T, V> Bocage<'a, 'f, 'g, T, V> where T: Copy {
     pub fn new(grammar: &'g InternalGrammar) -> Self {
         Bocage {
             graph: Arena::with_capacity(512),
-            grammar: grammar,
+            grammar,
             nulling_forests: Cell::new(&[]),
         }
     }
@@ -72,27 +72,24 @@ impl<'a, 'f, 'g, T, V> Bocage<'a, 'f, 'g, T, V> where T: Copy {
 
     #[inline]
     fn product_tree_node(&'f self, node: &Node<'a, 'f, T, V>) {
-        match node.get() {
-            Product { action, mut factors } => {
-                if factors.right.is_none() {
-                    // add omitted phantom syms here...
-                    if let Some((sym, dir)) = self.grammar.nulling(action) {
-                        let nulling_forest = self.nulling(sym);
-                        let (left, right) = if dir {
-                            (factors.left, nulling_forest)
-                        } else {
-                            (nulling_forest, factors.left)
-                        };
-                        factors.left = left;
-                        factors.right = Some(right);
-                        node.set(Product {
-                            action: action,
-                            factors: factors,
-                        });
-                    }
+        if let Product { action, mut factors } = node.get() {
+            if factors.right.is_none() {
+                // add omitted phantom syms here...
+                if let Some((sym, dir)) = self.grammar.nulling(action) {
+                    let nulling_forest = self.nulling(sym);
+                    let (left, right) = if dir {
+                        (factors.left, nulling_forest)
+                    } else {
+                        (nulling_forest, factors.left)
+                    };
+                    factors.left = left;
+                    factors.right = Some(right);
+                    node.set(Product {
+                        action,
+                        factors,
+                    });
                 }
             }
-            _ => {}
         }
     }
 }
@@ -109,7 +106,7 @@ impl<'a, 'f, 'g, T, V> Forest<'f> for Bocage<'a, 'f, 'g, T, V> where T: Copy {
     fn leaf(&'f self, token: Symbol, _pos: u32, value: Self::LeafValue) -> Self::NodeRef {
         &*self.graph.alloc(LeafWithValue {
             symbol: token,
-            value: value,
+            value,
         }.into())
     }
 

@@ -26,9 +26,9 @@ impl<'t, V, F, G, H> ActionClosureEvaluator<'t, V, F, G, H> {
             cartesian_product: CartesianProduct::new(),
             action: 0,
             exhausted: false,
-            leaf: leaf,
-            rule: rule,
-            null: null,
+            leaf,
+            rule,
+            null,
         }
     }
 }
@@ -40,7 +40,8 @@ impl<'a, T, V, F, G, H> ActionEvaluator<'a, T, V> for ActionClosureEvaluator<'a,
           T: Copy
 {
     fn production<'t, 'f>(&mut self, product: &ProductHandle<'a, 't, 'f, T, V>) {
-        self.cartesian_product.from_production(product);
+        self.cartesian_product.clear();
+        self.cartesian_product.extend(product);
         self.action = product.action();
         self.exhausted = false;
     }

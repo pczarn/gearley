@@ -25,7 +25,7 @@ const SUM_TOKENS: &'static [u32] = precedenced_arith!(
 fn bench_ambiguous_arithmetic(b: &mut test::Bencher) {
     let tokens = ambiguous_arith!('2' '-' '0' '*' '3' '+' '1' '/' '2' '+' '8' '8' '+' '1' '/' '2');
     let external = ambiguous_arith::grammar();
-    let cfg = external.into_internal_grammar();
+    let cfg = external.to_internal_grammar();
 
     b.iter(|| {
         let values = ValueArray::new();
@@ -50,7 +50,7 @@ fn bench_ambiguous_arithmetic(b: &mut test::Bencher) {
 #[bench]
 fn bench_evaluate_precedenced_arith(b: &mut test::Bencher) {
     let external = precedenced_arith::grammar();
-    let cfg = external.into_internal_grammar();
+    let cfg = external.to_internal_grammar();
     let sum_tokens = test::black_box(SUM_TOKENS);
 
     b.iter(|| {
@@ -80,13 +80,13 @@ fn bench_process_grammar_for_precedenced_arith(b: &mut test::Bencher) {
     let external = precedenced_arith::grammar();
 
     b.iter(|| {
-        test::black_box(&external.into_internal_grammar());
+        test::black_box(&external.to_internal_grammar());
     })
 }
 
 #[bench]
 fn bench_recognize_precedenced_arith(b: &mut test::Bencher) {
-    let grammar = precedenced_arith::grammar().into_internal_grammar();
+    let grammar = precedenced_arith::grammar().to_internal_grammar();
     let sum_tokens = test::black_box(SUM_TOKENS);
 
     b.iter(|| {

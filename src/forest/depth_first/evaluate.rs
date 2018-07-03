@@ -46,7 +46,7 @@ pub struct NullHandle<'a: 'f, 'f, T: 'f + Copy, V: 'a> {
 impl<'a, 't, 'f, 'g, T, V> SumHandle<'a, 't, 'f, 'g, T, V> where T: Copy {
     pub fn result(&self, values: &'a [V]) {
         self.node.set(Evaluated {
-            values: values
+            values
         });
     }
 }
@@ -54,7 +54,7 @@ impl<'a, 't, 'f, 'g, T, V> SumHandle<'a, 't, 'f, 'g, T, V> where T: Copy {
 impl<'a, 'f, T, V> LeafHandle<'a, 'f, T, V> where T: Copy {
     pub fn result(&self, values: &'a [V]) {
         self.factor.set(Evaluated {
-            values: values
+            values
         });
     }
 }
@@ -62,7 +62,7 @@ impl<'a, 'f, T, V> LeafHandle<'a, 'f, T, V> where T: Copy {
 impl<'a, 'f, T, V> NullHandle<'a, 'f, T, V> where T: Copy {
     pub fn result(&self, values: &'a [V]) {
         self.factor.set(Evaluated {
-            values: values
+            values
         });
     }
 }
@@ -96,8 +96,8 @@ impl<'a, 't, 'f, 'g, T, V> Iterator for SumIter<'a, 't, 'f, 'g, T, V> where T: C
                     let (rest, factors) = self.factor_stack.split_at(factor_stack_bottom);
                     self.factor_stack = rest;
                     ProductHandle {
-                        action: action,
-                        factors: factors,
+                        action,
+                        factors,
                     }
                 }
                 _ => unreachable!()
@@ -120,6 +120,6 @@ impl<'a, 't, 'f, T, V> ProductHandle<'a, 't, 'f, T, V> where T: Copy {
                 Evaluated { values } => values.len(),
                 _ => unreachable!()
             }
-        }).fold(1, |acc, elem| acc * elem)
+        }).product()
     }
 }

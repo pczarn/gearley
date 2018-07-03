@@ -74,7 +74,7 @@ impl<'a, T> PredictionEvents<'a, T> {
     fn new<'b>(events: &'b [T], pred: row::Iter<'b>, origin: usize) -> PredictionEvents<'b, T> {
         PredictionEvents {
             iter: pred.zip(events.iter()),
-            origin: origin,
+            origin,
         }
     }
 }
@@ -95,8 +95,8 @@ impl<'a, T> Iterator for PredictionEvents<'a, T> {
 impl<'a, T, L> MedialEvents<'a, T, L> {
     fn new<'b>(events: &'b [T], items: RawMedialItems<'b, L>) -> MedialEvents<'b, T, L> {
         MedialEvents {
-            events: events,
-            items: items,
+            events,
+            items,
         }
     }
 }

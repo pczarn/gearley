@@ -55,8 +55,8 @@ impl<'f, 'g, F> Recognizer<'f, 'g, F> where F: Forest<'f> + 'f {
     /// Earley set that predicts the grammar's start symbol.
     pub fn new(grammar: &'g InternalGrammar, forest: &'f F) -> Recognizer<'f, 'g, F> {
         let mut recognizer = Recognizer {
-            forest: forest,
-            grammar: grammar,
+            forest,
+            grammar,
             finished_node: None,
             // The initial location is 0.
             earleme: 0,
@@ -135,7 +135,7 @@ impl<'f, 'g, F> Recognizer<'f, 'g, F> where F: Forest<'f> + 'f {
         // Create a builder for bocage node slices.
         let products = self.forest.build(self.complete.len());
         Completions {
-            products: products,
+            products,
             recognizer: self,
         }
     }
@@ -232,8 +232,8 @@ impl<'f, 'g, F> Recognizer<'f, 'g, F> where F: Forest<'f> + 'f {
                 // from A ::= B • C
                 // to   A ::= B   C •
                 self.complete.push(CompletedItem {
-                    dot: dot,
-                    origin: origin,
+                    dot,
+                    origin,
                     left_node: node,
                     right_node: Some(rhs_link),
                 });
@@ -254,6 +254,7 @@ impl<'f, 'g, F> Recognizer<'f, 'g, F> where F: Forest<'f> + 'f {
     }
 
     /// Complete a predicted item.
+    #[cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
     #[inline]
     fn complete_predicted_item(&mut self, set_id: Origin, dot_kind: DotKind, rhs_link: F::NodeRef) {
         // New item, either completed or pre-terminal. Ensure uniqueness.
@@ -264,7 +265,7 @@ impl<'f, 'g, F> Recognizer<'f, 'g, F> where F: Forest<'f> + 'f {
                 // from A ::= • B
                 // to   A ::=   B •
                 self.complete.push(CompletedItem {
-                    dot: dot,
+                    dot,
                     origin: set_id,
                     left_node: rhs_link,
                     right_node: None,
@@ -276,7 +277,7 @@ impl<'f, 'g, F> Recognizer<'f, 'g, F> where F: Forest<'f> + 'f {
                 // to   A ::=   B • C
                 // Where C is terminal or nonterminal.
                 self.medial.push(Item {
-                    dot: dot,
+                    dot,
                     origin: set_id,
                     node: rhs_link,
                 });
@@ -405,8 +406,8 @@ impl<'c, 'f, 'g, 'r, F> Completion<'c, 'f, 'g, 'r, F>
         let lhs_sym = completions.recognizer.grammar().get_lhs(ei.dot);
         Completion {
             origin: ei.origin,
-            lhs_sym: lhs_sym,
-            completions: completions,
+            lhs_sym,
+            completions,
         }
     }
 
@@ -421,6 +422,7 @@ impl<'c, 'f, 'g, 'r, F> Completion<'c, 'f, 'g, 'r, F>
     }
 
     /// Allows iteration through completed items.
+    #[cfg_attr(feature = "cargo-clippy", allow(should_implement_trait))]
     pub fn next(&mut self) -> Option<CompletedItem<F::NodeRef>> {
         if let Some(&completion) = self.completions.recognizer.complete.peek() {
             let completion_lhs_sym = self.completions.recognizer.grammar().get_lhs(completion.dot);

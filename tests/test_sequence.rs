@@ -23,7 +23,7 @@ fn test_sequence() {
     external.sequence(start).separator(Trailing(minus)).inclusive(3, Some(3)).rhs(plus);
     external.set_start(start);
 
-    let cfg = external.into_internal_grammar();
+    let cfg = external.to_internal_grammar();
     let values = ValueArray::new();
     let mut evaluator = ArrayEvaluator::new(
         &values,
