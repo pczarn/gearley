@@ -38,7 +38,7 @@ const TOKENS: &'static [u32] = rhs!(
     use gearley::events::'{' PredictionEvents, MedialEvents, CompletionEvents '}';
     use gearley::util::slice_builder::SliceBuilder;
     use gearley::forest::depth_first::'{'
-        NullOrder, ArrayEvaluator, ArrayStore, ClosureActionEvaluator
+        NullOrder, FastEvaluator, ArrayStore, ClosureActionEvaluator
     '}';
     pub use self::PathParsingMode::*;
 

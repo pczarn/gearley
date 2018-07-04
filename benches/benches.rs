@@ -9,7 +9,7 @@ extern crate gearley;
 mod grammars;
 
 use gearley::forest::{Bocage, Traversal, NullForest};
-use gearley::forest::depth_first::{NullOrder, ArrayEvaluator, ValueArray, ActionClosureEvaluator};
+use gearley::forest::depth_first::{NullOrder, FastEvaluator, ValueArray, ClosureInvoker};
 use gearley::recognizer::Recognizer;
 
 use grammars::*;
@@ -29,12 +29,12 @@ fn bench_ambiguous_arithmetic(b: &mut test::Bencher) {
 
     b.iter(|| {
         let values = ValueArray::new();
-        let closures = ActionClosureEvaluator::new(
+        let closures = ClosureInvoker::new(
             ambiguous_arith::leaf,
             ambiguous_arith::rule,
             |_, _: &mut _| unreachable!()
         );
-        let mut evaluator = ArrayEvaluator::new(&values, closures);
+        let mut evaluator = FastEvaluator::new(&values, closures);
         let bocage = Bocage::new(&cfg);
         let mut rec = Recognizer::new(&cfg, &bocage);
         rec.parse(tokens);
@@ -55,9 +55,9 @@ fn bench_evaluate_precedenced_arith(b: &mut test::Bencher) {
 
     b.iter(|| {
         let values = ValueArray::new();
-        let mut evaluator = ArrayEvaluator::new(
+        let mut evaluator = FastEvaluator::new(
             &values,
-            ActionClosureEvaluator::new(
+            ClosureInvoker::new(
                 precedenced_arith::leaf,
                 precedenced_arith::rule,
                 |_, _: &mut _| unreachable!()
