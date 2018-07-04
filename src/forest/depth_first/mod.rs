@@ -2,7 +2,7 @@ mod action;
 mod bocage;
 pub mod cartesian_product;
 mod evaluate;
-pub mod fast_evaluator;
+mod fast_evaluator;
 pub mod node;
 pub mod order;
 mod sum_builder;

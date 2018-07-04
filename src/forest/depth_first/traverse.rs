@@ -110,31 +110,29 @@ impl<'a, 'f, 'g, T, V, O> Traversal<'a, 'f, 'g, T, V, O>
         let alternatives = self.order.sum(dependency.alternatives());
         let sum_bottom = self.factor_stack.len();
         for product in alternatives {
-            self.bocage.product_tree_node(product);
+            let product_bottom = self.factor_stack.len();
+            let product_action;
             match product.get() {
                 Product { action, factors } => {
-                    let product_bottom = self.factor_stack.len();
-                    // We can't directly traverse the product's factors, because the product can
-                    // have nulling eliminated symbols.
-                    // No, this is changed, TODO reconsider, profile
-                    if let Some(right) = factors.right {
-                        self.factor_traversal.push(right);
-                    }
-                    self.factor_traversal.push(factors.left);
-                    self.traverse_factors();
-                    // Apply ordering.
-                    if let Some(len) = self.order.product(&self.factor_stack[product_bottom..]) {
-                        self.factor_stack.truncate(product_bottom + len);
-                    }
-                    product.set(ShallowProduct {
-                        action,
-                        factor_stack_bottom: product_bottom,
-                    });
+                    product.set(Product { action: action | (1 << 31), factors });
+                    product_action = Some(action);
                 }
                 Leaf { .. } => {
-                    self.factor_stack.push(product);
+                    product_action = None;
                 }
                 _ => unreachable!()
+            };
+            // Most unfolding happens here.
+            self.unfold_factors(product);
+            // Apply ordering.
+            if let Some(len) = self.order.product(&self.factor_stack[product_bottom..]) {
+                self.factor_stack.truncate(product_bottom + len);
+            }
+            if let Some(action) = product_action {
+                product.set(ShallowProduct {
+                    action,
+                    factor_stack_bottom: product_bottom,
+                });
             }
         }
         DepsTraversal {
@@ -143,9 +141,10 @@ impl<'a, 'f, 'g, T, V, O> Traversal<'a, 'f, 'g, T, V, O>
         }
     }
 
-    fn traverse_factors(&mut self) {
+    fn unfold_factors(&mut self, product: NodeRef<'a, 'f, T, V>) {
+        self.factor_traversal.push(product);
         while let Some(node) = self.factor_traversal.pop() {
-            self.bocage.product_tree_node(node);
+            self.bocage.prepare_product_tree_node(node);
             if let Some(factors) = self.intermediate_product(node) {
                 if let Some(right) = factors.right {
                     self.factor_traversal.push(right);
@@ -160,11 +159,15 @@ impl<'a, 'f, 'g, T, V, O> Traversal<'a, 'f, 'g, T, V, O>
     #[inline]
     fn intermediate_product(&self, node: NodeRef<'a, 'f, T, V>) -> Option<Factors<'a, 'f, T, V>> {
         match node.get() {
-            Product { action, factors } if self.bocage.grammar.get_eval(action).is_none() => {
-                Some(factors)
+            Product { action, factors } => {
+                if self.bocage.grammar.get_eval(action).is_none() {
+                    Some(factors)
+                } else {
+                    None
+                }
             }
             // When a node is a Sum, we assume it has an action. The grammar
-            // rewrites must not add ambiguous rules with null actions,
+            // rewrites must not add ambiguous rules (sum rules) with null actions,
             // because it would break our assumption.
             _ => None
         }

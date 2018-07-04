@@ -51,14 +51,15 @@ impl<'a, 'f, 'g, T, V> Bocage<'a, 'f, 'g, T, V> where T: Copy {
             });
         }
         self.nulling_forests.set(forests);
+
     }
 
     #[inline]
-    pub(super) fn product_tree_node(&'f self, node: &Node<'a, 'f, T, V>) {
+    pub(super) fn prepare_product_tree_node(&'f self, node: &Node<'a, 'f, T, V>) {
         if let Product { action, mut factors } = node.get() {
             if factors.right.is_none() {
                 // add omitted phantom syms here...
-                if let Some((sym, dir)) = self.grammar.nulling(action) {
+                if let Some((sym, dir)) = self.grammar.nulling(action & !(1 << 31)) {
                     let nulling_forest = self.nulling(sym);
                     let (left, right) = if dir {
                         (factors.left, nulling_forest)
