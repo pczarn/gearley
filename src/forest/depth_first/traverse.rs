@@ -22,12 +22,12 @@ pub struct Traversal<'a, 'f, 'g, T, V, O>
     factor_traversal: Vec<NodeRef<'a, 'f, T, V>>,
 }
 
-pub struct TraverseDeps<'a: 'f, 't, 'f: 't, T: 'f + Copy, V: 'a> {
+pub struct DepsTraversal<'a: 'f, 't, 'f: 't, T: 'f + Copy, V: 'a> {
     factors: slice::Iter<'t, NodeRef<'a, 'f, T, V>>,
     dependencies_stack: &'t mut Vec<NodeRef<'a, 'f, T, V>>,
 }
 
-pub struct TraverseSum<'a: 'f, 't, 'f: 't, 'g, T: 'f + Copy, V: 'a> {
+pub struct SumTraversal<'a: 'f, 't, 'f: 't, 'g, T: 'f + Copy, V: 'a> {
     fold: iter::Rev<iter::Enumerate<slice::Iter<'t, NodeRef<'a, 'f, T, V>>>>,
     factor_stack: &'t [NodeRef<'a, 'f, T, V>],
     factor_stack_bottom: &'t mut usize,
@@ -70,7 +70,7 @@ impl<'a, 'f, 'g, T, V, O> Traversal<'a, 'f, 'g, T, V, O>
     }
 
     #[inline]
-    pub fn traverse_deps<'t>(&'t mut self) -> Option<TraverseDeps<'a, 't, 'f, T, V>> {
+    pub fn traverse_deps<'t>(&'t mut self) -> Option<DepsTraversal<'a, 't, 'f, T, V>> {
         self.factor_stack.truncate(self.factor_stack_bottom);
         self.dependencies_stack.truncate(self.dependencies_stack_bottom);
         // Process nodes.
@@ -82,10 +82,10 @@ impl<'a, 'f, 'g, T, V, O> Traversal<'a, 'f, 'g, T, V, O>
     }
 
     #[inline]
-    pub fn traverse_sum<'t>(&'t mut self) -> TraverseSum<'a, 't, 'f, 'g, T, V> {
+    pub fn traverse_sum<'t>(&'t mut self) -> SumTraversal<'a, 't, 'f, 'g, T, V> {
         self.factor_stack_bottom = self.factor_stack.len();
         self.dependencies_stack_bottom = self.dependencies_stack.len();
-        TraverseSum {
+        SumTraversal {
             fold: self.dependencies_stack.iter().enumerate().rev(),
             factor_stack: &self.factor_stack[..],
             factor_stack_bottom: &mut self.factor_stack_bottom,
@@ -104,7 +104,7 @@ impl<'a, 'f, 'g, T, V, O> Traversal<'a, 'f, 'g, T, V, O>
     }
 
     fn unfold<'t>(&'t mut self, dependency: NodeRef<'a, 'f, T, V>)
-        -> TraverseDeps<'a, 't, 'f, T, V>
+        -> DepsTraversal<'a, 't, 'f, T, V>
     {
         // Apply order.
         let alternatives = self.order.sum(dependency.alternatives());
@@ -137,7 +137,7 @@ impl<'a, 'f, 'g, T, V, O> Traversal<'a, 'f, 'g, T, V, O>
                 _ => unreachable!()
             }
         }
-        TraverseDeps {
+        DepsTraversal {
             factors: self.factor_stack[sum_bottom..].iter(),
             dependencies_stack: &mut self.dependencies_stack,
         }
@@ -171,7 +171,7 @@ impl<'a, 'f, 'g, T, V, O> Traversal<'a, 'f, 'g, T, V, O>
     }
 }
 
-impl<'a, 't, 'f, 'g, T, V> Iterator for TraverseDeps<'a, 't, 'f, T, V> where T: 'a + Copy {
+impl<'a, 't, 'f, 'g, T, V> Iterator for DepsTraversal<'a, 't, 'f, T, V> where T: 'a + Copy {
     type Item = TraversalBottom<'a, 'f, T, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -200,7 +200,7 @@ impl<'a, 't, 'f, 'g, T, V> Iterator for TraverseDeps<'a, 't, 'f, T, V> where T: 
     }
 }
 
-impl<'a, 't, 'f, 'g, T, V> Iterator for TraverseSum<'a, 't, 'f, 'g, T, V> where T: 'a + Copy {
+impl<'a, 't, 'f, 'g, T, V> Iterator for SumTraversal<'a, 't, 'f, 'g, T, V> where T: 'a + Copy {
     type Item = SumHandle<'a, 't, 'f, 'g, T, V>;
     fn next(&mut self) -> Option<Self::Item> {
         for (pos, dependency) in &mut self.fold {

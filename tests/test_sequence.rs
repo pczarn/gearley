@@ -25,9 +25,9 @@ fn test_sequence() {
 
     let cfg = external.to_internal_grammar();
     let values = ValueArray::new();
-    let mut evaluator = ArrayEvaluator::new(
+    let mut evaluator = FastEvaluator::new(
         &values,
-        ActionClosureEvaluator::new(
+        ClosureInvoker::new(
             |sym: Symbol, _: Option<&()>| {
                 match sym.usize() {
                     1 => 1,

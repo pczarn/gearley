@@ -5,7 +5,7 @@ mod grammars;
 
 use cfg::Symbol;
 use gearley::forest::{Bocage, Traversal};
-use gearley::forest::depth_first::{NullOrder, ArrayEvaluator, ValueArray, ActionClosureEvaluator};
+use gearley::forest::depth_first::{NullOrder, FastEvaluator, ValueArray, ClosureInvoker};
 use gearley::grammar::Grammar;
 use gearley::recognizer::Recognizer;
 use gearley::util::slice_builder::SliceBuilder;
@@ -20,9 +20,9 @@ fn test_trivial_grammar() {
     external.set_start(start);
     let cfg = external.to_internal_grammar();
     let values = ValueArray::new();
-    let mut evaluator = ArrayEvaluator::new(
+    let mut evaluator = FastEvaluator::new(
         &values,
-        ActionClosureEvaluator::new(
+        ClosureInvoker::new(
             |_: Symbol, _: Option<&()>| unreachable!(),
             |_: u32, _: &[&bool]| unreachable!(),
             |sym, builder: &mut SliceBuilder<bool>| {
@@ -58,9 +58,9 @@ fn test_grammar_with_nulling_intermediate() {
     external.set_start(start);
     let cfg = external.to_internal_grammar();
     let values = ValueArray::new();
-    let mut evaluator = ArrayEvaluator::new(
+    let mut evaluator = FastEvaluator::new(
         &values,
-        ActionClosureEvaluator::new(
+        ClosureInvoker::new(
             |sym: Symbol, _: Option<&()>| {
                 if sym == foo {
                     3

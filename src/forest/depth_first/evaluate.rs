@@ -7,7 +7,7 @@ use grammar::InternalGrammar;
 
 // In the future, these methods may need to return paramter type N (Node).
 pub trait Evaluate<'a, T, V> where T: Copy {
-    fn evaluate<'t, 'f, 'g>(&mut self, node: SumHandle<'a, 't, 'f, 'g, T, V>) -> &'a [V];
+    fn evaluate_sum<'t, 'f, 'g>(&mut self, node: SumHandle<'a, 't, 'f, 'g, T, V>) -> &'a [V];
     fn evaluate_terminal(&mut self, node: LeafHandle<T, V>) -> &'a [V];
     fn evaluate_nulling(&mut self, symbol: Symbol) -> &'a [V];
 }
@@ -28,7 +28,7 @@ pub struct SumIter<'a: 'f, 't, 'f: 't, 'g, T: 'f + Copy, V: 'a> {
 pub struct ProductHandle<'a: 'f, 't, 'f: 't, T: 'f + Copy, V: 'a> {
     pub action: u32,
     pub factors: &'t [NodeRef<'a, 'f, T, V>],
-    // TO DO, if needed? for accessing the symbol.
+    // TO DO, if needed for accessing the symbol by `action`:
     // grammar: &'g InternalGrammar,
 }
 
@@ -44,7 +44,7 @@ pub struct NullHandle<'a: 'f, 'f, T: 'f + Copy, V: 'a> {
 }
 
 impl<'a, 't, 'f, 'g, T, V> SumHandle<'a, 't, 'f, 'g, T, V> where T: Copy {
-    pub fn result(&self, values: &'a [V]) {
+    pub fn set_evaluation_result(&self, values: &'a [V]) {
         self.node.set(Evaluated {
             values
         });
@@ -52,7 +52,7 @@ impl<'a, 't, 'f, 'g, T, V> SumHandle<'a, 't, 'f, 'g, T, V> where T: Copy {
 }
 
 impl<'a, 'f, T, V> LeafHandle<'a, 'f, T, V> where T: Copy {
-    pub fn result(&self, values: &'a [V]) {
+    pub fn set_evaluation_result(&self, values: &'a [V]) {
         self.factor.set(Evaluated {
             values
         });
@@ -60,7 +60,7 @@ impl<'a, 'f, T, V> LeafHandle<'a, 'f, T, V> where T: Copy {
 }
 
 impl<'a, 'f, T, V> NullHandle<'a, 'f, T, V> where T: Copy {
-    pub fn result(&self, values: &'a [V]) {
+    pub fn set_evaluation_result(&self, values: &'a [V]) {
         self.factor.set(Evaluated {
             values
         });

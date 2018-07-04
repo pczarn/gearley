@@ -5,7 +5,7 @@ extern crate gearley;
 mod grammars;
 
 use gearley::forest::{Bocage, Traversal, NullForest};
-use gearley::forest::depth_first::{NullOrder, ArrayEvaluator, ValueArray, ActionClosureEvaluator};
+use gearley::forest::depth_first::{NullOrder, FastEvaluator, ValueArray, ClosureInvoker};
 use gearley::recognizer::Recognizer;
 use gearley::util::slice_builder::SliceBuilder;
 
@@ -33,9 +33,9 @@ fn test_ambiguous_arithmetic() {
     let external = ambiguous_arith::grammar();
     let cfg = external.to_internal_grammar();
     let values = ValueArray::new();
-    let mut evaluator = ArrayEvaluator::new(
+    let mut evaluator = FastEvaluator::new(
         &values,
-        ActionClosureEvaluator::new(
+        ClosureInvoker::new(
             ambiguous_arith::leaf,
             ambiguous_arith::rule,
             |_, _: &mut SliceBuilder<i32>| unreachable!()

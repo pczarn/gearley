@@ -14,6 +14,8 @@ pub struct Node<'a, 'f, T: 'f, V: 'a> where 'a: 'f, T: Copy {
     cell: Cell<NodeInner<'a, 'f, T, V>>,
 }
 
+pub type NodeRef<'a, 'f, T, V> = &'f Node<'a, 'f, T, V>;
+
 // Node variants `Sum`/`Product` are better known in literature as `OR`/`AND`.
 #[derive(Debug)]
 pub enum NodeInner<'a, 'f, T: 'f, V: 'a> where 'a: 'f, T: Copy {

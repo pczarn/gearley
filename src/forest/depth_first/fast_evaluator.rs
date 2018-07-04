@@ -3,7 +3,7 @@ use ref_slice::ref_slice;
 use cfg::Symbol;
 
 use util::slice_builder::SliceBuilder;
-use super::action_closure::ActionEvaluator;
+use super::action::Invoke;
 use super::evaluate::{Evaluate, SumHandle, LeafHandle};
 use super::{Traversal, NodeRef, TraversalBottom, Order};
 
@@ -19,9 +19,9 @@ impl<V> Default for ValueArray<V> {
     }
 }
 
-pub struct ArrayEvaluator<'a, V: 'a, E> {
+pub struct FastEvaluator<'a, I, V: 'a> {
+    invoker: I,
     value_array: &'a ValueArray<V>,
-    eval: E,
 }
 
 impl<V> ValueArray<V> {
@@ -36,11 +36,11 @@ impl<V> ValueArray<V> {
     }
 }
 
-impl<'a, V, E> ArrayEvaluator<'a, V, E> {
-    pub fn new(value_array: &'a ValueArray<V>, eval: E) -> Self {
-        ArrayEvaluator {
+impl<'a, I, V> FastEvaluator<'a, I, V> {
+    pub fn new(value_array: &'a ValueArray<V>, invoker: I) -> Self {
+        FastEvaluator {
             value_array,
-            eval,
+            invoker,
         }
     }
 
@@ -51,7 +51,7 @@ impl<'a, V, E> ArrayEvaluator<'a, V, E> {
         -> &'a [V]
         where T: 'a + Copy,
               O: Order<'a, 'f, T, V>,
-              E: ActionEvaluator<'a, T, V>,
+              I: Invoke<'a, T, V>,
     {
         traversal.traverse(root);
         loop {
@@ -64,11 +64,11 @@ impl<'a, V, E> ArrayEvaluator<'a, V, E> {
                                 terminal: terminal.terminal,
                                 value: terminal.value,
                             });
-                            terminal.result(values);
+                            terminal.set_evaluation_result(values);
                         }
                         TraversalBottom::Null(nulling) => {
                             let values = self.evaluate_nulling(nulling.symbol);
-                            nulling.result(values);
+                            nulling.set_evaluation_result(values);
                         }
                     }
                 }
@@ -76,30 +76,30 @@ impl<'a, V, E> ArrayEvaluator<'a, V, E> {
                 break;
             }
             for sum in traversal.traverse_sum() {
-                let values = self.evaluate(SumHandle {
+                let values = self.evaluate_sum(SumHandle {
                     node: sum.node,
                     summands: sum.summands,
                     factor_stack: sum.factor_stack,
                     grammar: sum.grammar,
                 });
-                sum.result(values);
+                sum.set_evaluation_result(values);
             }
         }
         traversal.finish(root)
     }
 }
 
-impl<'a, T, V, E> Evaluate<'a, T, V> for ArrayEvaluator<'a, V, E>
-    where E: ActionEvaluator<'a, T, V>,
+impl<'a, I, T, V> Evaluate<'a, T, V> for FastEvaluator<'a, I, V>
+    where I: Invoke<'a, T, V>,
           T: Copy
 {
-    fn evaluate<'t, 'f, 'g>(&mut self, sum: SumHandle<'a, 't, 'f, 'g, T, V>) -> &'a [V] {
+    fn evaluate_sum<'t, 'f, 'g>(&mut self, sum: SumHandle<'a, 't, 'f, 'g, T, V>) -> &'a [V] {
         let count = sum.iter().map(|alt| alt.len()).sum();
         let mut slice_builder = self.value_array.build_slice(count);
         // Evaluate.
         for summand in sum.iter() {
-            self.eval.production(&summand);
-            while let Some(value) = self.eval.next() {
+            self.invoker.set_production(&summand);
+            while let Some(value) = self.invoker.invoke_next_factor() {
                 // placement new?
                 slice_builder.push(value);
             }
@@ -108,13 +108,14 @@ impl<'a, T, V, E> Evaluate<'a, T, V> for ArrayEvaluator<'a, V, E>
     }
 
     fn evaluate_terminal(&mut self, leaf: LeafHandle<T, V>) -> &'a [V] {
-        let result = self.value_array.arena.alloc(self.eval.leaf(leaf.terminal, Some(&leaf.value)));
+        let value = self.invoker.invoke_leaf(leaf.terminal, Some(&leaf.value));
+        let result = self.value_array.arena.alloc(value);
         ref_slice(result)
     }
 
     fn evaluate_nulling(&mut self, symbol: Symbol) -> &'a [V] {
         let mut builder = self.value_array.build_slice(0);
-        self.eval.nulling(symbol, &mut builder);
+        self.invoker.invoke_nulling(symbol, &mut builder);
         builder.into_slice()
     }
 }
