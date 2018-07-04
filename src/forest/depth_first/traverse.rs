@@ -109,31 +109,8 @@ impl<'a, 'f, 'g, T, V, O> Traversal<'a, 'f, 'g, T, V, O>
         // Apply order.
         let alternatives = self.order.sum(dependency.alternatives());
         let sum_bottom = self.factor_stack.len();
-        for product in alternatives {
-            let product_bottom = self.factor_stack.len();
-            let product_action;
-            match product.get() {
-                Product { action, factors } => {
-                    product.set(Product { action: action | (1 << 31), factors });
-                    product_action = Some(action);
-                }
-                Leaf { .. } => {
-                    product_action = None;
-                }
-                _ => unreachable!()
-            };
-            // Most unfolding happens here.
-            self.unfold_factors(product);
-            // Apply ordering.
-            if let Some(len) = self.order.product(&self.factor_stack[product_bottom..]) {
-                self.factor_stack.truncate(product_bottom + len);
-            }
-            if let Some(action) = product_action {
-                product.set(ShallowProduct {
-                    action,
-                    factor_stack_bottom: product_bottom,
-                });
-            }
+        for summand in alternatives {
+            self.unfold_factors(summand);
         }
         DepsTraversal {
             factors: self.factor_stack[sum_bottom..].iter(),
@@ -141,11 +118,38 @@ impl<'a, 'f, 'g, T, V, O> Traversal<'a, 'f, 'g, T, V, O>
         }
     }
 
-    fn unfold_factors(&mut self, product: NodeRef<'a, 'f, T, V>) {
+    fn unfold_factors(&mut self, summand: NodeRef<'a, 'f, T, V>) {
+        let product_bottom = self.factor_stack.len();
+        let product_action;
+        match summand.get() {
+            Product { action, factors } => {
+                summand.set(Product { action: action | (1 << 31), factors });
+                product_action = Some(action);
+            }
+            Leaf { .. } => {
+                product_action = None;
+            }
+            _ => unreachable!()
+        };
+        // Most unfolding happens here.
+        self.traverse_factors(summand);
+        // Apply ordering.
+        if let Some(len) = self.order.product(&self.factor_stack[product_bottom..]) {
+            self.factor_stack.truncate(product_bottom + len);
+        }
+        if let Some(action) = product_action {
+            summand.set(ShallowProduct {
+                action,
+                factor_stack_bottom: product_bottom,
+            });
+        }
+    }
+
+    fn traverse_factors(&mut self, product: NodeRef<'a, 'f, T, V>) {
         self.factor_traversal.push(product);
         while let Some(node) = self.factor_traversal.pop() {
             self.bocage.prepare_product_tree_node(node);
-            if let Some(factors) = self.intermediate_product(node) {
+            if let Some(factors) = self.intermediate_factors(node) {
                 if let Some(right) = factors.right {
                     self.factor_traversal.push(right);
                 }
@@ -157,7 +161,7 @@ impl<'a, 'f, 'g, T, V, O> Traversal<'a, 'f, 'g, T, V, O>
     }
 
     #[inline]
-    fn intermediate_product(&self, node: NodeRef<'a, 'f, T, V>) -> Option<Factors<'a, 'f, T, V>> {
+    fn intermediate_factors(&self, node: NodeRef<'a, 'f, T, V>) -> Option<Factors<'a, 'f, T, V>> {
         match node.get() {
             Product { action, factors } => {
                 if self.bocage.grammar.get_eval(action).is_none() {
