@@ -3,11 +3,11 @@ use std::cmp::Ordering;
 use bit_matrix::BitMatrix;
 use cfg::*;
 
-use events::{RawPredictedItems, RawMedialItems};
+use events::{PredictedSymbols, MedialItems};
 use forest::{Forest, NodeBuilder, NullForest};
 use grammar::{InternalGrammar, DotKind};
 use item::{CompletedItem, Item, Origin};
-use util::sort_and_dedup;
+use util::array::sort_and_dedup;
 use util::binary_heap::BinaryHeap;
 
 /// The recognizer implements the Earley algorithm. It parses the given input according
@@ -19,7 +19,7 @@ pub struct Recognizer<'f, 'g, F = NullForest> where F: Forest<'f> + 'f {
     // The forest.
     forest: &'f F,
     // The grammar.
-    grammar: &'g InternalGrammar,
+    pub(in super) grammar: &'g InternalGrammar,
 
     // Chart's items.
 
@@ -326,19 +326,24 @@ impl<'f, 'g, F> Recognizer<'f, 'g, F> where F: Forest<'f> + 'f {
 
     // Event access.
 
-    /// Accesses predicted items.
-    pub fn raw_predicted_items(&self) -> RawPredictedItems {
+    /// Accesses predicted symbols.
+    pub fn predicted_symbols(&self) -> PredictedSymbols {
         let earleme = self.earleme();
-        RawPredictedItems::new(self.predicted.iter_row(earleme))
+        PredictedSymbols {
+            iter: self.predicted.iter_row(earleme),
+            idx: 0,
+        }
     }
 
     /// Accesses medial items.
-    pub fn raw_medial_items(&self) -> RawMedialItems<F::NodeRef> {
+    pub fn medial_items(&self) -> MedialItems<F::NodeRef> {
         let indices_len = self.indices.len();
         // Next-to-last index, which points to the beginning of the set before the current set.
         // The current set is empty.
         let items_start = self.indices[indices_len - 2];
-        self.medial[items_start..].iter()
+        MedialItems {
+            iter: self.medial[items_start..].iter(),
+        }
     }
 
     // Accessors.

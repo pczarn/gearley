@@ -11,4 +11,4 @@ pub mod forest;
 pub mod grammar;
 pub mod item;
 pub mod recognizer;
-pub mod util;
+pub(in self) mod util;

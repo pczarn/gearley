@@ -93,7 +93,7 @@ impl Grammar {
         self.start = Some(start);
     }
 
-    pub fn get_start(&self) -> Symbol {
+    pub fn start(&self) -> Symbol {
         self.start.unwrap()
     }
 
@@ -149,7 +149,7 @@ impl BinarizedGrammar {
         self.start = Some(start);
     }
 
-    pub fn get_start(&self) -> Symbol {
+    pub fn start(&self) -> Symbol {
         self.start.unwrap()
     }
 }
@@ -174,7 +174,7 @@ pub struct BuildHistory {
 
 impl BuildHistory {
     /// Creates default history.
-    pub fn new(num_rules: usize) -> Self {
+    pub(in super) fn new(num_rules: usize) -> Self {
         BuildHistory { num_rules }
     }
 }
@@ -189,7 +189,7 @@ impl HistorySource<History> for BuildHistory {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct PredictionTransition {
+pub(in super) struct PredictionTransition {
     pub symbol: Symbol,
     pub dot: Dot,
 }
@@ -206,7 +206,7 @@ impl PredictionTransition {
     }
 }
 
-pub enum DotKind {
+pub(in super) enum DotKind {
     Medial(Dot),
     Completed(Dot),
 }
@@ -245,40 +245,39 @@ pub struct InternalGrammarParts {
     pub trivial_derivation: bool,
 }
 
-pub type ExternalDottedRule = (u32, u32);
-pub type RuleOrigin = Option<u32>;
-pub type EventId = Optioned<u32>;
-pub type MinimalDistance = Optioned<u32>;
-pub type Event = (EventId, MinimalDistance);
-pub type NullingRule = (Symbol, [Option<Symbol>; 2]);
-pub type NullingEliminated = Option<(Symbol, bool)>;
-pub type NullingIntermediateRule = (Symbol, Symbol, Symbol);
+pub(in super) type ExternalDottedRule = (u32, u32);
+type RuleOrigin = Option<u32>;
+type EventId = Optioned<u32>;
+type MinimalDistance = Optioned<u32>;
+pub(in super) type Event = (EventId, MinimalDistance);
+type NullingEliminated = Option<(Symbol, bool)>;
+type NullingIntermediateRule = (Symbol, Symbol, Symbol);
 
 #[derive(Debug)]
-pub struct InternalGrammarSlices<'a> {
+struct InternalGrammarSlices<'a> {
     prediction_matrix: BitSubMatrix<'a>,
     // Inverse prediction lookup.
-    pub inverse_prediction: &'a [PredictionTransition],
-    pub inverse_prediction_index: &'a [u32],
+    inverse_prediction: &'a [PredictionTransition],
+    inverse_prediction_index: &'a [u32],
     // array of events
-    pub events_prediction: &'a [Event],
+    events_prediction: &'a [Event],
     // Length = num_rules
-    pub events1: &'a [Event],
-    pub events2: &'a [Event],
-    pub eval: &'a [RuleOrigin],
+    events1: &'a [Event],
+    events2: &'a [Event],
+    eval: &'a [RuleOrigin],
     // Unzipped rules stored in column-major order.
-    pub rules: RuleSlices<'a>,
+    rules: RuleSlices<'a>,
     // array with information about dotted rules
-    pub tracing_pred: &'a [Option<ExternalDottedRule>],
-    pub nulling_eliminated: &'a [NullingEliminated],
+    tracing_pred: &'a [Option<ExternalDottedRule>],
+    nulling_eliminated: &'a [NullingEliminated],
     // Other length
-    pub tracing: &'a [Option<ExternalDottedRule>],
+    tracing: &'a [Option<ExternalDottedRule>],
     to_external: &'a [Symbol],
-    pub to_internal: &'a [Option<Symbol>],
+    to_internal: &'a [Option<Symbol>],
     nulling_intermediate: &'a [NullingIntermediateRule],
 }
 
-pub struct InternalGrammarSlicesMut<'a> {
+struct InternalGrammarSlicesMut<'a> {
     pub prediction_matrix: BitSubMatrixMut<'a>,
     // Inverse prediction lookup.
     pub inverse_prediction: &'a mut [PredictionTransition],
@@ -308,7 +307,7 @@ pub struct History {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct RuleDot {
+struct RuleDot {
     event: Option<(EventId, ExternalDottedRule)>,
     distance: MinimalDistance,
 }
@@ -328,7 +327,7 @@ impl RuleDot {
         }
     }
 
-    pub fn trace(&self) -> Option<ExternalDottedRule> {
+    pub(in super) fn trace(&self) -> Option<ExternalDottedRule> {
         self.event.map(|x| x.1)
     }
 }
@@ -346,14 +345,6 @@ impl History {
             dots: (0 .. len + 1).map(|i| RuleDot::new(id, i)).collect(),
             ..History::default()
         }
-    }
-
-    pub fn origin(&self) -> RuleOrigin {
-        self.origin
-    }
-
-    pub fn dots(&self) -> &[RuleDot] {
-        &self.dots[..]
     }
 }
 
@@ -469,7 +460,7 @@ impl RewriteSequence for History {
 
 impl BinarizedGrammar {
     fn make_proper(mut self: BinarizedGrammar) -> BinarizedGrammar {
-        let start = self.get_start();
+        let start = self.start();
         {
             let mut usefulness = Usefulness::new(&mut *self).reachable([start]);
             if !usefulness.all_useful() {
@@ -481,7 +472,7 @@ impl BinarizedGrammar {
     }
 
     pub fn generate_special_start(mut self: BinarizedGrammar) -> BinarizedGrammar {
-        let previous_start = self.get_start();
+        let previous_start = self.start();
         let new_start = self.sym();
         let new_history = History {
             dots: vec![RuleDot::none(), RuleDot::none()],
@@ -496,7 +487,7 @@ impl BinarizedGrammar {
     pub fn eliminate_nulling(mut self: BinarizedGrammar) -> (BinarizedGrammar, BinarizedGrammar) {
         let nulling_grammar = BinarizedGrammar {
             inherit: self.eliminate_nulling_rules(),
-            start: Some(self.get_start()),
+            start: Some(self.start()),
         };
         (self, nulling_grammar)
     }
@@ -538,7 +529,7 @@ impl BinarizedGrammar {
             });
             remap.get_mapping()
         };
-        let start = self.get_start();
+        let start = self.start();
         if let Some(internal_start) = maps.to_internal[start.usize()] {
             self.set_start(internal_start);
         } else {
@@ -601,7 +592,7 @@ impl InternalGrammar {
             num_internal_syms: maps.to_external.len(),
             num_external_syms: maps.to_internal.len(),
             num_rules,
-            start_sym: grammar.get_start(),
+            start_sym: grammar.start(),
             trivial_derivation,
             num_nulling_intermediate: nulling_intermediate.len(),
         });
@@ -750,7 +741,7 @@ impl InternalGrammar {
     }
 
     #[inline]
-    pub fn as_slices_mut(&mut self) -> InternalGrammarSlicesMut {
+    fn as_slices_mut(&mut self) -> InternalGrammarSlicesMut {
         unsafe {
             let &InternalGrammarParts { num_rules, num_syms, .. } = &self.parts;
             let (rhs0, rest) = (*self.rules_flat).split_at_mut(num_rules);
@@ -792,7 +783,7 @@ impl InternalGrammar {
     }
 
     #[inline(always)]
-    pub fn as_slices(&self) -> InternalGrammarSlices {
+    fn as_slices(&self) -> InternalGrammarSlices {
         unsafe {
             let &InternalGrammarParts { num_rules, num_syms, .. } = &self.parts;
             let (events_pred, rest) = (*self.events_flat).split_at(num_syms);
@@ -828,42 +819,42 @@ impl InternalGrammar {
     }
 
     #[inline]
-    pub fn prediction_matrix(&self) -> BitSubMatrix {
+    pub(in super) fn prediction_matrix(&self) -> BitSubMatrix {
         self.as_slices().prediction_matrix
     }
 
     #[inline(always)]
-    pub fn inverse_prediction(&self) -> &[PredictionTransition] {
+    pub(in super) fn inverse_prediction(&self) -> &[PredictionTransition] {
         unsafe { &*self.inverse_prediction }
     }
 
     #[inline]
-    pub fn num_syms(&self) -> usize {
+    pub(in super) fn num_syms(&self) -> usize {
         self.parts.num_syms
     }
 
     #[inline]
-    pub fn num_rules(&self) -> usize {
+    pub(in super) fn num_rules(&self) -> usize {
         self.parts.num_rules
     }
 
     #[inline]
-    pub fn num_pos(&self) -> usize {
+    pub(in super) fn num_pos(&self) -> usize {
         self.parts.num_rules * 2
     }
 
     #[inline]
-    pub fn start_sym(&self) -> Symbol {
+    pub(in super) fn start_sym(&self) -> Symbol {
         self.parts.start_sym
     }
 
     #[inline]
-    pub fn has_trivial_derivation(&self) -> bool {
+    pub(in super) fn has_trivial_derivation(&self) -> bool {
         self.parts.trivial_derivation
     }
 
     #[inline]
-    pub fn nulling(&self, pos: u32) -> NullingEliminated {
+    pub(in super) fn nulling(&self, pos: u32) -> NullingEliminated {
         unsafe {
             let nulling_eliminated = &*self.nulling_eliminated;
             nulling_eliminated.get(pos as usize).and_then(|&ne| ne)
@@ -871,7 +862,7 @@ impl InternalGrammar {
     }
 
     #[inline]
-    pub fn events(&self) -> (&[Event], &[Event]) {
+    pub(in super) fn events(&self) -> (&[Event], &[Event]) {
         unsafe {
             let events_flat = &*self.events_flat;
             events_flat.split_at(self.num_syms())
@@ -879,20 +870,20 @@ impl InternalGrammar {
     }
 
     #[inline]
-    pub fn trace(&self) -> [&[Option<ExternalDottedRule>]; 3] {
+    pub(in super) fn trace(&self) -> [&[Option<ExternalDottedRule>]; 3] {
         let slices = self.as_slices();
         let (trace1, trace2) = slices.tracing.split_at(self.num_rules());
         [slices.tracing_pred, trace1, trace2]
     }
 
     #[inline]
-    pub fn complete_over(&self, dot: Dot, sym: Symbol) -> bool {
+    pub(in super) fn complete_over(&self, dot: Dot, sym: Symbol) -> bool {
         let rhs1 = self.rules().rhs1;
         rhs1[dot as usize] == Some(sym)
     }
 
     #[inline]
-    pub fn rules(&self) -> RuleSlices {
+    pub(in super) fn rules(&self) -> RuleSlices {
         unsafe {
             let (rhs0, rest) = (*self.rules_flat).split_at(self.num_rules());
             let (rhs1, lhs) = rest.split_at(self.num_rules());
@@ -905,38 +896,38 @@ impl InternalGrammar {
     }
 
     #[inline]
-    pub fn get_rhs0(&self, dot: Dot) -> Symbol {
+    pub(in super) fn get_rhs0(&self, dot: Dot) -> Symbol {
         let rules = self.rules().rhs0;
         rules[dot as usize].unwrap()
     }
 
     #[inline]
-    pub fn get_rhs1(&self, dot: Dot) -> Option<Symbol> {
+    pub(in super) fn get_rhs1(&self, dot: Dot) -> Option<Symbol> {
         let rules = self.rules().rhs1;
         rules[dot as usize]
     }
 
     #[inline]
-    pub fn get_lhs(&self, dot: Dot) -> Symbol {
+    pub(in super) fn get_lhs(&self, dot: Dot) -> Symbol {
         let rules = self.rules().lhs;
         rules[dot as usize].unwrap()
     }
 
     #[inline]
-    pub fn get_eval(&self, dot: Dot) -> RuleOrigin {
+    pub(in super) fn get_eval(&self, dot: Dot) -> RuleOrigin {
         unsafe {
             (&*self.eval).get(dot as usize).and_then(|&eval| eval)
         }
     }
 
-    pub fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule] {
+    pub(in super) fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule] {
         unsafe {
             &*self.nulling_intermediate
         }
     }
 
     #[inline(always)]
-    pub fn inverse_prediction_of(&self, sym: Symbol) -> &[PredictionTransition] {
+    pub(in super) fn inverse_prediction_of(&self, sym: Symbol) -> &[PredictionTransition] {
         let slices = self.as_slices();
         let idxs = &slices.inverse_prediction_index[sym.usize() .. sym.usize() + 2];
         let range = idxs[0] as usize .. idxs[1] as usize;
@@ -944,7 +935,7 @@ impl InternalGrammar {
     }
 
     #[inline(always)]
-    pub fn to_internal(&self, symbol: Symbol) -> Option<Symbol> {
+    pub(in super) fn to_internal(&self, symbol: Symbol) -> Option<Symbol> {
         if self.parts.num_external_syms == 0 {
             Some(symbol)
         } else {
@@ -953,7 +944,7 @@ impl InternalGrammar {
     }
 
     #[inline]
-    pub fn to_external(&self, symbol: Symbol) -> Symbol {
+    pub(in super) fn to_external(&self, symbol: Symbol) -> Symbol {
         if self.parts.num_internal_syms == 0 {
             symbol
         } else {
@@ -1025,7 +1016,7 @@ fn round_up_to_next(unrounded: usize, target_alignment: usize) -> usize {
     (unrounded + target_alignment - 1) & !(target_alignment - 1)
 }
 
-pub struct BinaryRule {
+pub(in super) struct BinaryRule {
     lhs: Symbol,
     rhs0: Symbol,
     rhs1: Option<Symbol>,
@@ -1074,7 +1065,7 @@ impl<'a> BinaryRuleMut<'a> {
 }
 
 #[derive(Debug)]
-pub struct RuleSlices<'a> {
+pub(in super) struct RuleSlices<'a> {
     pub lhs: &'a [Option<Symbol>],
     pub rhs0: &'a [Option<Symbol>],
     pub rhs1: &'a [Option<Symbol>],
@@ -1090,7 +1081,7 @@ impl<'a> RuleSlices<'a> {
     }
 }
 
-pub struct RuleSlicesMut<'a> {
+pub(in super) struct RuleSlicesMut<'a> {
     pub lhs: &'a mut [Option<Symbol>],
     pub rhs0: &'a mut [Option<Symbol>],
     pub rhs1: &'a mut [Option<Symbol>],
@@ -1106,7 +1097,7 @@ impl<'a> RuleSlicesMut<'a> {
     }
 }
 
-pub struct Rules<'a> {
+pub(in super) struct Rules<'a> {
     lhs: slice::Iter<'a, Option<Symbol>>,
     rhs0: slice::Iter<'a, Option<Symbol>>,
     rhs1: slice::Iter<'a, Option<Symbol>>,

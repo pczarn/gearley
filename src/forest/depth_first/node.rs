@@ -72,7 +72,16 @@ impl<'a, 'f, T, V> Copy for Factors<'a, 'f, T, V> where T: Copy {}
 
 impl<'a, 'f, T, V> Node<'a, 'f, T, V> where T: Copy {
     #[inline]
-    pub fn nonterminal(&self, grammar: &InternalGrammar) -> u32 {
+    pub fn values(&self) -> Option<&'a [V]> {
+        // All nodes are now evaluated.
+        match self.get() {
+            Evaluated { values } => Some(values),
+            _ => None
+        }
+    }
+
+    #[inline]
+    pub(in super) fn nonterminal(&self, grammar: &InternalGrammar) -> u32 {
         match self.alternatives()[0].get() {
             Product { action, .. } | ShallowProduct { action, .. } => {
                 grammar.get_lhs(action).usize() as u32
@@ -82,7 +91,7 @@ impl<'a, 'f, T, V> Node<'a, 'f, T, V> where T: Copy {
     }
 
     #[inline]
-    pub fn factor_stack_bottom(&self) -> Option<usize> {
+    pub(in super) fn factor_stack_bottom(&self) -> Option<usize> {
         match self.alternatives()[0].get() {
             Product { .. } | Leaf { .. } => {
                 None
@@ -95,7 +104,7 @@ impl<'a, 'f, T, V> Node<'a, 'f, T, V> where T: Copy {
     }
 
     #[inline]
-    pub fn alternatives(&self) -> &[Self] {
+    pub(in super) fn alternatives(&self) -> &[Self] {
         match self.get() {
             Sum { summands, .. } => {
                 summands
@@ -108,12 +117,12 @@ impl<'a, 'f, T, V> Node<'a, 'f, T, V> where T: Copy {
     }
 
     #[inline(always)]
-    pub fn get(&self) -> NodeInner<'a, 'f, T, V> {
+    pub(in super) fn get(&self) -> NodeInner<'a, 'f, T, V> {
         self.cell.get()
     }
 
     #[inline(always)]
-    pub fn set(&self, inner: NodeInner<'a, 'f, T, V>) {
+    pub(in super) fn set(&self, inner: NodeInner<'a, 'f, T, V>) {
         self.cell.set(inner)
     }
 }

@@ -31,7 +31,7 @@ impl<V> ValueArray<V> {
         }
     }
 
-    pub fn build_slice(&self, len: usize) -> SliceBuilder<V> {
+    fn build_slice(&self, len: usize) -> SliceBuilder<V> {
         SliceBuilder::new(&self.arena, len)
     }
 }
@@ -85,7 +85,7 @@ impl<'a, I, V> FastEvaluator<'a, I, V> {
                 sum.set_evaluation_result(values);
             }
         }
-        traversal.finish(root)
+        root.values().unwrap()
     }
 }
 

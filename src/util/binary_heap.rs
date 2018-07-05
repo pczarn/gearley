@@ -47,11 +47,6 @@ impl<T> Default for BinaryHeap<T> {
 }
 
 impl<T: Ord> BinaryHeap<T> {
-    /// Creates an empty `BinaryHeap` as a max-heap.
-    pub fn new() -> BinaryHeap<T> {
-        Default::default()
-    }
-
     /// Creates an empty `BinaryHeap` with a specific capacity.
     /// This preallocates enough memory for `capacity` elements,
     /// so that the `BinaryHeap` does not have to be reallocated
@@ -74,28 +69,11 @@ impl<T: Ord> BinaryHeap<T> {
         self.indices.get(idx_idx).and_then(|&idx| self.data.get(idx as usize))
     }
 
-    /// Returns the number of elements the binary heap can hold without reallocating.
-    pub fn capacity(&self) -> usize {
-        self.data.capacity()
-    }
-
-    /// Reserves the minimum capacity for exactly `additional` more elements to be inserted in the
-    /// given `BinaryHeap`. Does nothing if the capacity is already sufficient.
-    pub fn reserve_exact(&mut self, additional: usize) {
-        self.data.reserve_exact(additional);
-    }
-
     /// Reserves capacity for at least `additional` more elements to be inserted in the
     /// `BinaryHeap`. The collection may reserve more space to avoid frequent reallocations.
     pub fn reserve(&mut self, additional: usize) {
         self.indices.reserve(additional);
         self.data.reserve(additional);
-    }
-
-    /// Discards as much additional capacity as possible.
-    pub fn shrink_to_fit(&mut self) {
-        self.indices.shrink_to_fit();
-        self.data.shrink_to_fit();
     }
 
     /// Removes the greatest item from the binary heap and returns it, or `None` if it
@@ -180,14 +158,6 @@ impl<T: Ord> BinaryHeap<T> {
     pub fn clear(&mut self) {
         self.indices.clear();
         self.data.clear();
-    }
-
-    pub fn as_data_slice(&self) -> &[T] {
-        &self.data[..]
-    }
-
-    pub fn as_data_slice_mut(&mut self) -> &mut [T] {
-        &mut self.data[..]
     }
 }
 

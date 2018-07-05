@@ -94,15 +94,6 @@ impl<'a, 'f, 'g, T, V, O> Traversal<'a, 'f, 'g, T, V, O>
         }
     }
 
-    #[inline]
-    pub fn finish(&mut self, root: NodeRef<'a, 'f, T, V>) -> &'a [V] {
-        // All nodes are now evaluated.
-        match root.get() {
-            Evaluated { values } => values,
-            _ => unreachable!()
-        }
-    }
-
     fn unfold<'t>(&'t mut self, dependency: NodeRef<'a, 'f, T, V>)
         -> DepsTraversal<'a, 't, 'f, T, V>
     {
