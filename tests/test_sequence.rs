@@ -1,21 +1,24 @@
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 extern crate cfg;
 extern crate gearley;
 
-#[macro_use]
-mod grammars;
+mod helpers;
 
 use cfg::Symbol;
 use cfg::sequence::Separator::Trailing;
+use cfg::earley::Grammar;
 
-use gearley::forest::depth_first::*;
-use gearley::grammar::Grammar;
+use gearley::forest::Bocage;
+use gearley::grammar::InternalGrammar;
 use gearley::recognizer::Recognizer;
-use gearley::util::slice_builder::SliceBuilder;
 
-use grammars::*;
+use helpers::{SimpleEvaluator, Parse};
 
 #[test]
 fn test_sequence() {
+    let _ = env_logger::try_init();
     let (plus, minus) = (1, 2);
     let tokens = &[plus, minus, plus, minus, plus, minus];
     let mut external = Grammar::new();
@@ -23,36 +26,31 @@ fn test_sequence() {
     external.sequence(start).separator(Trailing(minus)).inclusive(3, Some(3)).rhs(plus);
     external.set_start(start);
 
-    let cfg = external.to_internal_grammar();
-    let values = ValueArray::new();
-    let mut evaluator = FastEvaluator::new(
-        &values,
-        ClosureInvoker::new(
-            |sym: Symbol, _: Option<&()>| {
-                match sym.usize() {
-                    1 => 1,
-                    2 => -1,
-                    _ => unreachable!()
-                }
-            },
-            |rule: u32, args: &[&i32]| {
-                if rule == 0 {
-                    args.len() as i32
-                } else {
-                    unreachable!()
-                }
-            },
-            |_, _: &mut SliceBuilder<i32>| unreachable!()
-        )
+    let cfg = InternalGrammar::from_grammar(&external);
+    let mut evaluator = SimpleEvaluator::new(
+        |sym: Symbol| {
+            match sym.usize() {
+                1 => 1,
+                2 => -1,
+                _ => unreachable!()
+            }
+        },
+        |rule: u32, args: &[&i32]| {
+            if rule == 0 {
+                args.len() as i32
+            } else {
+                unreachable!()
+            }
+        },
+        |_, _: &mut Vec<i32>| unreachable!()
     );
-    let bocage: Bocage<(), i32> = Bocage::new(&cfg);
-    let mut recognizer = Recognizer::new(&cfg, &bocage);
-    recognizer.parse(tokens);
+    let bocage = Bocage::new(&cfg);
+    let mut recognizer = Recognizer::new(&cfg, bocage);
+    assert!(recognizer.parse(tokens));
 
-    let mut traversal = Traversal::new(&bocage, NullOrder::new());
+    let mut traversal = recognizer.forest.traverse();
 
-    let mut tree = evaluator.traverse(&mut traversal, recognizer.finished_node()).iter();
+    let results = evaluator.traverse(&mut traversal);
 
-    assert_eq!(tree.next(), Some(&6));
-    assert_eq!(tree.next(), None);
+    assert_eq!(results, vec![6]);
 }

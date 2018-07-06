@@ -152,9 +152,11 @@ impl<'a, N> Iterator for ExpectedTerminals<'a, N> {
     }
 }
 
-impl<'f, 'g, F> Recognizer<'f, 'g, F> where F: Forest<'f> + 'f {
+impl<'g, F> Recognizer<'g, F>
+    where F: Forest,
+{
     pub fn trace(&self) -> Trace<F::NodeRef> {
-        let trace = self.grammar().trace();
+        let trace = self.grammar.trace();
         let prediction = Prediction {
             iter: self.predicted_symbols().iter.zip(trace[0].iter()),
             origin: self.earleme(),
@@ -169,7 +171,7 @@ impl<'f, 'g, F> Recognizer<'f, 'g, F> where F: Forest<'f> + 'f {
     }
 
     pub fn events(&self) -> Events<F::NodeRef> {
-        let (events_predict, events_flat) = self.grammar().events();
+        let (events_predict, events_flat) = self.grammar.events();
         let prediction = Prediction {
             iter: self.predicted_symbols().iter.zip(events_predict.iter()),
             origin: self.earleme(),
@@ -192,7 +194,7 @@ impl<'f, 'g, F> Recognizer<'f, 'g, F> where F: Forest<'f> + 'f {
     pub fn expected_terminals(&self) -> ExpectedTerminals<F::NodeRef> {
         ExpectedTerminals {
             prev_scan_iter: self.medial_items(),
-            rhs1: self.grammar().rules().rhs1,
+            rhs1: self.grammar.rhs1(),
         }
     }
 }

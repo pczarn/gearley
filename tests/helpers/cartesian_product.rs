@@ -1,8 +1,5 @@
 use std::marker::PhantomData;
 
-use forest::depth_first::Evaluated;
-use super::evaluate::ProductHandle;
-
 pub struct Factor<'a, V: 'a> {
     start: *const V,
     end: *const V,
@@ -50,23 +47,23 @@ impl<'a, V> CartesianProduct<'a, V> {
     pub fn clear(&mut self) {
         self.ranges.clear();
         self.ptrs.clear();
-    } 
+    }
 
-    /// Multiplies the cartesian product  a production.
-    pub fn extend<'t, 'f, T>(&mut self, production: &ProductHandle<'a, 't, 'f, T, V>)
-        where T: Copy
-    {
-        let factors = production.factors.iter();
-        let slices = factors.map(|factor| {
-            match factor.get() {
-                Evaluated { values } => {
-                    values
-                }
-                _ => unreachable!()
-            }
-        });
-        self.ranges.extend(slices.map(|slice| Factor::new(slice)));
+    /// Multiplies the cartesian product by a slice.
+    pub fn push(&mut self, slice: &'a [V]) {
+        self.ranges.push(Factor::new(slice));
         unsafe {
+            self.ptrs.push(self.ranges.last().map(|factor| &*factor.start).unwrap());
+        }
+    }
+
+    /// Multiplies the cartesian product by an iterator.
+    pub fn extend<I>(&mut self, product: I)
+        where I: Iterator<Item=&'a [V]>,
+    {
+        self.ranges.extend(product.map(|slice| Factor::new(slice)));
+        unsafe {
+            // FIXME wrong range
             self.ptrs.extend(self.ranges.iter().map(|factor| &*factor.start));
         }
     }
@@ -74,41 +71,31 @@ impl<'a, V> CartesianProduct<'a, V> {
     pub fn as_slice(&self) -> &[&'a V] {
         &self.ptrs[..]
     }
-}
 
-impl<'a, V> Iterator for CartesianProduct<'a, V> {
-    type Item = ();
-    fn next(&mut self) -> Option<()> {
+    pub fn advance(&mut self) -> bool {
         for (ptr, factor) in self.ptrs.iter_mut().zip(&mut self.ranges) {
             if !factor.advance(ptr) {
-                return Some(());
+                return true;
             }
         }
-        None
+        false
     }
 }
 
 #[test]
 fn test_cartesian_product() {
-    use forest::depth_first::NodeRef;
     let (a, b, c) = ([1, 2, 3], [1, 2,], [1, 2, 3]);
-    let (a, b, c) = (
-        Evaluated { values: &a }.into(),
-        Evaluated { values: &b }.into(),
-        Evaluated { values: &c }.into()
-    );
-    let factors: &[NodeRef<(), i32>] = &[&a, &b, &c];
-    let production = ProductHandle { action: 0, factors: factors };
+    let factors: &[&[u32]] = &[&a[..], &b[..], &c[..]];
     let mut cartesian_product = CartesianProduct::new();
     cartesian_product.clear();
-    cartesian_product.extend(&production);
+    cartesian_product.extend(factors.iter().cloned());
     let mut result = vec![];
     loop {
         {
             let val = cartesian_product.as_slice();
             result.push(*val[0] * 100 + *val[1] * 10 + *val[2]);
         };
-        if cartesian_product.next().is_none() {
+        if !cartesian_product.advance() {
             break;
         }
     }

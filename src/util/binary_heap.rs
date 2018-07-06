@@ -20,6 +20,7 @@ use std::u32;
 /// A priority queue implemented with a binary heap.
 ///
 /// This will be a max-heap.
+#[derive(Debug)]
 pub struct BinaryHeap<T> {
     /// Indices into `data`.
     indices: Vec<u32>,

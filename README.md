@@ -14,12 +14,14 @@ The grammar is stored in a serialized form. You may create or deserialize it
 yourself. Grammar construction is implemented in the
 [cfg library](https://github.com/pczarn/cfg).
 
-The recognizer provides an interface for writing a custom parse forest. You
-may reuse the default parse forest, but write your own code for controlling
-rule order, and for storing evaluated values.
+The recognizer provides an interface for writing a custom parse forest. Or you
+may reuse the default parse forest algorithm, but write your own code for controlling
+rule order, and for storing evaluated values within each tree node.
 
-Another interface gives control over rule completion. You may reject certain
-completed rules or modify their parse forests.
+Yet another interface gives immediate control over rule completion. You may reject certain
+completed rules or modify their parse forests as the parse progresses.
+
+Gearley is perfectly extensible on every level.
 
 ## Glossary
 
@@ -32,6 +34,8 @@ completed rules or modify their parse forests.
 | item               | Earley item            | situation                  |
 | origin             | origin                 | distance                   |
 | rule history       | rule semantics         | --                         |
+
+| complete           | complete               | accept                     |
 
 Dot — a position in the grammar, which is an integer.
 

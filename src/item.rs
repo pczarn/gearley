@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 pub type Dot = u32;
 pub type Origin = u32;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub struct Item<N> {
     pub(in super) origin: Origin,
     pub(in super) dot: Dot,
@@ -22,6 +22,26 @@ pub struct CompletedItem<N> {
     pub left_node: N,
     /// Right bocage node.
     pub right_node: Option<N>,
+}
+
+impl<L> PartialEq for Item<L> {
+    fn eq(&self, other: &Self) -> bool {
+        (self.origin, self.dot) == (other.origin, other.dot)
+    }
+}
+
+impl<L> Eq for Item<L> {}
+
+impl<L> PartialOrd for Item<L> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<L> Ord for Item<L> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (self.origin, self.dot).cmp(&(other.origin, other.dot))
+    }
 }
 
 impl<L> PartialEq for CompletedItem<L> {

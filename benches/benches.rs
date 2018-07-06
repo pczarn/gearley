@@ -4,15 +4,20 @@ extern crate test;
 extern crate cfg;
 extern crate gearley;
 
+macro_rules! trace(($($tt:tt)*) => ());
+
 #[macro_use]
 #[path = "../tests/grammars/mod.rs"]
 mod grammars;
+#[path = "../tests/helpers/mod.rs"]
+mod helpers;
 
-use gearley::forest::{Bocage, Traversal, NullForest};
-use gearley::forest::depth_first::{NullOrder, FastEvaluator, ValueArray, ClosureInvoker};
+use gearley::grammar::InternalGrammar;
+use gearley::forest::{Bocage, NullForest};
 use gearley::recognizer::Recognizer;
 
 use grammars::*;
+use helpers::{SimpleEvaluator, Parse};
 
 const SUM_TOKENS: &'static [u32] = precedenced_arith!(
     '1' '+' '(' '2' '*' '3' '-' '4' ')' '/'
@@ -25,24 +30,19 @@ const SUM_TOKENS: &'static [u32] = precedenced_arith!(
 fn bench_ambiguous_arithmetic(b: &mut test::Bencher) {
     let tokens = ambiguous_arith!('2' '-' '0' '*' '3' '+' '1' '/' '2' '+' '8' '8' '+' '1' '/' '2');
     let external = ambiguous_arith::grammar();
-    let cfg = external.to_internal_grammar();
+    let cfg = InternalGrammar::from_grammar(&external);
 
     b.iter(|| {
-        let values = ValueArray::new();
-        let closures = ClosureInvoker::new(
+        let mut evaluator = SimpleEvaluator::new(
             ambiguous_arith::leaf,
             ambiguous_arith::rule,
             |_, _: &mut _| unreachable!()
         );
-        let mut evaluator = FastEvaluator::new(&values, closures);
         let bocage = Bocage::new(&cfg);
-        let mut rec = Recognizer::new(&cfg, &bocage);
-        rec.parse(tokens);
-        let mut traversal = Traversal::new(&bocage, NullOrder::new());
-        let results = evaluator.traverse(
-            &mut traversal,
-            rec.finished_node(),
-        );
+        let mut rec = Recognizer::new(&cfg, bocage);
+        assert!(rec.parse(tokens));
+        let mut traversal = rec.forest.traverse();
+        let results = evaluator.traverse(&mut traversal);
         test::black_box(results);
     })
 }
@@ -50,27 +50,20 @@ fn bench_ambiguous_arithmetic(b: &mut test::Bencher) {
 #[bench]
 fn bench_evaluate_precedenced_arith(b: &mut test::Bencher) {
     let external = precedenced_arith::grammar();
-    let cfg = external.to_internal_grammar();
+    let cfg = InternalGrammar::from_grammar(&external);
     let sum_tokens = test::black_box(SUM_TOKENS);
 
     b.iter(|| {
-        let values = ValueArray::new();
-        let mut evaluator = FastEvaluator::new(
-            &values,
-            ClosureInvoker::new(
-                precedenced_arith::leaf,
-                precedenced_arith::rule,
-                |_, _: &mut _| unreachable!()
-            )
+        let mut evaluator = SimpleEvaluator::new(
+            precedenced_arith::leaf,
+            precedenced_arith::rule,
+            |_, _: &mut _| unreachable!(),
         );
         let bocage = Bocage::new(&cfg);
-        let mut recognizer = Recognizer::new(&cfg, &bocage);
+        let mut recognizer = Recognizer::new(&cfg, bocage);
         recognizer.parse(sum_tokens);
-        let mut traversal = Traversal::new(&bocage, NullOrder::new());
-        let results = evaluator.traverse(
-            &mut traversal,
-            recognizer.finished_node(),
-        );
+        let mut traversal = recognizer.forest.traverse();
+        let results = evaluator.traverse(&mut traversal);
         test::black_box(results);
     })
 }
@@ -80,18 +73,18 @@ fn bench_process_grammar_for_precedenced_arith(b: &mut test::Bencher) {
     let external = precedenced_arith::grammar();
 
     b.iter(|| {
-        test::black_box(&external.to_internal_grammar());
+        test::black_box(InternalGrammar::from_grammar(&external));
     })
 }
 
 #[bench]
 fn bench_recognize_precedenced_arith(b: &mut test::Bencher) {
-    let grammar = precedenced_arith::grammar().to_internal_grammar();
+    let grammar = precedenced_arith::grammar();
+    let cfg = InternalGrammar::from_grammar(&grammar);
     let sum_tokens = test::black_box(SUM_TOKENS);
 
     b.iter(|| {
-        let null_forest = NullForest;
-        let mut recognizer = Recognizer::new(&grammar, &null_forest);
+        let mut recognizer = Recognizer::new(&cfg, NullForest);
         test::black_box(&recognizer.parse(sum_tokens));
     })
 }

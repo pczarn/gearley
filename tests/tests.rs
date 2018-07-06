@@ -1,15 +1,18 @@
+#[macro_use]
+extern crate log;
 extern crate cfg;
 extern crate gearley;
 
 #[macro_use]
 mod grammars;
+mod helpers;
 
-use gearley::forest::{Bocage, Traversal, NullForest};
-use gearley::forest::depth_first::{NullOrder, FastEvaluator, ValueArray, ClosureInvoker};
+use gearley::grammar::InternalGrammar;
+use gearley::forest::{Bocage, NullForest};
 use gearley::recognizer::Recognizer;
-use gearley::util::slice_builder::SliceBuilder;
 
 use grammars::*;
+use helpers::{SimpleEvaluator, Parse};
 
 const SUM_TOKENS: &'static [u32] = precedenced_arith!(
     '1' '+' '(' '2' '*' '3' '-' '4' ')' '/'
@@ -21,42 +24,36 @@ const SUM_TOKENS: &'static [u32] = precedenced_arith!(
 #[test]
 fn test_precedenced_arith() {
     let external = precedenced_arith::grammar();
-    let cfg = external.to_internal_grammar();
-    let null_forest = NullForest;
-    let mut rec = Recognizer::new(&cfg, &null_forest);
-    rec.parse(SUM_TOKENS);
+    let cfg = InternalGrammar::from_grammar(&external);
+    let mut rec = Recognizer::new(&cfg, NullForest);
+    assert!(rec.parse(SUM_TOKENS));
 }
 
 #[test]
 fn test_ambiguous_arithmetic() {
     let tokens = ambiguous_arith!('2' '-' '0' '*' '3' '+' '1');
     let external = ambiguous_arith::grammar();
-    let cfg = external.to_internal_grammar();
-    let values = ValueArray::new();
-    let mut evaluator = FastEvaluator::new(
-        &values,
-        ClosureInvoker::new(
-            ambiguous_arith::leaf,
-            ambiguous_arith::rule,
-            |_, _: &mut SliceBuilder<i32>| unreachable!()
-        )
+    let cfg = InternalGrammar::from_grammar(&external);
+    let mut evaluator = SimpleEvaluator::new(
+        ambiguous_arith::leaf,
+        ambiguous_arith::rule,
+        |_, _: &mut Vec<i32>| unreachable!()
     );
     let bocage = Bocage::new(&cfg);
-    let mut rec = Recognizer::new(&cfg, &bocage);
-    rec.parse(tokens);
-    let mut traversal = Traversal::new(&bocage, NullOrder::new());
-    let results = evaluator.traverse(
-        &mut traversal,
-        rec.finished_node(),
-    );
+    let mut rec = Recognizer::new(&cfg, bocage);
+    assert!(rec.parse(tokens));
+    let mut traverse = rec.forest.traverse();
+    let results = evaluator.traverse(&mut traverse);
+
+    // The result is currently ordered by rule ID:
+    assert_eq!(results, vec![8, 1, 2, 7, 3]);
 
     // A result ordered by structure would be: [2, 1, 8, 3, 7]
-    // The result is currently ordered by rule ID:
-    assert_eq!(results, &[3, 7, 2, 1, 8]);
+    // where
 
-    // 3  =  (2 - (0 * 3)) + 1
-    // 7  =  ((2 - 0) * 3) + 1
     // 2  =  2 - (0 * (3 + 1))
     // 1  =  2 - ((0 * 3) + 1)
     // 8  =  (2 - 0) * (3 + 1)
+    // 3  =  (2 - (0 * 3)) + 1
+    // 7  =  ((2 - 0) * 3) + 1
 }

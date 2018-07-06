@@ -4,16 +4,18 @@ extern crate test;
 extern crate cfg;
 extern crate gearley;
 
-#[macro_use]
-#[path = "../tests/grammars/mod.rs"]
-mod grammars;
+macro_rules! trace(($($tt:tt)*) => ());
+
+#[path = "../tests/helpers/mod.rs"]
+mod helpers;
 
 use cfg::sequence::Separator::Proper;
+use cfg::earley::Grammar;
 use gearley::forest::{Bocage, NullForest};
-use gearley::grammar::Grammar;
+use gearley::grammar::InternalGrammar;
 use gearley::recognizer::Recognizer;
 
-use grammars::*;
+use helpers::Parse;
 
 macro_rules! rhs_elem {
     (use) => (0);
@@ -134,25 +136,24 @@ fn grammar() -> Grammar {
 #[bench]
 fn bench_recognize_decl_use(b: &mut test::Bencher) {
     let external = grammar();
-    let cfg = external.to_internal_grammar();
+    let cfg = InternalGrammar::from_grammar(&external);
 
     b.iter(|| {
-        let bocage = NullForest;
-        let mut rec = Recognizer::new(&cfg, &bocage);
+        let mut rec = Recognizer::new(&cfg, NullForest);
         rec.parse(TOKENS);
-        test::black_box(rec);
+        test::black_box(&rec);
     })
 }
 
 #[bench]
 fn bench_parse_decl_use(b: &mut test::Bencher) {
     let external = grammar();
-    let cfg = external.to_internal_grammar();
+    let cfg = InternalGrammar::from_grammar(&external);
 
     b.iter(|| {
-        let bocage: Bocage<(), ()> = Bocage::new(&cfg);
-        let mut rec = Recognizer::new(&cfg, &bocage);
+        let bocage: Bocage<_> = Bocage::new(&cfg);
+        let mut rec = Recognizer::new(&cfg, bocage);
         rec.parse(TOKENS);
-        test::black_box(&bocage);
+        test::black_box(&rec.forest);
     })
 }

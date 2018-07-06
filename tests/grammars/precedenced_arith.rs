@@ -1,5 +1,5 @@
 use cfg::Symbol;
-use gearley::grammar::Grammar;
+use cfg::earley::Grammar;
 
 pub fn grammar() -> Grammar {
     let mut bnf = Grammar::new();
@@ -21,7 +21,7 @@ pub fn grammar() -> Grammar {
     bnf
 }
 
-pub fn leaf(sym: Symbol, _val: Option<&()>) -> i32 {
+pub fn leaf(sym: Symbol) -> i32 {
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9][sym.usize()]
 }
 
