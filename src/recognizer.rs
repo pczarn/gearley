@@ -235,7 +235,7 @@ impl<'g, F> Recognizer<'g, F>
 
     /// Complete an item if predicted at rhs0.
     fn complete_unary_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
-        for trans in self.grammar.inverse_unary_prediction(sym) {
+        for trans in self.grammar.unary_completions(sym) {
             if self.predicted[set_id as usize].get(trans.symbol.usize()) {
                 // No checks for uniqueness, because `medial` will be deduplicated.
                 // from A ::= • B
@@ -254,7 +254,7 @@ impl<'g, F> Recognizer<'g, F>
 
     /// Complete an item if predicted at rhs1.
     fn complete_binary_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
-        for trans in self.grammar.inverse_binary_prediction(sym) {
+        for trans in self.grammar.binary_completions(sym) {
             if self.predicted[set_id as usize].get(trans.symbol.usize()) {
                 // No checks for uniqueness, because `medial` will be deduplicated.
                 // from A ::= • B   C

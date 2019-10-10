@@ -1,5 +1,4 @@
 use std::borrow::Borrow;
-use std::mem;
 
 use bit_vec::BitVec;
 use cfg::symbol::Symbol;

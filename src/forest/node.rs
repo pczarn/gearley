@@ -1,5 +1,4 @@
 use std::cell::Cell;
-use std::convert::Into;
 use num::{FromPrimitive, ToPrimitive};
 use num_derive::{FromPrimitive, ToPrimitive};
 

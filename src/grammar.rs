@@ -71,11 +71,11 @@ pub struct InternalGrammar {
 
     prediction_matrix: BitMatrix,
     // Inverse prediction lookup.
-    inverse_unary_prediction: Vec<PredictionTransition>,
-    inverse_unary_prediction_index: Vec<u32>,
+    unary_completions: Vec<PredictionTransition>,
+    unary_completion_index: Vec<u32>,
 
-    inverse_binary_prediction: Vec<PredictionTransition>,
-    inverse_binary_prediction_index: Vec<u32>,
+    binary_completions: Vec<PredictionTransition>,
+    binary_completion_index: Vec<u32>,
 
     // array of events
     events_rhs: [Vec<Event>; 3],
@@ -109,7 +109,7 @@ type MinimalDistance = Optioned<u32>;
 pub(in super) type Event = (EventId, MinimalDistance);
 type NullingEliminated = Option<(Symbol, bool)>;
 type NullingIntermediateRule = (Symbol, Symbol, Symbol);
-type InversePredictionTable = Vec<Vec<PredictionTransition>>;
+type CompletionTable = Vec<Vec<PredictionTransition>>;
 
 impl InternalGrammar {
     fn new() -> Self {
@@ -223,7 +223,7 @@ impl InternalGrammar {
     fn populate_predictions(&mut self, grammar: &BinarizedGrammar) {
         self.populate_prediction_matrix(grammar);
         self.populate_prediction_events(grammar);
-        self.populate_inverse_prediction_tables(grammar);
+        self.populate_completion_tables(grammar);
     }
 
     fn populate_prediction_matrix(&mut self, grammar: &BinarizedGrammar) {
@@ -239,24 +239,18 @@ impl InternalGrammar {
         }
     }
 
-    fn populate_inverse_prediction_tables(&mut self, grammar: &BinarizedGrammar) {
-        self.populate_inverse_unary_prediction_table(grammar);
-        self.populate_inverse_binary_prediction_table(grammar);
+    fn populate_completion_tables(&mut self, grammar: &BinarizedGrammar) {
+        self.populate_unary_completion_table(grammar);
+        self.populate_binary_completion_table(grammar);
     }
 
-    fn populate_inverse_unary_prediction_table(&mut self, grammar: &BinarizedGrammar) {
-        let table = self.compute_inverse_unary_prediction_table(grammar);
-        let mut current_idx = 0u32;
-        self.inverse_unary_prediction_index.push(current_idx as u32);
-        self.inverse_unary_prediction_index.extend(table.iter().map(|run| {
-            current_idx = current_idx.checked_add(run.len() as u32).unwrap();
-            current_idx
-        }));
-        let iter_table = table.into_iter().flat_map(|v| v.into_iter());
-        self.inverse_unary_prediction.extend(iter_table);
+    fn populate_unary_completion_table(&mut self, grammar: &BinarizedGrammar) {
+        let table = self.compute_unary_completion_table(grammar);
+        self.populate_unary_completion_index(&table);
+        self.populate_unary_completions(&table);
     }
 
-    fn compute_inverse_unary_prediction_table(&self, grammar: &BinarizedGrammar) -> InversePredictionTable {
+    fn compute_unary_completion_table(&self, grammar: &BinarizedGrammar) -> CompletionTable {
         let mut table = iter::repeat(vec![]).take(self.size.syms).collect::<Vec<_>>();
 
         let mut unary_rules = vec![];
@@ -277,19 +271,27 @@ impl InternalGrammar {
         table
     }
 
-    fn populate_inverse_binary_prediction_table(&mut self, grammar: &BinarizedGrammar) {
-        let table = self.compute_inverse_binary_prediction_table(grammar);
+    fn populate_unary_completion_index(&mut self, table: &CompletionTable) {
         let mut current_idx = 0u32;
-        self.inverse_binary_prediction_index.push(current_idx as u32);
-        self.inverse_binary_prediction_index.extend(table.iter().map(|run| {
+        self.unary_completion_index.push(0u32);
+        self.unary_completion_index.extend(table.iter().map(|run| {
             current_idx = current_idx.checked_add(run.len() as u32).unwrap();
             current_idx
         }));
-        let iter_table = table.into_iter().flat_map(|v| v.into_iter());
-        self.inverse_binary_prediction.extend(iter_table);
     }
 
-    fn compute_inverse_binary_prediction_table(&self, grammar: &BinarizedGrammar) -> InversePredictionTable {
+    fn populate_unary_completions(&mut self, table: &CompletionTable) {
+        let iter_table = table.into_iter().flat_map(|v| v.into_iter());
+        self.unary_completions.extend(iter_table);
+    }
+
+    fn populate_binary_completion_table(&mut self, grammar: &BinarizedGrammar) {
+        let table = self.compute_binary_completion_table(grammar);
+        self.populate_binary_completion_index(&table);
+        self.populate_binary_completions(&table);
+    }
+
+    fn compute_binary_completion_table(&self, grammar: &BinarizedGrammar) -> CompletionTable {
         let mut table = iter::repeat(vec![]).take(self.size.syms).collect::<Vec<_>>();
 
         let mut binary_rules = vec![];
@@ -308,6 +310,20 @@ impl InternalGrammar {
             });
         }
         table
+    }
+
+    fn populate_binary_completion_index(&mut self, table: &CompletionTable) {
+        let mut current_idx = 0u32;
+        self.binary_completion_index.push(0u32);
+        self.binary_completion_index.extend(table.iter().map(|run| {
+            current_idx = current_idx.checked_add(run.len() as u32).unwrap();
+            current_idx
+        }));
+    }
+
+    fn populate_binary_completions(&mut self, table: &CompletionTable) {
+        let iter_table = table.into_iter().flat_map(|v| v.into_iter());
+        self.binary_completions.extend(iter_table);
     }
 
     fn populate_prediction_events(&mut self, grammar: &BinarizedGrammar) {
@@ -408,17 +424,17 @@ impl InternalGrammar {
     }
 
     #[inline(always)]
-    pub(in super) fn inverse_unary_prediction(&self, sym: Symbol) -> &[PredictionTransition] {
-        let idxs = &self.inverse_unary_prediction_index[sym.usize() .. sym.usize() + 2];
+    pub(in super) fn unary_completions(&self, sym: Symbol) -> &[PredictionTransition] {
+        let idxs = &self.unary_completion_index[sym.usize() .. sym.usize() + 2];
         let range = idxs[0] as usize .. idxs[1] as usize;
-        &self.inverse_unary_prediction[range]
+        &self.unary_completions[range]
     }
 
     #[inline(always)]
-    pub(in super) fn inverse_binary_prediction(&self, sym: Symbol) -> &[PredictionTransition] {
-        let idxs = &self.inverse_binary_prediction_index[sym.usize() .. sym.usize() + 2];
+    pub(in super) fn binary_completions(&self, sym: Symbol) -> &[PredictionTransition] {
+        let idxs = &self.binary_completion_index[sym.usize() .. sym.usize() + 2];
         let range = idxs[0] as usize .. idxs[1] as usize;
-        &self.inverse_binary_prediction[range]
+        &self.binary_completions[range]
     }
 
     #[inline(always)]
