@@ -2,12 +2,14 @@ use std::iter;
 
 use bit_matrix::BitMatrix;
 use cfg::{ContextFreeRef, GrammarRule, Symbol};
-use cfg::earley::{Grammar, BinarizedGrammar};
 use cfg::rule::container::RuleContainer;
 use cfg::remap::Mapping;
 use optional::Optioned;
 
 use item::Dot;
+
+pub use cfg::earley::{Grammar, BinarizedGrammar};
+pub use cfg::earley::history::History;
 
 // For efficiency, the recognizer works on processed grammars. Grammars described by the user
 // are transformed to meet the following properties:
