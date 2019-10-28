@@ -60,6 +60,7 @@ impl<'g, F> MemoryUse for Recognizer<'g, F>
             predicted: BitMatrix::new(sets_use, grammar.num_syms()),
             medial: Vec::with_capacity(sets_use * ITEMS_PER_SET),
             complete: BinaryHeap::with_capacity(complete_use),
+            lookahead_hint: None,
         };
         recognizer.indices.push(0);
         recognizer.indices.push(0);
@@ -92,6 +93,7 @@ impl<'g, F> Recognizer<'g, F>
             predicted: BitMatrix::new(tokens + 1, grammar.num_syms()),
             medial: Vec::with_capacity(tokens * ITEMS_PER_SET),
             complete: BinaryHeap::with_capacity(complete_use),
+            lookahead_hint: None,
         };
         recognizer.indices.push(0);
         recognizer.indices.push(0);
@@ -136,6 +138,7 @@ impl<'g> MemoryUse for Recognizer<'g, NullForest> {
             predicted: BitMatrix::new(sets_use, grammar.num_syms()),
             medial: Vec::with_capacity(sets_use * ITEMS_PER_SET),
             complete: BinaryHeap::with_capacity(complete_use),
+            lookahead_hint: None,
         };
         recognizer.indices.push(0);
         recognizer.indices.push(0);

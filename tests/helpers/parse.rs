@@ -17,12 +17,14 @@ impl<'g, G> Parse for Recognizer<'g, Bocage<G>>
 {
     #[inline]
     fn parse(&mut self, tokens: &[u32]) -> bool {
-        for (i, &token) in tokens.iter().enumerate() {
+        let mut iter = tokens.iter().enumerate().peekable();
+        while let Some((i, &token)) = iter.next() {
             self.begin_earleme();
             trace!("before pass 1 {:?}", &*self);
             self.scan(Symbol::from(token), i as u32);
             trace!("before pass 2 {:?}", &*self);
-            assert!(self.end_earleme());
+            self.lookahead_hint(iter.peek().map(|(_i, &t)| Symbol::from(t)));
+            assert!(self.end_earleme(), "failed to parse after {}@{}", token, i);
         }
         trace!("finished {:?}", &*self);
 

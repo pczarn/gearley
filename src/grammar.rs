@@ -4,6 +4,7 @@ use bit_matrix::BitMatrix;
 use cfg::{ContextFreeRef, GrammarRule, Symbol};
 use cfg::rule::container::RuleContainer;
 use cfg::remap::Mapping;
+use cfg::prediction::{FirstSetsCollector, FollowSets};
 use optional::Optioned;
 
 use item::Dot;
@@ -68,6 +69,7 @@ pub struct InternalGrammar {
     start_sym: Symbol,
     original_start_sym: Symbol,
     has_trivial_derivation: bool,
+    eof_sym: Symbol,
     dot_before_eof: Dot,
     size: InternalGrammarSize,
 
@@ -78,6 +80,8 @@ pub struct InternalGrammar {
 
     binary_completions: Vec<PredictionTransition>,
     binary_completion_index: Vec<u32>,
+
+    follow_sets: BitMatrix,
 
     // array of events
     events_rhs: [Vec<Event>; 3],
@@ -147,8 +151,8 @@ impl InternalGrammar {
         grammar.sort_by(|a, b| a.lhs().cmp(&b.lhs()));
         let mut result = InternalGrammar::new();
         result.populate_sizes(&grammar, &maps);
-        result.populate_grammar(&grammar);
         result.populate_maps(maps);
+        result.populate_grammar(&grammar);
         result.populate_nulling(nulling);
         trace!("populated grammar {:?}", &result);
         result
@@ -173,10 +177,10 @@ impl InternalGrammar {
 
     fn populate_start_sym(&mut self, grammar: &BinarizedGrammar) {
         let start = grammar.start();
-        let rule = grammar.rules().enumerate().find(|(_, rule)| rule.lhs() == start).unwrap();
-        self.dot_before_eof = rule.0 as u32;
         self.start_sym = start;
-        self.original_start_sym = rule.1.rhs().get(0).cloned().unwrap();
+        self.eof_sym = grammar.eof().unwrap();
+        self.dot_before_eof = grammar.dot_before_eof().unwrap();
+        self.original_start_sym = grammar.original_start().unwrap();
     }
 
     fn populate_grammar_with_lhs(&mut self, grammar: &BinarizedGrammar) {
@@ -226,6 +230,7 @@ impl InternalGrammar {
         self.populate_prediction_matrix(grammar);
         self.populate_prediction_events(grammar);
         self.populate_completion_tables(grammar);
+        self.populate_follow_sets(grammar);
     }
 
     fn populate_prediction_matrix(&mut self, grammar: &BinarizedGrammar) {
@@ -238,6 +243,20 @@ impl InternalGrammar {
         // Prediction relation is reflexive.
         for i in 0..self.size.syms {
             self.prediction_matrix.set(i, i, true);
+        }
+    }
+
+    fn populate_follow_sets(&mut self, grammar: &BinarizedGrammar) {
+        self.follow_sets = BitMatrix::new(self.size.syms, self.size.syms);
+        let first_sets = FirstSetsCollector::new(grammar);
+        let follow_sets = FollowSets::new(grammar, grammar.start(), first_sets.first_sets());
+        for (before, after) in follow_sets.follow_sets().into_iter() {
+            for elem_after in after.into_iter() {
+                // println!("{:?} => {:?}", self.to_external(*before), elem_after.map(|s| self.to_external(s)));
+                if let Some(after_sym) = elem_after {
+                    self.follow_sets.set(before.usize(), after_sym.usize(), true);
+                }
+            }
         }
     }
 
@@ -355,6 +374,17 @@ impl InternalGrammar {
             }
         });
         self.nulling_intermediate_rules.extend(iter_nulling_intermediate);
+    }
+
+    #[inline]
+    pub(in super) fn eof(&self) -> Symbol {
+        self.eof_sym
+    }
+
+    #[inline]
+    pub(in super) fn can_follow(&self, before: Symbol, after: Option<Symbol>) -> bool {
+        let after = after.unwrap_or(self.eof()).usize();
+        self.follow_sets[(before.usize(), after)]
     }
 
     #[inline]

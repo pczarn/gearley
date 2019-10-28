@@ -51,6 +51,8 @@ pub struct Recognizer<'g, F = NullForest>
 
     // The input location.
     pub(super) earleme: usize,
+
+    pub(super) lookahead_hint: Option<Option<Symbol>>,
 }
 
 impl<'g, F> Recognizer<'g, F>
@@ -71,6 +73,7 @@ impl<'g, F> Recognizer<'g, F>
             predicted: BitMatrix::new(8, grammar.num_syms()),
             medial: Vec::with_capacity(256),
             complete: BinaryHeap::with_capacity(32),
+            lookahead_hint: None,
         };
         recognizer.predict(grammar.start_sym());
         recognizer
@@ -101,6 +104,11 @@ impl<'g, F> Recognizer<'g, F>
             let node = self.forest.leaf(symbol, earleme + 1, value);
             self.complete(earleme, internal, node);
         }
+    }
+
+    pub fn lookahead_hint(&mut self, lookahead: Option<Symbol>) {
+        let to_internal = |sym| self.grammar.to_internal(sym).unwrap();
+        self.lookahead_hint = Some(lookahead.map(to_internal));
     }
 
     /// Advances the parse. Calling this method may set the finished node, which can be accessed
@@ -171,6 +179,8 @@ impl<'g, F> Recognizer<'g, F>
 
     /// Complete items.
     pub fn complete(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
+        debug_assert!(sym != self.grammar.eof());
+        // println!("complete {:?} @ {}..{}", self.grammar.to_external(sym), set_id, self.earleme);
         if self.predicted[set_id as usize].get(sym.usize()) {
             self.complete_medial_items(set_id, sym, rhs_link);
             self.complete_predictions(set_id, sym, rhs_link);
@@ -302,11 +312,9 @@ impl<'g, F> Recognizer<'g, F>
         if self.grammar.has_trivial_derivation() && self.earleme == 0 {
             Some(self.forest.nulling(self.grammar.externalized_start_sym()))
         } else {
-            self.medial.last().filter(|item| {
-                item.dot == self.grammar.dot_before_eof()
-            }).map(|item| {
-                item.node
-            })
+            let has_dot_before_eof = |item: &&Item<_>| item.dot == self.grammar.dot_before_eof();
+            let item_node = |item: &Item<_>| item.node;
+            self.medial.last().filter(has_dot_before_eof).map(item_node)
         }
     }
 
@@ -344,9 +352,17 @@ impl<'g, F> Recognizer<'g, F>
     /// Performs the completion pass.
     pub fn complete_all_sums_entirely(&mut self) {
         while let Some(mut completion) = self.next_sum() {
+            if let Some(hint) = completion.recognizer.lookahead_hint {
+                if !completion.recognizer.grammar.can_follow(completion.lhs_sym, hint) {
+                    // println!("cannot follow {:?} => {:?}", completion.recognizer.grammar.to_external(completion.lhs_sym), hint);
+                    completion.skip_entire_sum();
+                    continue;
+                }
+            }
             // Include all items in the completion.
             completion.complete_entire_sum();
         }
+        self.lookahead_hint = None;
     }
 
     /// Allows iteration through groups of completions that have unique symbol and origin.
@@ -390,7 +406,15 @@ impl<'g, 'r, F> CompleteSum<'g, 'r, F>
         self.complete_sum();
     }
 
+    /// Skips all items.
+    pub fn skip_entire_sum(&mut self) {
+        // For each item, include it in the completion.
+        while let Some(_) = self.next_summand() {}
+    }
+
+
     /// Allows iteration through completed items.
+    #[inline]
     pub fn next_summand(&mut self) -> Option<CompletedItem<F::NodeRef>> {
         if let Some(&completion) = self.recognizer.complete.peek() {
             let completion_lhs_sym = self.recognizer.grammar.get_lhs(completion.dot);
