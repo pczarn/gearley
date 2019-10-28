@@ -406,11 +406,13 @@ impl<'g, 'r, F> CompleteSum<'g, 'r, F>
     }
 
     /// Includes an item in the completion.
+    #[inline]
     pub fn push_summand(&mut self, completed_item: CompletedItem<F::NodeRef>) {
         self.recognizer.forest.push_summand(completed_item);
     }
 
     /// Uses the completion to complete items in the recognizer.
+    #[inline]
     pub fn complete_sum(&mut self) -> F::NodeRef {
         let node = self.recognizer.forest.sum(self.lhs_sym, self.origin);
         self.recognizer.complete(self.origin, self.lhs_sym, node);
@@ -418,11 +420,13 @@ impl<'g, 'r, F> CompleteSum<'g, 'r, F>
     }
 
     /// Returns the origin location of this completion.
+    #[inline]
     pub fn origin(&self) -> Origin {
         self.origin
     }
 
     /// Returns the symbol of this completion.
+    #[inline]
     pub fn symbol(&self) -> Symbol {
         self.lhs_sym
     }

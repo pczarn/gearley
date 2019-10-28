@@ -1,6 +1,5 @@
 use std::cell::Cell;
-use num::{FromPrimitive, ToPrimitive};
-use num_derive::{FromPrimitive, ToPrimitive};
+use std::hint;
 
 use cfg::symbol::Symbol;
 
@@ -12,8 +11,8 @@ use self::Tag::*;
 pub enum Node {
     Sum {
         /// 8 bytes.
-        /// Invariant: count > 0.
-        /// Invariant: This node can directly follow only `Product` or `Link`.
+        /// Invariant: count > 1.
+        /// Invariant: This node can only be directly followed by `Product`.
         nonterminal: Symbol,
         count: u32,
     },
@@ -62,11 +61,36 @@ union CompactField {
     tag: u32,
 }
 
-#[derive(FromPrimitive, ToPrimitive)]
+#[derive(Copy, Clone)]
 enum Tag {
     LeafTag = 0b00 << TAG_BIT,
     SumTag = 0b01 << TAG_BIT,
     ProductTag = 0b10 << TAG_BIT,
+}
+
+impl Tag {
+    #[inline]
+    fn from_u32(n: u32) -> Option<Self> {
+        let n = n & TAG_MASK;
+        if n == LeafTag.to_u32() {
+            Some(LeafTag)
+        } else if n == SumTag.to_u32() {
+            Some(SumTag)
+        } else if n == ProductTag.to_u32() {
+            Some(ProductTag)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
+    fn to_u32(&self) -> u32 {
+        match *self {
+            LeafTag => 0b00 << TAG_BIT,
+            SumTag => 0b01 << TAG_BIT,
+            ProductTag => 0b10 << TAG_BIT,
+        }
+    }
 }
 
 const TAG_BIT: usize = 30;
@@ -117,6 +141,7 @@ impl Node {
         }
     }
 
+    #[inline]
     fn tag(&self) -> Tag {
         match self {
             Product { .. } => ProductTag,
@@ -174,6 +199,7 @@ impl CompactNode {
 }
 
 impl NodeHandle {
+    #[inline]
     pub(in super) fn nulling(symbol: Symbol) -> Self {
         NodeHandle(symbol.usize() as u32)
     }
@@ -183,6 +209,7 @@ impl NodeHandle {
         self.0 as usize
     }
 
+    #[inline]
     fn to_option(self) -> Option<NodeHandle> {
         if self == NULL_HANDLE {
             None
@@ -192,13 +219,23 @@ impl NodeHandle {
     }
 }
 
-unsafe fn set_tag(fields: &mut [CompactField; 3], tag: Tag) {
-    fields[0].tag |= ToPrimitive::to_u32(&tag).unwrap();
+#[inline]
+unsafe fn unwrap_unchecked<T>(opt: Option<T>) -> T {
+    match opt {
+        Some(val) => val,
+        None => hint::unreachable_unchecked(),
+    }
 }
 
+#[inline]
+unsafe fn set_tag(fields: &mut [CompactField; 3], tag: Tag) {
+    fields[0].tag |= tag.to_u32();
+}
+
+#[inline]
 unsafe fn get_and_erase_tag(fields: &mut [CompactField; 3]) -> Tag {
     let &mut CompactField { ref mut tag } = &mut fields[0];
-    let extract_tag = *tag & TAG_MASK;
+    let extract_tag = *tag;
     *tag = *tag & !TAG_MASK;
-    FromPrimitive::from_u32(extract_tag).unwrap()
+    unwrap_unchecked(Tag::from_u32(extract_tag))
 }

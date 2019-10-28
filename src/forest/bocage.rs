@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::hint;
 
 use bit_vec::BitVec;
 use cfg::symbol::Symbol;
@@ -16,7 +17,6 @@ pub struct Bocage<G> {
     pub(super) graph: Vec<CompactNode>,
     pub(super) gc: MarkAndSweep,
     pub(super) grammar: G,
-    pub(super) nulling_leaf_count: usize,
     pub(super) summand_count: u32,
 }
 
@@ -29,13 +29,12 @@ pub(super) struct MarkAndSweep {
 impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
     pub fn new(grammar: G) -> Self {
         let mut result = Bocage {
-            graph: Vec::with_capacity(512),
+            graph: Vec::with_capacity(1024),
             gc: MarkAndSweep {
-                liveness: BitVec::with_capacity(512),
-                dfs: vec![],
+                liveness: BitVec::with_capacity(1024),
+                dfs: Vec::with_capacity(32),
             },
             grammar,
-            nulling_leaf_count: 0,
             summand_count: 0,
         };
         result.initialize_nulling();
@@ -44,11 +43,12 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
 
     fn initialize_nulling(&mut self) {
         // TODO trivial grammar check
-        self.nulling_leaf_count = self.nulling_symbol_count();
+        // self.nulling_leaf_count = self.nulling_symbol_count();
+        let nulling_leaf_count = self.nulling_symbol_count();
         // Ensure that `max` is not ridiculously large.
-        assert!(self.nulling_leaf_count < (1 << 20), "invalid nullable symbol");
+        assert!(nulling_leaf_count < (1 << 20), "invalid nullable symbol");
         self.graph.extend(
-            (0 ..= self.nulling_leaf_count).map(|i|
+            (0 ..= nulling_leaf_count).map(|i|
                 NullingLeaf { symbol: Symbol::from(i) }.compact()
             )
         );
@@ -68,34 +68,35 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
         self.grammar.borrow().max_nulling_symbol().unwrap_or(0)
     }
 
+    #[inline]
     pub fn mark_alive<O: Order>(&mut self, root: NodeHandle, mut order: O) {
         #[inline]
         fn summands(graph: &Vec<CompactNode>, node: NodeHandle) -> &[CompactNode] {
-            match graph[node.usize()].get() {
-                Sum { count, .. } => {
-                    // back
-                    // let start = node.usize() - count as usize - 1;
-                    // let end = node.usize() - 1;
-                    let start = node.usize() + 1;
-                    let end = node.usize() + count as usize + 1;
-                    &graph[start .. end]
+            unsafe {
+                match graph.get_unchecked(node.usize()).get() {
+                    Sum { count, .. } => {
+                        // back
+                        // let start = node.usize() - count as usize - 1;
+                        // let end = node.usize() - 1;
+                        let start = node.usize() + 1;
+                        let end = node.usize() + count as usize + 1;
+                        graph.get_unchecked(start .. end)
+                    }
+                    _ => ref_slice(graph.get_unchecked(node.usize())),
                 }
-                _ => ref_slice(&graph[node.usize()]),
             }
         }
 
         self.gc.liveness.grow(self.graph.len(), false);
         self.gc.dfs.push(root);
         while let Some(node) = self.gc.dfs.pop() {
-            if let Some(false) = self.gc.liveness.get(node.usize()) {
-                self.gc.liveness.set(node.usize(), true);
-                let summands = summands(&self.graph, node);
-                let summands = order.sum(summands);
-                for summand in summands {
-                    self.postprocess_product_tree_node(summand);
-                    // TODO: use order for products.
-                    self.gc.dfs_queue_factors(summand);
-                }
+            self.gc.liveness.set(node.usize(), true);
+            let summands = summands(&self.graph, node);
+            let summands = order.sum(summands);
+            for summand in summands {
+                self.postprocess_product_tree_node(summand);
+                // TODO: use order for products.
+                self.gc.dfs_queue_factors(summand);
             }
         }
     }
@@ -126,6 +127,7 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
         self.graph[idx.usize()].set(node);
     }
 
+    #[inline]
     pub(super) fn is_transparent(&self, action: u32) -> bool {
         action == NULL_ACTION || self.grammar.borrow().external_origin(action).is_none()
     }
@@ -165,8 +167,14 @@ impl MarkAndSweep {
     fn dfs_queue_factors(&mut self, summand: &CompactNode) {
         match summand.get() {
             Product { left_factor, right_factor, .. } => {
-                self.dfs.extend(right_factor);
-                self.dfs.push(left_factor);
+                if let Some(factor) = right_factor {
+                    if let Some(false) = self.liveness.get(factor.usize()) {
+                        self.dfs.push(factor);
+                    }
+                }
+                if let Some(false) = self.liveness.get(left_factor.usize()) {
+                    self.dfs.push(left_factor);
+                }
             }
             NullingLeaf { .. } | Evaluated { .. } => {}
             Sum { .. } => unreachable!()
@@ -178,14 +186,13 @@ impl<G> Forest for Bocage<G> {
     type NodeRef = NodeHandle;
     type LeafValue = u32;
 
+    #[inline]
     fn push_summand(&mut self, item: CompletedItem<Self::NodeRef>) {
         if self.summand_count == 1 {
-            let first_node = self.graph.pop().unwrap();
             self.graph.push(Sum {
                 nonterminal: Symbol::from(0u32),
                 count: 0,
             }.compact());
-            self.graph.push(first_node);
         }
         self.graph.push(Product {
             action: item.dot,
@@ -195,32 +202,38 @@ impl<G> Forest for Bocage<G> {
         self.summand_count += 1;
     }
 
+    #[inline]
     fn sum(&mut self, lhs_sym: Symbol, _origin: u32) -> Self::NodeRef {
-        let distance = if self.summand_count == 1 {
-            0
-        } else {
-            self.summand_count as usize
-        };
-        let node_idx = self.graph.len() - distance - 1;
-        if self.summand_count >= 2 {
-            // Slower case: ambiguous node.
-            self.graph[node_idx].set(
-                Sum {
-                    nonterminal: lhs_sym,
-                    count: self.summand_count as u32,
+        let result = unsafe {
+            match self.summand_count {
+                0 => hint::unreachable_unchecked(),
+                1 => NodeHandle(self.graph.len() as u32 - 1),
+                summand_count => {
+                    // Slower case: ambiguous node.
+                    let sum_idx = self.graph.len() - summand_count as usize;
+                    let first_summand_idx = sum_idx - 1;
+                    let first_summand = self.graph.get_unchecked(first_summand_idx).clone();
+                    *self.graph.get_unchecked_mut(sum_idx) = first_summand;
+                    *self.graph.get_unchecked_mut(first_summand_idx) = Sum {
+                        nonterminal: lhs_sym,
+                        count: self.summand_count as u32,
+                    }.compact();
+                    NodeHandle(first_summand_idx as u32)
                 }
-            );
-        }
+            }
+        };
         self.summand_count = 0;
-        NodeHandle(node_idx as u32)
+        result
     }
 
+    #[inline]
     fn leaf(&mut self, token: Symbol, _pos: u32, value: Self::LeafValue) -> Self::NodeRef {
         let result = NodeHandle(self.graph.len() as u32);
         self.graph.push(Evaluated { symbol: token, values: value }.compact());
         result
     }
 
+    #[inline]
     fn nulling(&self, token: Symbol) -> Self::NodeRef {
         NodeHandle::nulling(token)
     }
