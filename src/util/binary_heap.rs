@@ -150,6 +150,11 @@ impl<T: Ord> BinaryHeap<T> {
         self.indices.len()
     }
 
+    /// Returns the capacity of the binary heap.
+    pub fn capacity(&self) -> usize {
+        self.indices.capacity()
+    }
+
     /// Checks if the binary heap is empty.
     pub fn is_empty(&self) -> bool {
         self.len() == 0

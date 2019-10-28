@@ -14,16 +14,16 @@ use super::order::Order;
 use super::node::Node::*;
 
 pub struct Bocage<G> {
-    pub(super) graph: Vec<CompactNode>,
-    pub(super) gc: MarkAndSweep,
-    pub(super) grammar: G,
-    pub(super) summand_count: u32,
+    pub(crate) graph: Vec<CompactNode>,
+    pub(crate) gc: MarkAndSweep,
+    pub(crate) grammar: G,
+    pub(crate) summand_count: u32,
 }
 
-pub(super) struct MarkAndSweep {
-    pub(super) liveness: BitVec,
+pub(crate) struct MarkAndSweep {
+    pub(crate) liveness: BitVec,
     // List for DFS and/or maybe relocation of stuff in the future.
-    pub(super) dfs: Vec<NodeHandle>,
+    pub(crate) dfs: Vec<NodeHandle>,
 }
 
 impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
@@ -41,7 +41,7 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
         result
     }
 
-    fn initialize_nulling(&mut self) {
+    pub(crate) fn initialize_nulling(&mut self) {
         // TODO trivial grammar check
         // self.nulling_leaf_count = self.nulling_symbol_count();
         let nulling_leaf_count = self.nulling_symbol_count();
@@ -185,6 +185,8 @@ impl MarkAndSweep {
 impl<G> Forest for Bocage<G> {
     type NodeRef = NodeHandle;
     type LeafValue = u32;
+
+    const FOREST_BYTES_PER_RECOGNIZER_BYTE: usize = 2;
 
     #[inline]
     fn push_summand(&mut self, item: CompletedItem<Self::NodeRef>) {

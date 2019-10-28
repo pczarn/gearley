@@ -15,6 +15,7 @@ mod helpers;
 use gearley::grammar::InternalGrammar;
 use gearley::forest::{Bocage, NullForest};
 use gearley::recognizer::Recognizer;
+use gearley::memory_use::MemoryUse;
 
 use grammars::*;
 use helpers::{SimpleEvaluator, Parse};
@@ -38,8 +39,7 @@ fn bench_ambiguous_arithmetic(b: &mut test::Bencher) {
             ambiguous_arith::rule,
             |_, _: &mut _| unreachable!()
         );
-        let bocage = Bocage::new(&cfg);
-        let mut rec = Recognizer::new(&cfg, bocage);
+        let mut rec: Recognizer<Bocage<&'_ InternalGrammar>> = Recognizer::new_with_hint(&cfg, tokens.len());
         assert!(rec.parse(tokens));
         let mut traversal = rec.forest.traverse();
         let results = evaluator.traverse(&mut traversal);

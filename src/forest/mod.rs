@@ -1,8 +1,8 @@
 pub mod null_forest;
 pub mod order;
 pub mod traverse;
-mod bocage;
-mod node;
+pub(crate) mod bocage;
+pub(crate) mod node;
 
 pub use self::bocage::Bocage;
 pub use self::null_forest::NullForest;
@@ -16,6 +16,8 @@ pub trait Forest {
     /// Reference to a node.
     type NodeRef: Copy + fmt::Debug;
     type LeafValue;
+
+    const FOREST_BYTES_PER_RECOGNIZER_BYTE: usize;
 
     fn push_summand(&mut self, item: CompletedItem<Self::NodeRef>);
 

@@ -10,6 +10,8 @@ impl Forest for NullForest {
     type NodeRef = ();
     type LeafValue = ();
 
+    const FOREST_BYTES_PER_RECOGNIZER_BYTE: usize = 0;
+
     #[inline(always)] fn leaf(&mut self, _: Symbol, _: u32, _: ()) {}
     #[inline(always)] fn nulling(&self, _: Symbol) {}
     #[inline(always)] fn push_summand(&mut self, _item: CompletedItem<Self::NodeRef>) {}

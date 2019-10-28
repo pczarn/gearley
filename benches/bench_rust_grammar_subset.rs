@@ -14,6 +14,7 @@ use cfg::earley::Grammar;
 use gearley::forest::{Bocage, NullForest};
 use gearley::grammar::InternalGrammar;
 use gearley::recognizer::Recognizer;
+use gearley::memory_use::MemoryUse;
 
 use helpers::Parse;
 
@@ -139,7 +140,7 @@ fn bench_recognize_decl_use(b: &mut test::Bencher) {
     let cfg = InternalGrammar::from_grammar(&external);
 
     b.iter(|| {
-        let mut rec = Recognizer::new(&cfg, NullForest);
+        let mut rec: Recognizer<NullForest> = Recognizer::new_with_limit(&cfg, 2_000_000);
         rec.parse(TOKENS);
         test::black_box(&rec);
     })
@@ -151,8 +152,7 @@ fn bench_parse_decl_use(b: &mut test::Bencher) {
     let cfg = InternalGrammar::from_grammar(&external);
 
     b.iter(|| {
-        let bocage: Bocage<_> = Bocage::new(&cfg);
-        let mut rec = Recognizer::new(&cfg, bocage);
+        let mut rec: Recognizer<Bocage<&'_ InternalGrammar>> = Recognizer::new_with_limit(&cfg, 2_000_000);
         rec.parse(TOKENS);
         test::black_box(&rec.forest);
     })
