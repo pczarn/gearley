@@ -7,9 +7,8 @@ use cfg::*;
 use events::{PredictedSymbols, MedialItems};
 use forest::{Forest, NullForest};
 use grammar::InternalGrammar;
-use item::{CompletedItem, Item, Origin};
+use item::{CompletedItem, CompletedItemLinked, Item, Origin};
 // use policy::{PerformancePolicy, NullPerformancePolicy};
-use util::binary_heap::BinaryHeap;
 
 /// The recognizer implements the Earley algorithm. It parses the given input according
 /// to the `grammar`. The `forest` is used to construct a parse result.
@@ -30,6 +29,7 @@ pub struct Recognizer<'g, F = NullForest>
 
     // Predicted items are stored in a bit matrix. The bit matrix has a row for every Earley set.
     pub(super) predicted: BitMatrix,
+
     // Medial items.
     //
     // N.B. This structure could be moved into its own module.
@@ -41,7 +41,7 @@ pub struct Recognizer<'g, F = NullForest>
     // origin and dot. The creation of a completed item can only be caused
     // by a scan or a completion of an item that has a higher (origin, dot)
     // pair value.
-    pub(super) complete: BinaryHeap<CompletedItem<F::NodeRef>>,
+    pub(super) complete: Vec<CompletedItemLinked<F::NodeRef>>,
 
     // Chart's indices. They point to the beginning of each Earley set.
     pub(super) indices: Vec<usize>,
@@ -54,6 +54,7 @@ pub struct Recognizer<'g, F = NullForest>
 
     pub(super) lookahead_hint: Option<Option<Symbol>>,
 }
+
 
 impl<'g, F> Recognizer<'g, F>
     where F: Forest,
@@ -72,7 +73,7 @@ impl<'g, F> Recognizer<'g, F>
             // Reserve some capacity for vectors.
             predicted: BitMatrix::new(8, grammar.num_syms()),
             medial: Vec::with_capacity(256),
-            complete: BinaryHeap::with_capacity(32),
+            complete: Vec::with_capacity(32),
             lookahead_hint: None,
         };
         recognizer.predict(grammar.start_sym());
@@ -106,6 +107,7 @@ impl<'g, F> Recognizer<'g, F>
         }
     }
 
+    #[inline]
     pub fn lookahead_hint(&mut self, lookahead: Option<Symbol>) {
         let to_internal = |sym| self.grammar.to_internal(sym).unwrap();
         self.lookahead_hint = Some(lookahead.map(to_internal));
@@ -165,7 +167,11 @@ impl<'g, F> Recognizer<'g, F>
         // For each medial item in the current set, predict its postdot symbol.
         let destination = &mut self.predicted[self.earleme];
         for ei in iter {
-            let postdot = self.grammar.get_rhs1(ei.dot).unwrap();
+            let postdot = if let Some(rhs1) = self.grammar.get_rhs1(ei.dot) {
+                rhs1
+            } else {
+                continue;
+            };
             if !destination[postdot.usize()] {
                 // Prediction happens here. We would prefer to call `self.predict`, but we can't,
                 // because `self.medial` is borrowed by `iter`.
@@ -180,7 +186,6 @@ impl<'g, F> Recognizer<'g, F>
     /// Complete items.
     pub fn complete(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
         debug_assert!(sym != self.grammar.eof());
-        // println!("complete {:?} @ {}..{}", self.grammar.to_external(sym), set_id, self.earleme);
         if self.predicted[set_id as usize].get(sym.usize()) {
             self.complete_medial_items(set_id, sym, rhs_link);
             self.complete_predictions(set_id, sym, rhs_link);
@@ -191,20 +196,38 @@ impl<'g, F> Recognizer<'g, F>
     fn complete_medial_items(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
         // Iterate through medial items to complete them.
         let set_range = self.medial_item_set_range(set_id, sym);
-        for &Item { dot, origin, node } in self.medial[set_range].iter() {
-            // New completed item.
-            // from A ::= B • C
-            // to   A ::= B   C •
-            //
-            // We might link to medial items by index, here.
-            self.complete.push(
-                CompletedItem {
-                    dot,
-                    origin,
-                    left_node: node,
-                    right_node: Some(rhs_link),
+        if let Some(hint) = self.lookahead_hint {
+            for idx in set_range {
+                // New completed item.
+                // from A ::= B • C
+                // to   A ::= B   C •
+                //
+                // We might link to medial items by index, here.
+                let dot = self.medial[idx].dot;
+                if !self.grammar.can_follow(self.grammar.get_lhs(dot), hint) {
+                    continue;
                 }
-            );
+                self.heap_push_linked(
+                    CompletedItemLinked {
+                        idx: idx as u32,
+                        node: Some(rhs_link),
+                    }
+                );
+            }
+        } else {
+            for idx in set_range {
+                // New completed item.
+                // from A ::= B • C
+                // to   A ::= B   C •
+                //
+                // We might link to medial items by index, here.
+                self.heap_push_linked(
+                    CompletedItemLinked {
+                        idx: idx as u32,
+                        node: Some(rhs_link),
+                    }
+                );
+            }
         }
     }
 
@@ -224,7 +247,12 @@ impl<'g, F> Recognizer<'g, F>
                 Ok(idx) | Err(idx) => idx
             }
         } else {
-            specific_set.iter().take_while(|ei| self.grammar.get_rhs1(ei.dot).unwrap() < sym).count()
+            specific_set.iter().take_while(|ei| {
+                match self.grammar.get_rhs1(ei.dot) {
+                    None => true,
+                    Some(rhs1) => rhs1 < sym
+                }
+            }).count()
         };
 
         // The range contains items that have the same RHS1 symbol.
@@ -252,7 +280,13 @@ impl<'g, F> Recognizer<'g, F>
                 // to   A ::=   B •
                 // ---
                 // We could push to `medial` as well and link from `complete` to `medial`.
-                self.complete.push(CompletedItem {
+
+                if let Some(hint) = self.lookahead_hint {
+                    if !self.grammar.can_follow(self.grammar.get_lhs(trans.dot), hint) {
+                        continue;
+                    }
+                }
+                self.heap_push(CompletedItem {
                     origin: set_id,
                     dot: trans.dot,
                     left_node: rhs_link,
@@ -266,10 +300,16 @@ impl<'g, F> Recognizer<'g, F>
     fn complete_binary_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
         for trans in self.grammar.binary_completions(sym) {
             if self.predicted[set_id as usize].get(trans.symbol.usize()) {
+                if let Some(hint) = self.lookahead_hint {
+                    if !self.grammar.first(self.grammar.get_rhs1(trans.dot).unwrap(), hint) {
+                        continue;
+                    }
+                }
                 // No checks for uniqueness, because `medial` will be deduplicated.
                 // from A ::= • B   C
                 // to   A ::=   B • C
                 // Where C is terminal or nonterminal.
+
                 self.medial.push(Item {
                     origin: set_id,
                     dot: trans.dot,
@@ -352,13 +392,6 @@ impl<'g, F> Recognizer<'g, F>
     /// Performs the completion pass.
     pub fn complete_all_sums_entirely(&mut self) {
         while let Some(mut completion) = self.next_sum() {
-            if let Some(hint) = completion.recognizer.lookahead_hint {
-                if !completion.recognizer.grammar.can_follow(completion.lhs_sym, hint) {
-                    // println!("cannot follow {:?} => {:?}", completion.recognizer.grammar.to_external(completion.lhs_sym), hint);
-                    completion.skip_entire_sum();
-                    continue;
-                }
-            }
             // Include all items in the completion.
             completion.complete_entire_sum();
         }
@@ -367,7 +400,7 @@ impl<'g, F> Recognizer<'g, F>
 
     /// Allows iteration through groups of completions that have unique symbol and origin.
     pub fn next_sum<'r>(&'r mut self) -> Option<CompleteSum<'g, 'r, F>> {
-        if let Some(&ei) = self.complete.peek() {
+        if let Some(ei) = self.heap_peek() {
             let lhs_sym = self.grammar.get_lhs(ei.dot);
             Some(CompleteSum {
                 origin: ei.origin,
@@ -416,7 +449,7 @@ impl<'g, 'r, F> CompleteSum<'g, 'r, F>
     /// Allows iteration through completed items.
     #[inline]
     pub fn next_summand(&mut self) -> Option<CompletedItem<F::NodeRef>> {
-        if let Some(&completion) = self.recognizer.complete.peek() {
+        if let Some(completion) = self.recognizer.heap_peek() {
             let completion_lhs_sym = self.recognizer.grammar.get_lhs(completion.dot);
             if self.origin == completion.origin && self.lhs_sym == completion_lhs_sym {
                 self.recognizer.complete.pop();

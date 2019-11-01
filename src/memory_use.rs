@@ -9,7 +9,6 @@ use forest::node::{CompactNode, NodeHandle};
 use grammar::InternalGrammar;
 use recognizer::Recognizer;
 use item::{Item, CompletedItem};
-use util::binary_heap::BinaryHeap;
 
 const ITEMS_PER_SET: usize = 16;
 
@@ -59,7 +58,7 @@ impl<'g, F> MemoryUse for Recognizer<'g, F>
             // Reserve some capacity for vectors.
             predicted: BitMatrix::new(sets_use, grammar.num_syms()),
             medial: Vec::with_capacity(sets_use * ITEMS_PER_SET),
-            complete: BinaryHeap::with_capacity(complete_use),
+            complete: Vec::with_capacity(complete_use),
             lookahead_hint: None,
         };
         recognizer.indices.push(0);
@@ -92,7 +91,7 @@ impl<'g, F> Recognizer<'g, F>
             // Reserve some capacity for vectors.
             predicted: BitMatrix::new(tokens + 1, grammar.num_syms()),
             medial: Vec::with_capacity(tokens * ITEMS_PER_SET),
-            complete: BinaryHeap::with_capacity(complete_use),
+            complete: Vec::with_capacity(complete_use),
             lookahead_hint: None,
         };
         recognizer.indices.push(0);
@@ -137,7 +136,7 @@ impl<'g> MemoryUse for Recognizer<'g, NullForest> {
             // Reserve some capacity for vectors.
             predicted: BitMatrix::new(sets_use, grammar.num_syms()),
             medial: Vec::with_capacity(sets_use * ITEMS_PER_SET),
-            complete: BinaryHeap::with_capacity(complete_use),
+            complete: Vec::with_capacity(complete_use),
             lookahead_hint: None,
         };
         recognizer.indices.push(0);
@@ -185,20 +184,6 @@ impl MemoryUse for BitVec {
     fn new_with_limit(_arg: (), memory_limit: usize) -> Self {
         let capacity = memory_limit * 8;
         Self::with_capacity(capacity)
-    }
-}
-
-impl<T> MemoryUse for BinaryHeap<T>
-    where T: Ord
-{
-    type Arg = ();
-
-    fn memory_use(&self) -> usize {
-        self.capacity() * (mem::size_of::<T>() + mem::size_of::<u32>())
-    }
-
-    fn new_with_limit(_arg: (), _memory_limit: usize) -> Self {
-        unimplemented!()
     }
 }
 

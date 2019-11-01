@@ -24,6 +24,14 @@ pub struct CompletedItem<N> {
     pub right_node: Option<N>,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct CompletedItemLinked<N> {
+    /// Left item idx.
+    pub idx: u32,
+    /// Right bocage node.
+    pub node: Option<N>,
+}
+
 impl<L> PartialEq for Item<L> {
     fn eq(&self, other: &Self) -> bool {
         (self.origin, self.dot) == (other.origin, other.dot)
@@ -61,5 +69,15 @@ impl<L> PartialOrd for CompletedItem<L> {
 impl<L> Ord for CompletedItem<L> {
     fn cmp(&self, other: &Self) -> Ordering {
         (self.origin, self.dot).cmp(&(other.origin, other.dot))
+    }
+}
+
+impl<N> Into<Item<N>> for CompletedItem<N> {
+    fn into(self) -> Item<N> {
+        Item {
+            origin: self.origin,
+            dot: self.dot,
+            node: self.left_node,
+        }
     }
 }

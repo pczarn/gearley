@@ -82,6 +82,7 @@ pub struct InternalGrammar {
     binary_completion_index: Vec<u32>,
 
     follow_sets: BitMatrix,
+    first_sets: BitMatrix,
 
     // array of events
     events_rhs: [Vec<Event>; 3],
@@ -248,7 +249,16 @@ impl InternalGrammar {
 
     fn populate_follow_sets(&mut self, grammar: &BinarizedGrammar) {
         self.follow_sets = BitMatrix::new(self.size.syms, self.size.syms);
+        self.first_sets = BitMatrix::new(self.size.syms, self.size.syms);
         let first_sets = FirstSetsCollector::new(grammar);
+        for (outer, inner) in first_sets.first_sets() {
+            for elem_inner in inner.into_iter() {
+                if let Some(inner_sym) = elem_inner {
+                    self.first_sets.set(outer.usize(), inner_sym.usize(), true);
+                }
+            }
+        }
+        self.first_sets.reflexive_closure();
         let follow_sets = FollowSets::new(grammar, grammar.start(), first_sets.first_sets());
         for (before, after) in follow_sets.follow_sets().into_iter() {
             for elem_after in after.into_iter() {
@@ -385,6 +395,16 @@ impl InternalGrammar {
     pub(in super) fn can_follow(&self, before: Symbol, after: Option<Symbol>) -> bool {
         let after = after.unwrap_or(self.eof()).usize();
         self.follow_sets[(before.usize(), after)]
+    }
+
+    #[inline]
+    pub(in super) fn first(&self, outer: Symbol, maybe_inner: Option<Symbol>) -> bool {
+        let inner = if let Some(inner) = maybe_inner {
+            inner
+        } else {
+            return outer == self.eof()
+        };
+        self.first_sets[(outer.usize(), inner.usize())]
     }
 
     #[inline]

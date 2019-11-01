@@ -21,4 +21,4 @@ pub mod grammar;
 pub mod item;
 pub mod memory_use;
 pub mod recognizer;
-pub(in self) mod util;
+pub mod binary_heap;

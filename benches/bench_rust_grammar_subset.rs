@@ -153,7 +153,8 @@ fn bench_parse_decl_use(b: &mut test::Bencher) {
 
     b.iter(|| {
         let mut rec: Recognizer<Bocage<&'_ InternalGrammar>> = Recognizer::new_with_limit(&cfg, 2_000_000);
-        rec.parse(TOKENS);
+        let finished = rec.parse(TOKENS);
+        assert!(finished);
         test::black_box(&rec.forest);
     })
 }
