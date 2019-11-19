@@ -73,7 +73,7 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
         #[inline]
         fn summands(graph: &Vec<CompactNode>, node: NodeHandle) -> &[CompactNode] {
             unsafe {
-                match graph.get_unchecked(node.usize()).get() {
+                match graph.get_unchecked(node.usize()).expand() {
                     Sum { count, .. } => {
                         // back
                         // let start = node.usize() - count as usize - 1;
@@ -103,7 +103,7 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
 
     #[inline]
     fn postprocess_product_tree_node(&self, node: &CompactNode) {
-        if let Product { left_factor: factor, right_factor: None, action } = node.get() {
+        if let Product { left_factor: factor, right_factor: None, action } = node.expand() {
             // Add omitted phantom syms here.
             if let Some((sym, dir)) = self.grammar.borrow().nulling(action) {
                 let (left, right) = if dir {
@@ -165,7 +165,7 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
 impl MarkAndSweep {
     #[inline]
     fn dfs_queue_factors(&mut self, summand: &CompactNode) {
-        match summand.get() {
+        match summand.expand() {
             Product { left_factor, right_factor, .. } => {
                 if let Some(factor) = right_factor {
                     if let Some(false) = self.liveness.get(factor.usize()) {

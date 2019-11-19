@@ -153,45 +153,40 @@ impl Node {
 
 impl CompactNode {
     #[inline]
-    pub(super) fn get(&self) -> Node {
-        unsafe {
-            self.expand()
-        }
-    }
-
-    #[inline]
     pub(super) fn set(&self, node: Node) {
         self.cell.set(node.compact().cell.get());
     }
 
     #[inline]
-    unsafe fn expand(&self) -> Node {
+    pub(super) fn expand(&self) -> Node {
         let mut fields = self.cell.get();
-        let tag = get_and_erase_tag(&mut fields);
-        match tag {
-            LeafTag => {
-                if fields[1].values == NULL_VALUES {
-                    NullingLeaf {
-                        symbol: fields[0].symbol,
-                    }
-                } else {
-                    Evaluated {
-                        symbol: fields[0].symbol,
-                        values: fields[1].values,
+        unsafe {
+            let tag = get_and_erase_tag(&mut fields);
+            match tag {
+                LeafTag => {
+                    if fields[1].values == NULL_VALUES {
+                        NullingLeaf {
+                            symbol: fields[0].symbol,
+                        }
+                    } else {
+                        Evaluated {
+                            symbol: fields[0].symbol,
+                            values: fields[1].values,
+                        }
                     }
                 }
-            }
-            ProductTag => {
-                Product {
-                    action: fields[0].action,
-                    left_factor: fields[1].factor,
-                    right_factor: fields[2].factor.to_option(),
+                ProductTag => {
+                    Product {
+                        action: fields[0].action,
+                        left_factor: fields[1].factor,
+                        right_factor: fields[2].factor.to_option(),
+                    }
                 }
-            }
-            SumTag => {
-                Sum {
-                    nonterminal: fields[0].nonterminal,
-                    count: fields[1].count,
+                SumTag => {
+                    Sum {
+                        nonterminal: fields[0].nonterminal,
+                        count: fields[1].count,
+                    }
                 }
             }
         }

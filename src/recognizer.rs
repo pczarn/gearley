@@ -21,7 +21,7 @@ pub struct Recognizer<'g, F = NullForest>
     // The forest.
     pub forest: F,
     // The grammar.
-    pub(super) grammar: &'g InternalGrammar,
+    pub grammar: &'g InternalGrammar,
     // The policy.
     // policy: P,
 
@@ -452,7 +452,7 @@ impl<'g, 'r, F> CompleteSum<'g, 'r, F>
         if let Some(completion) = self.recognizer.heap_peek() {
             let completion_lhs_sym = self.recognizer.grammar.get_lhs(completion.dot);
             if self.origin == completion.origin && self.lhs_sym == completion_lhs_sym {
-                self.recognizer.complete.pop();
+                self.recognizer.heap_pop();
                 Some(completion)
             } else {
                 None

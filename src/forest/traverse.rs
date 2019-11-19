@@ -44,7 +44,7 @@ impl<'f, G> Traverse<'f, G>
             if !alive {
                 continue;
             }
-            match node.get() {
+            match node.expand() {
                 Product { action, .. } => {
                     if self.bocage.is_transparent(action) {
                         continue;
@@ -118,7 +118,7 @@ impl<'f, G> Traverse<'f, G>
     fn pop_for_unfold(&mut self) -> Option<Node> {
         self.factor_traversal.pop().map(|handle| {
             let node = self.bocage.graph[handle.usize()].clone();
-            node.get()
+            node.expand()
         })
     }
 }
@@ -150,7 +150,7 @@ impl<'f, 't, G> Products<'f, 't, G>
 {
     pub fn next_product<'p>(&'p mut self) -> Option<ProductHandle> {
         while let Some(node) = self.products.next() {
-            match node.get() {
+            match node.expand() {
                 Product { left_factor, right_factor, action } => {
                     let origin = self.traverse.bocage.grammar.borrow().external_origin(action);
                     if let Some(action) = origin {

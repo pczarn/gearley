@@ -262,7 +262,6 @@ impl InternalGrammar {
         let follow_sets = FollowSets::new(grammar, grammar.start(), first_sets.first_sets());
         for (before, after) in follow_sets.follow_sets().into_iter() {
             for elem_after in after.into_iter() {
-                // println!("{:?} => {:?}", self.to_external(*before), elem_after.map(|s| self.to_external(s)));
                 if let Some(after_sym) = elem_after {
                     self.follow_sets.set(before.usize(), after_sym.usize(), true);
                 }
@@ -499,7 +498,7 @@ impl InternalGrammar {
     }
 
     #[inline]
-    pub(in super) fn to_external(&self, symbol: Symbol) -> Symbol {
+    pub fn to_external(&self, symbol: Symbol) -> Symbol {
         if self.sym_maps.to_external.is_empty() {
             symbol
         } else {
