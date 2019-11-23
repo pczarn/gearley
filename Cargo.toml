@@ -1,6 +1,6 @@
 [package]
 name = "gearley"
-version = "0.0.2"
+version = "0.0.3"
 
 authors = [ "Piotr Czarnecki <pioczarn@gmail.com>" ]
 description = "An Earley parser engine."
@@ -16,16 +16,16 @@ debug = true
 name = "gearley"
 
 [dependencies]
-cfg = { path = "../cfg/" }
-bit-matrix = { path = "../bit-matrix", features = ["serialize"] }
+cfg = { version = "0.5" }
+bit-matrix = { version = "0.6", features = ["serialize"] }
 bit-vec = "0.6"
 optional = { version = "0.5", features = ["serde"] }
-ref_slice = "1.1"
+ref_slice = "1.2"
 num = "0.2"
 num-traits = "0.2"
-num-derive = "0.2"
+num-derive = "0.3"
 log = "0.4"
-env_logger = "0.5"
+env_logger = "0.7"
 serde = "1.0"
 serde_derive = "1.0"
 
