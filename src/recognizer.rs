@@ -28,6 +28,8 @@ pub struct Recognizer<'g, F = NullForest>
     // Chart's items.
 
     // Predicted items are stored in a bit matrix. The bit matrix has a row for every Earley set.
+    //
+    // Length of `predicted` is earleme + 1, so that earleme points to the last 
     pub(super) predicted: BitMatrix,
 
     // Medial items.
@@ -44,6 +46,9 @@ pub struct Recognizer<'g, F = NullForest>
     pub(super) complete: Vec<CompletedItemLinked<F::NodeRef>>,
 
     // Chart's indices. They point to the beginning of each Earley set.
+    //
+    // Length of `indices` is `earleme` + 2, so that earleme points to
+    // the beginning of the range of indices for the last range.
     pub(super) indices: Vec<usize>,
     // Index that points to the beginning of the latest set. Equivalent to
     // the last element of `indices`.
@@ -132,6 +137,8 @@ impl<'g, F> Recognizer<'g, F>
     /// the finished node, which should be tracked externally.
     pub fn advance_without_completion(&mut self) {
         self.sort_medial_items();
+        self.remove_unary_medial_items();
+        self.remove_unreachable_sets();
         self.earleme += 1;
         // `earleme` is now at least 1.
         // Prediction pass.
@@ -154,8 +161,51 @@ impl<'g, F> Recognizer<'g, F>
         // Build index by postdot
         // These medial positions themselves are sorted by postdot symbol.
         self.medial[self.current_medial_start..].sort_unstable_by(|a, b|
-            (grammar.get_rhs1(a.dot), a.dot, a.origin).cmp(&(grammar.get_rhs1(b.dot), b.dot, b.origin))
+            (grammar.get_rhs1_cmp(a.dot), a.dot, a.origin).cmp(&(grammar.get_rhs1_cmp(b.dot), b.dot, b.origin))
         );
+    }
+
+    fn remove_unary_medial_items(&mut self) {
+        while let Some(&item) = self.medial.last() {
+            if self.grammar.get_rhs1(item.dot).is_some() {
+                break;
+            }
+            self.medial.pop();
+        }
+    }
+
+    fn remove_unreachable_sets(&mut self) {
+        let origin = |item: &Item<F::NodeRef>| item.origin as usize;
+        let max_origin = self.medial[self.current_medial_start..]
+                        .iter()
+                        .map(origin)
+                        .max()
+                        .unwrap_or(self.earleme);
+        let diff = self.earleme - max_origin;
+        if diff <= 1 {
+            return;
+        }
+        // | 0 | 1 | 2 | 3 |
+        //               ^ current_medial_start
+        //   _________diff = 2
+        //       ____drop = 1
+        //           ^ self.earleme = 2
+        //   ^ m = 0
+        // | 0 | 1 | 2 |
+        let drop = diff - 1;
+        let new_medial_start = self.indices[self.indices.len() - 1 - drop];
+        self.indices.truncate(self.indices.len() - drop);
+        let current_medial_length = self.medial.len() - self.current_medial_start;
+        for i in 0 .. current_medial_length {
+            self.medial[new_medial_start as usize + i] = self.medial[self.current_medial_start + i];
+        }
+        self.medial.truncate(new_medial_start as usize + current_medial_length);
+        self.current_medial_start = new_medial_start as usize;
+        self.earleme -= drop;
+        self.predicted.truncate(self.earleme + 1);
+        for dst in self.predicted[self.earleme].iter_mut() {
+            *dst = 0;
+        }
     }
 
     /// Performs the prediction pass.
@@ -248,10 +298,7 @@ impl<'g, F> Recognizer<'g, F>
             }
         } else {
             specific_set.iter().take_while(|ei| {
-                match self.grammar.get_rhs1(ei.dot) {
-                    None => true,
-                    Some(rhs1) => rhs1 < sym
-                }
+                self.grammar.get_rhs1(ei.dot).unwrap() < sym
             }).count()
         };
 

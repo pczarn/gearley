@@ -7,7 +7,6 @@ extern crate c_lexer;
 
 macro_rules! trace(($($tt:tt)*) => ());
 
-#[path = "../tests/helpers/mod.rs"]
 mod helpers;
 
 use cfg::sequence::Separator::Proper;
@@ -337,8 +336,8 @@ fn grammar() -> Grammar {
     grammar
 }
 
-#[bench]
-fn bench_parse_c(b: &mut test::Bencher) {
+#[test]
+fn test_parse_c() {
     use c_lexer::Lexer;
     use c_lexer::token::Token::*;
     let external = grammar();
@@ -355,7 +354,7 @@ fn bench_parse_c(b: &mut test::Bencher) {
         equal
     ) = grammar.sym();
 
-    let contents = include_str!("part_gcc_test.i");
+    let contents = include_str!("../benches/part_gcc_test.i");
     let tokens: Vec<_> = Lexer::lex(&contents[..]).unwrap().into_iter().filter_map(|(token, start, end)| {
         // println!("{:?}", token);
         let tok = match token {
@@ -465,18 +464,11 @@ fn bench_parse_c(b: &mut test::Bencher) {
         // tok.map(|t| (t.usize() as u32, start, end))
         tok.map(|t| t.usize() as u32)
     }).collect();
-    let mut first = true;
-    b.iter(|| {
-        let cfg = InternalGrammar::from_grammar(&external);
-        let bocage = Bocage::new(&cfg);
-        let mut rec: Recognizer<Bocage<&'_ InternalGrammar>> = Recognizer::new_with_limit(&cfg, 2_00_000);
-        rec.forest = bocage;
-        let finished = rec.parse(&tokens[..]);
-        assert!(finished);
-        if first {
-            println!("memory use: all:{} forest:{}", rec.memory_use(), rec.forest.memory_use());
-            first = false;
-        }
-        test::black_box(&rec.forest);
-    });
+    let cfg = InternalGrammar::from_grammar(&external);
+    let bocage = Bocage::new(&cfg);
+    let mut rec: Recognizer<Bocage<&'_ InternalGrammar>> = Recognizer::new_with_limit(&cfg, 2_00_000);
+    rec.forest = bocage;
+    let finished = rec.parse(&tokens[..]);
+    assert!(finished);
+    println!("memory use: all:{} forest:{}", rec.memory_use(), rec.forest.memory_use());
 }

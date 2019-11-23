@@ -64,6 +64,12 @@ pub(in super) struct PredictionTransition {
     pub dot: Dot,
 }
 
+#[derive(Eq, PartialEq, Ord, PartialOrd)]
+pub(in super) enum MaybePostdot {
+    Binary(Symbol),
+    Unary,
+}
+
 #[derive(Serialize, Deserialize, Clone, Default, Debug)]
 pub struct InternalGrammar {
     start_sym: Symbol,
@@ -453,6 +459,14 @@ impl InternalGrammar {
     #[inline]
     pub(in super) fn get_rhs1(&self, dot: Dot) -> Option<Symbol> {
         self.rhs1[dot as usize]
+    }
+
+    #[inline]
+    pub(in super) fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot {
+        match self.rhs1[dot as usize] {
+            None => MaybePostdot::Unary,
+            Some(rhs1) => MaybePostdot::Binary(rhs1),
+        }
     }
 
     #[inline]

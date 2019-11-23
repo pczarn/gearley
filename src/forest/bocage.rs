@@ -70,33 +70,34 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
 
     #[inline]
     pub fn mark_alive<O: Order>(&mut self, root: NodeHandle, mut order: O) {
-        #[inline]
-        fn summands(graph: &Vec<CompactNode>, node: NodeHandle) -> &[CompactNode] {
-            unsafe {
-                match graph.get_unchecked(node.usize()).expand() {
-                    Sum { count, .. } => {
-                        // back
-                        // let start = node.usize() - count as usize - 1;
-                        // let end = node.usize() - 1;
-                        let start = node.usize() + 1;
-                        let end = node.usize() + count as usize + 1;
-                        graph.get_unchecked(start .. end)
-                    }
-                    _ => ref_slice(graph.get_unchecked(node.usize())),
-                }
-            }
-        }
-
+        self.gc.liveness.clear();
         self.gc.liveness.grow(self.graph.len(), false);
         self.gc.dfs.push(root);
         while let Some(node) = self.gc.dfs.pop() {
             self.gc.liveness.set(node.usize(), true);
-            let summands = summands(&self.graph, node);
+            let summands = Bocage::<G>::summands(&self.graph, node);
             let summands = order.sum(summands);
             for summand in summands {
                 self.postprocess_product_tree_node(summand);
                 // TODO: use order for products.
                 self.gc.dfs_queue_factors(summand);
+            }
+        }
+    }
+
+    #[inline]
+    fn summands(graph: &Vec<CompactNode>, node: NodeHandle) -> &[CompactNode] {
+        unsafe {
+            match graph.get_unchecked(node.usize()).expand() {
+                Sum { count, .. } => {
+                    // back
+                    // let start = node.usize() - count as usize - 1;
+                    // let end = node.usize() - 1;
+                    let start = node.usize() + 1;
+                    let end = node.usize() + count as usize + 1;
+                    graph.get_unchecked(start .. end)
+                }
+                _ => ref_slice(graph.get_unchecked(node.usize())),
             }
         }
     }
