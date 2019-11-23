@@ -191,12 +191,6 @@ impl<G> Forest for Bocage<G> {
 
     #[inline]
     fn push_summand(&mut self, item: CompletedItem<Self::NodeRef>) {
-        if self.summand_count == 1 {
-            self.graph.push(Sum {
-                nonterminal: Symbol::from(0u32),
-                count: 0,
-            }.compact());
-        }
         self.graph.push(Product {
             action: item.dot,
             left_factor: item.left_node,
@@ -213,10 +207,9 @@ impl<G> Forest for Bocage<G> {
                 1 => NodeHandle(self.graph.len() as u32 - 1),
                 summand_count => {
                     // Slower case: ambiguous node.
-                    let sum_idx = self.graph.len() - summand_count as usize;
-                    let first_summand_idx = sum_idx - 1;
+                    let first_summand_idx = self.graph.len() - summand_count as usize;
                     let first_summand = self.graph.get_unchecked(first_summand_idx).clone();
-                    *self.graph.get_unchecked_mut(sum_idx) = first_summand;
+                    self.graph.push(first_summand);
                     *self.graph.get_unchecked_mut(first_summand_idx) = Sum {
                         nonterminal: lhs_sym,
                         count: self.summand_count as u32,

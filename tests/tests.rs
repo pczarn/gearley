@@ -46,7 +46,7 @@ fn test_ambiguous_arithmetic() {
     let results = evaluator.traverse(&mut traverse);
 
     // The result is currently ordered by rule ID:
-    assert_eq!(results, vec![8, 1, 2, 7, 3]);
+    assert_eq!(results, vec![2, 1, 3, 7, 8]);
 
     // A result ordered by structure would be: [2, 1, 8, 3, 7]
     // where
