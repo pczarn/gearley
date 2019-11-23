@@ -9,16 +9,15 @@ macro_rules! trace(($($tt:tt)*) => ());
 
 mod helpers;
 
-use cfg::sequence::Separator::Proper;
 use cfg::earley::Grammar;
-use gearley::forest::{Bocage, NullForest};
+use gearley::forest::Bocage;
 use gearley::grammar::InternalGrammar;
 use gearley::recognizer::Recognizer;
 use gearley::memory_use::MemoryUse;
 
 use helpers::Parse;
 
-const SYM_NAMES: &'static [&'static str] = &[
+const _SYM_NAMES: &'static [&'static str] = &[
     "term", "identifier", "signed", "const_", "inline", "auto", "break_", "case", "char_", "continue_", "default",
     "do_", "double", "else_", "enum_", "extern_", "float", "for_", "goto", "if_", "int", "long", "register", "return_",
     "short", "sizeof_", "static_", "struct_", "switch", "typedef", "union", "unsigned", "void", "volatile", "while_",
@@ -52,10 +51,11 @@ const SYM_NAMES: &'static [&'static str] = &[
     "type_name", "error",
 ];
 
+#[allow(non_snake_case)]
 fn grammar() -> Grammar {
     let mut grammar = Grammar::new();
     let (
-        term, identifier, signed, const_, inline, auto, break_, case, char_, continue_, default,
+        _term, identifier, signed, const_, inline, auto, break_, case, char_, continue_, default,
         do_, double, else_, enum_, extern_, float, for_, goto, if_, int, long, register, return_,
         short, sizeof_, static_, struct_, switch, typedef, union, unsigned, void, volatile, while_,
         constant, string_literal, right_assign, left_assign, add_assign, sub_assign, mul_assign,
@@ -343,7 +343,7 @@ fn test_parse_c() {
     let external = grammar();
     let mut grammar = Grammar::new();
     let (
-        term, identifier, signed, const_, inline, auto, break_, case, char_, continue_, default,
+        _term, identifier, signed, const_, inline, _auto, break_, case, char_, continue_, default,
         do_, double, else_, enum_, extern_, float, for_, goto, if_, int, long, register, return_,
         short, sizeof_, static_, struct_, switch, typedef, union, unsigned, void, volatile, while_,
         constant, string_literal, right_assign, left_assign, add_assign, sub_assign, mul_assign,
@@ -355,7 +355,7 @@ fn test_parse_c() {
     ) = grammar.sym();
 
     let contents = include_str!("../benches/part_gcc_test.i");
-    let tokens: Vec<_> = Lexer::lex(&contents[..]).unwrap().into_iter().filter_map(|(token, start, end)| {
+    let tokens: Vec<_> = Lexer::lex(&contents[..]).unwrap().into_iter().filter_map(|(token, _start, _end)| {
         // println!("{:?}", token);
         let tok = match token {
             LBrace => Some(lbrace),
@@ -382,9 +382,9 @@ fn test_parse_c() {
             InclusiveOr => Some(pipe),
             ExclusiveOr => Some(xor),
             Mod => Some(percent),
-            Identifier(i_str) => Some(identifier),
-            NumericLiteral(num) => Some(constant),
-            StringLiteral(s) => Some(string_literal),
+            Identifier(_i_str) => Some(identifier),
+            NumericLiteral(_num) => Some(constant),
+            StringLiteral(_s) => Some(string_literal),
             FuncName => None,
             SIZEOF => Some(sizeof_),
             PtrOp => Some(ptr_op),
