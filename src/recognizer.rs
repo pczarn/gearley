@@ -478,6 +478,7 @@ impl<'g, 'r, F> CompleteSum<'g, 'r, F>
 {
     /// Completes all items.
     pub fn complete_entire_sum(&mut self) {
+        self.recognizer.forest.begin_sum();
         // For each item, include it in the completion.
         while let Some(item) = self.next_summand() {
             self.push_summand(item);
