@@ -42,7 +42,7 @@ fn bench_ambiguous_arithmetic(b: &mut test::Bencher) {
         let mut rec: Recognizer<Bocage<&'_ InternalGrammar>> = Recognizer::new_with_hint(&cfg, tokens.len());
         assert!(rec.parse(tokens));
         let mut traversal = rec.forest.traverse();
-        let results = evaluator.traverse(&mut traversal);
+        let results = evaluator.traverse(&mut traversal, rec.finished_node().unwrap());
         test::black_box(results);
     })
 }
@@ -63,7 +63,7 @@ fn bench_evaluate_precedenced_arith(b: &mut test::Bencher) {
         let mut recognizer = Recognizer::new(&cfg, bocage);
         recognizer.parse(sum_tokens);
         let mut traversal = recognizer.forest.traverse();
-        let results = evaluator.traverse(&mut traversal);
+        let results = evaluator.traverse(&mut traversal, recognizer.finished_node().unwrap());
         test::black_box(results);
     })
 }

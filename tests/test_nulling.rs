@@ -38,7 +38,7 @@ fn test_trivial_grammar() {
     let mut rec = Recognizer::new(&cfg, bocage);
     assert!(rec.parse(&[]));
     let mut traversal = rec.forest.traverse();
-    let results = evaluator.traverse(&mut traversal);
+    let results = evaluator.traverse(&mut traversal, rec.finished_node().unwrap());
     assert_eq!(results, &[true]);
 }
 
@@ -82,6 +82,6 @@ fn test_grammar_with_nulling_intermediate() {
     let mut rec = Recognizer::new(&cfg, bocage);
     assert!(rec.parse(&[foo.usize() as u32]));
     let mut traversal = rec.forest.traverse();
-    let results = evaluator.traverse(&mut traversal);
+    let results = evaluator.traverse(&mut traversal, rec.finished_node().unwrap());
     assert_eq!(results, &[10]);
 }

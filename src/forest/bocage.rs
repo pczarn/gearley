@@ -3,7 +3,6 @@ use std::hint;
 
 use bit_vec::BitVec;
 use cfg::symbol::Symbol;
-use ref_slice::ref_slice;
 
 use item::CompletedItem;
 use grammar::InternalGrammar;
@@ -59,17 +58,35 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
                 action: NULL_ACTION,
             };
         }
+        let mut pos = 0;
+        let mut relocation = vec![];
+        for node in &graph {
+            relocation.push(NodeHandle(pos));
+            pos += node.classify(pos).size() as u32;
+        }
         for node in graph {
-            self.graph.push(node);
+            match node {
+                Product { action, left_factor, right_factor } => {
+                    self.graph.push(Product {
+                        action,
+                        left_factor: relocation[left_factor.usize()],
+                        right_factor: right_factor.map(|f| relocation[f.usize()]),
+                    });
+                }
+                other => {
+                    self.graph.push(other);
+                }
+            }
         }
     }
 
     fn nulling_symbol_count(&self) -> usize {
-        self.grammar.borrow().max_nulling_symbol().map_or(0, |m| m + 1)
+        // why 1?
+        self.grammar.borrow().max_nulling_symbol().map_or(1, |m| m + 1)
     }
 
     #[inline]
-    pub fn mark_alive<O: Order>(&mut self, root: NodeHandle, mut order: O) {
+    pub fn mark_alive<O: Order>(&mut self, root: NodeHandle, _order: O) {
         self.gc.liveness.clear();
         self.gc.liveness.grow(self.graph.vec.len(), false);
         self.gc.dfs.push(root);
@@ -77,9 +94,7 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
             self.gc.liveness.set(node.usize(), true);
             let summands = Bocage::<G>::summands(&self.graph, node);
             // let summands = order.sum(summands);
-            println!("---");
             for summand in summands {
-                println!("{:?}", summand);
                 // TODO: use order for products.
                 self.gc.dfs_queue_factors(summand);
             }
@@ -182,6 +197,11 @@ impl<G> Forest for Bocage<G> where G: Borrow<InternalGrammar> {
     const FOREST_BYTES_PER_RECOGNIZER_BYTE: usize = 2;
 
     #[inline]
+    fn begin_sum(&mut self) {
+        self.first_summand = NodeHandle(self.graph.vec.len() as u32);
+    }
+
+    #[inline]
     fn push_summand(&mut self, item: CompletedItem<Self::NodeRef>) {
         self.graph.push(
             self.process_product_tree_node(Product {
@@ -203,21 +223,20 @@ impl<G> Forest for Bocage<G> where G: Borrow<InternalGrammar> {
                     // Slower case: ambiguous node.
                     let sum = Sum {
                         nonterminal: lhs_sym,
-                        count: self.summand_count,
+                        count: summand_count,
                     };
                     self.graph.set_up(self.first_summand, sum);
                 }
             }
         };
         let result = self.first_summand;
-        self.first_summand = NodeHandle(self.graph.vec.len() as u32);
         self.summand_count = 0;
         result
     }
 
     #[inline]
-    fn leaf(&mut self, token: Symbol, _pos: u32, value: Self::LeafValue) -> Self::NodeRef {
-        self.graph.push(Evaluated { symbol: token, values: value })
+    fn leaf(&mut self, token: Symbol, _pos: u32, _value: Self::LeafValue) -> Self::NodeRef {
+        self.graph.push(Evaluated { symbol: token })
     }
 
     #[inline]

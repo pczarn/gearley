@@ -2,7 +2,7 @@ pub mod null_forest;
 pub mod order;
 pub mod traverse;
 pub(crate) mod bocage;
-pub(crate) mod node;
+pub mod node;
 
 pub use self::bocage::Bocage;
 pub use self::null_forest::NullForest;
@@ -18,6 +18,8 @@ pub trait Forest {
     type LeafValue;
 
     const FOREST_BYTES_PER_RECOGNIZER_BYTE: usize;
+
+    fn begin_sum(&mut self);
 
     fn push_summand(&mut self, item: CompletedItem<Self::NodeRef>);
 
