@@ -9,7 +9,7 @@ use item::CompletedItem;
 use grammar::InternalGrammar;
 use forest::Forest;
 
-use super::node::{Node, NodeHandle, CompactNode, Graph, NULL_ACTION};
+use super::node::{Node, NodeHandle, Graph, NULL_ACTION};
 use super::order::Order;
 use super::node::Node::*;
 
@@ -30,7 +30,7 @@ pub(crate) struct MarkAndSweep {
 impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
     pub fn new(grammar: G) -> Self {
         let mut result = Bocage {
-            graph: Vec::with_capacity(1024),
+            graph: Graph::with_capacity(1024),
             gc: MarkAndSweep {
                 liveness: BitVec::with_capacity(1024),
                 dfs: Vec::with_capacity(32),
@@ -50,7 +50,7 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
         // Ensure that `max` is not ridiculously large.
         assert!(nulling_leaf_count < (1 << 20), "invalid nullable symbol");
         let mut graph: Vec<Node> = (0 .. nulling_leaf_count).map(|i|
-            NullingLeaf { symbol: Symbol::from(i) }.compact()
+            NullingLeaf { symbol: Symbol::from(i) }
         ).collect();
         for &(lhs, rhs0, rhs1) in self.grammar.borrow().eliminated_nulling_intermediate() {
             graph[lhs.usize()] = Product {
@@ -65,20 +65,21 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
     }
 
     fn nulling_symbol_count(&self) -> usize {
-        self.grammar.borrow().max_nulling_symbol().map_or(|m| m + 1, 0)
+        self.grammar.borrow().max_nulling_symbol().map_or(0, |m| m + 1)
     }
 
     #[inline]
     pub fn mark_alive<O: Order>(&mut self, root: NodeHandle, mut order: O) {
         self.gc.liveness.clear();
-        self.gc.liveness.grow(self.graph.len(), false);
+        self.gc.liveness.grow(self.graph.vec.len(), false);
         self.gc.dfs.push(root);
         while let Some(node) = self.gc.dfs.pop() {
             self.gc.liveness.set(node.usize(), true);
             let summands = Bocage::<G>::summands(&self.graph, node);
-            let summands = order.sum(summands);
+            // let summands = order.sum(summands);
+            println!("---");
             for summand in summands {
-                self.postprocess_product_tree_node(summand);
+                println!("{:?}", summand);
                 // TODO: use order for products.
                 self.gc.dfs_queue_factors(summand);
             }
@@ -86,42 +87,37 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
     }
 
     #[inline]
-    fn summands(graph: &Vec<CompactNode>, node: NodeHandle) -> impl Iterator<Item=CompactNode> {
+    fn summands<'a>(graph: &'a Graph, node: NodeHandle) -> impl Iterator<Item=Node> + 'a {
         let mut iter = graph.iter_from(node);
-        let count = match graph.peek() {
+        match iter.peek() {
             Some(Sum { count, .. }) => {
                 iter.next();
-                count
+                iter.take(count as usize)
             }
-            _ => 1,
-        };
-        iter.take(count)
-    }
-
-    #[inline]
-    fn postprocess_product_tree_node(&self, node: &CompactNode) {
-        if let Product { left_factor: factor, right_factor: None, action } = node.expand() {
-            // Add omitted phantom syms here.
-            if let Some((sym, dir)) = self.grammar.borrow().nulling(action) {
-                let (left, right) = if dir {
-                    (factor, NodeHandle::nulling(sym))
-                } else {
-                    (NodeHandle::nulling(sym), factor)
-                };
-                node.set(
-                    Product {
-                        left_factor: left,
-                        right_factor: Some(right),
-                        action,
-                    }
-                );
-            }
+            _ => iter.take(1)
         }
     }
 
     #[inline]
-    fn set(&self, idx: NodeHandle, node: Node) {
-        self.graph[idx.usize()].set(node);
+    fn process_product_tree_node(&self, mut node: Node) -> Node {
+        match node {
+            Product { ref mut left_factor, ref mut right_factor, action } => {
+                if right_factor.is_none() {
+                    // Add omitted phantom syms here.
+                    if let Some((sym, dir)) = self.grammar.borrow().nulling(action) {
+                        let (left, right) = if dir {
+                            (*left_factor, NodeHandle::nulling(sym))
+                        } else {
+                            (NodeHandle::nulling(sym), *left_factor)
+                        };
+                        *left_factor = left;
+                        *right_factor = Some(right);
+                    }
+                }
+            }
+            _ => {}
+        }
+        node
     }
 
     #[inline]
@@ -161,8 +157,8 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
 
 impl MarkAndSweep {
     #[inline]
-    fn dfs_queue_factors(&mut self, summand: &CompactNode) {
-        match summand.expand() {
+    fn dfs_queue_factors(&mut self, summand: Node) {
+        match summand {
             Product { left_factor, right_factor, .. } => {
                 if let Some(factor) = right_factor {
                     if let Some(false) = self.liveness.get(factor.usize()) {
@@ -179,7 +175,7 @@ impl MarkAndSweep {
     }
 }
 
-impl<G> Forest for Bocage<G> {
+impl<G> Forest for Bocage<G> where G: Borrow<InternalGrammar> {
     type NodeRef = NodeHandle;
     type LeafValue = u32;
 
@@ -187,11 +183,13 @@ impl<G> Forest for Bocage<G> {
 
     #[inline]
     fn push_summand(&mut self, item: CompletedItem<Self::NodeRef>) {
-        self.graph.push(Product {
-            action: item.dot,
-            left_factor: item.left_node,
-            right_factor: item.right_node,
-        });
+        self.graph.push(
+            self.process_product_tree_node(Product {
+                action: item.dot,
+                left_factor: item.left_node,
+                right_factor: item.right_node,
+            })
+        );
         self.summand_count += 1;
     }
 
@@ -203,17 +201,16 @@ impl<G> Forest for Bocage<G> {
                 1 => {}
                 summand_count => {
                     // Slower case: ambiguous node.
-                    let first_summand = self.graph.get(self.first_summand);
-                    self.graph.push(first_summand);
-                    self.graph.set(self.first_summand, Sum {
+                    let sum = Sum {
                         nonterminal: lhs_sym,
                         count: self.summand_count,
-                    });
+                    };
+                    self.graph.set_up(self.first_summand, sum);
                 }
             }
         };
         let result = self.first_summand;
-        self.first_summand = NodeHandle(self.graph.len());
+        self.first_summand = NodeHandle(self.graph.vec.len() as u32);
         self.summand_count = 0;
         result
     }
