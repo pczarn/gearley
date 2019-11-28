@@ -5,7 +5,7 @@ use bit_matrix::BitMatrix;
 
 use forest::{Forest, NullForest, Bocage};
 use forest::bocage::MarkAndSweep;
-use forest::node::{CompactNode, NodeHandle};
+use forest::node::{NodeHandle, Graph};
 use grammar::InternalGrammar;
 use recognizer::Recognizer;
 use item::{Item, CompletedItem};
@@ -203,7 +203,7 @@ impl<'g> MemoryUse for Bocage<&'g InternalGrammar> {
     type Arg = &'g InternalGrammar;
 
     fn memory_use(&self) -> usize {
-        self.graph.memory_use() + self.gc.liveness.memory_use() + self.gc.dfs.memory_use()
+        self.graph.vec.memory_use() + self.gc.liveness.memory_use() + self.gc.dfs.memory_use()
     }
 
     fn new_with_limit(grammar: &'g InternalGrammar, memory_limit: usize) -> Self {
@@ -213,16 +213,17 @@ impl<'g> MemoryUse for Bocage<&'g InternalGrammar> {
             _ => 64,
         };
         let remaining_use = memory_limit - dfs_size * std::mem::size_of::<NodeHandle>();
-        let bytes_per_node = mem::size_of::<CompactNode>() as f32 + 1.0 / 8.0;
+        let bytes_per_node = mem::size_of::<u16>() as f32 + 1.0 / 8.0;
         let graph_size = (remaining_use as f32 / bytes_per_node) as usize;
         let mut result = Bocage {
-            graph: Vec::with_capacity(graph_size),
+            graph: Graph::with_capacity(graph_size),
             gc: MarkAndSweep {
                 liveness: BitVec::with_capacity(graph_size),
                 dfs: Vec::with_capacity(dfs_size),
             },
             grammar,
             summand_count: 0,
+            first_summand: NodeHandle(0),
         };
         result.initialize_nulling();
         result
