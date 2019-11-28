@@ -43,7 +43,7 @@ fn test_ambiguous_arithmetic() {
     let mut rec = Recognizer::new(&cfg, bocage);
     assert!(rec.parse(tokens));
     let mut traverse = rec.forest.traverse();
-    let results = evaluator.traverse(&mut traverse);
+    let results = evaluator.traverse(&mut traverse, rec.finished_node().unwrap());
 
     // The result is currently ordered by rule ID:
     assert_eq!(results, vec![2, 1, 3, 7, 8]);

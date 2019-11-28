@@ -1,9 +1,11 @@
 use std::borrow::Borrow;
 use std::fmt;
 use std::mem;
+use std::collections::BTreeMap;
 
 use cfg::Symbol;
 
+use gearley::forest::node::NodeHandle;
 use gearley::forest::traverse::{
     Traverse,
     SumHandle,
@@ -17,7 +19,7 @@ use super::cartesian_product::CartesianProduct;
 
 pub struct SimpleEvaluator<V, F, G, H> {
     values: Vec<V>,
-    evaluated: Vec<Vec<V>>,
+    evaluated: BTreeMap<NodeHandle, Vec<V>>,
     leaf: F,
     rule: G,
     null: H,
@@ -27,12 +29,12 @@ impl<V, FLeaf, FRule, FNull> SimpleEvaluator<V, FLeaf, FRule, FNull>
     where FLeaf: FnMut(Symbol) -> V,
           FRule: FnMut(u32, &[&V]) -> V,
           FNull: for<'r> FnMut(Symbol, &'r mut Vec<V>),
-          V: fmt::Debug,
+          V: fmt::Debug + Clone,
 {
     pub fn new(leaf: FLeaf, rule: FRule, null: FNull) -> Self {
         SimpleEvaluator {
             values: vec![],
-            evaluated: vec![],
+            evaluated: BTreeMap::new(),
             leaf,
             rule,
             null,
@@ -42,6 +44,7 @@ impl<V, FLeaf, FRule, FNull> SimpleEvaluator<V, FLeaf, FRule, FNull>
     pub fn traverse<'f, G>(
         &mut self,
         traverse: &mut Traverse<'f, G>,
+        root: NodeHandle,
     )
         -> Vec<V>
         where G: Borrow<InternalGrammar>,
@@ -51,8 +54,8 @@ impl<V, FLeaf, FRule, FNull> SimpleEvaluator<V, FLeaf, FRule, FNull>
                 &mut SumHandle(ref mut products) => {
                     while let Some(product) = products.next_product() {
                         let mut cartesian_product = CartesianProduct::new();
-                        for &(_sym, values_idx) in product.factors {
-                            cartesian_product.push(&self.evaluated[values_idx as usize][..]);
+                        for &(_sym, handle) in product.factors {
+                            cartesian_product.push(&self.evaluated[&handle][..]);
                         }
                         loop {
                             let v = (self.rule)(product.action, cartesian_product.as_slice());
@@ -66,15 +69,14 @@ impl<V, FLeaf, FRule, FNull> SimpleEvaluator<V, FLeaf, FRule, FNull>
                 &mut NullingHandle => {
                     (self.null)(item.symbol, &mut self.values);
                 }
-                &mut LeafHandle(_) => {
+                &mut LeafHandle => {
                     let v = (self.leaf)(item.symbol);
                     self.values.push(v);
                 }
             }
-            let result = self.evaluated.len() as u32;
-            self.evaluated.push(mem::replace(&mut self.values, vec![]));
-            item.set_evaluation_result(result);
+            self.evaluated.insert(item.handle(), mem::replace(&mut self.values, vec![]));
+            item.end_evaluation();
         }
-        self.evaluated.pop().unwrap()
+        self.evaluated[&root].clone()
     }
 }

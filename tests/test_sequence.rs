@@ -50,7 +50,7 @@ fn test_sequence() {
 
     let mut traversal = recognizer.forest.traverse();
 
-    let results = evaluator.traverse(&mut traversal);
+    let results = evaluator.traverse(&mut traversal, recognizer.finished_node().unwrap());
 
     assert_eq!(results, vec![6]);
 }
