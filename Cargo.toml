@@ -30,4 +30,4 @@ serde = "1.0"
 serde_derive = "1.0"
 
 [dev-dependencies]
-c_lexer = { version = "0.1", path = "../c_lexer/" }
+c_lexer = "0.1"

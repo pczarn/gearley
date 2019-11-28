@@ -355,7 +355,7 @@ fn test_parse_c() {
     ) = grammar.sym();
 
     let contents = include_str!("../benches/part_gcc_test.i");
-    let tokens: Vec<_> = Lexer::lex(&contents[..]).unwrap().into_iter().filter_map(|(token, _start, _end)| {
+    let tokens: Vec<_> = Lexer::lex(&contents[..]).unwrap().into_iter().filter_map(|token| {
         // println!("{:?}", token);
         let tok = match token {
             LBrace => Some(lbrace),

@@ -356,7 +356,7 @@ fn bench_parse_c(b: &mut test::Bencher) {
     ) = grammar.sym();
 
     let contents = include_str!("part_gcc_test.i");
-    let tokens: Vec<_> = Lexer::lex(&contents[..]).unwrap().into_iter().filter_map(|(token, start, end)| {
+    let tokens: Vec<_> = Lexer::lex(&contents[..]).unwrap().into_iter().filter_map(|token| {
         // println!("{:?}", token);
         let tok = match token {
             LBrace => Some(lbrace),
