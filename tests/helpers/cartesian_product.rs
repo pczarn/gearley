@@ -53,18 +53,21 @@ impl<'a, V> CartesianProduct<'a, V> {
     pub fn push(&mut self, slice: &'a [V]) {
         self.ranges.push(Factor::new(slice));
         unsafe {
-            self.ptrs.push(self.ranges.last().map(|factor| &*factor.start).unwrap());
+            self.ptrs
+                .push(self.ranges.last().map(|factor| &*factor.start).unwrap());
         }
     }
 
     /// Multiplies the cartesian product by an iterator.
     pub fn extend<I>(&mut self, product: I)
-        where I: Iterator<Item=&'a [V]>,
+    where
+        I: Iterator<Item = &'a [V]>,
     {
         self.ranges.extend(product.map(|slice| Factor::new(slice)));
         unsafe {
             // FIXME wrong range
-            self.ptrs.extend(self.ranges.iter().map(|factor| &*factor.start));
+            self.ptrs
+                .extend(self.ranges.iter().map(|factor| &*factor.start));
         }
     }
 
@@ -84,7 +87,7 @@ impl<'a, V> CartesianProduct<'a, V> {
 
 #[test]
 fn test_cartesian_product() {
-    let (a, b, c) = ([1, 2, 3], [1, 2,], [1, 2, 3]);
+    let (a, b, c) = ([1, 2, 3], [1, 2], [1, 2, 3]);
     let factors: &[&[u32]] = &[&a[..], &b[..], &c[..]];
     let mut cartesian_product = CartesianProduct::new();
     cartesian_product.clear();
@@ -99,7 +102,11 @@ fn test_cartesian_product() {
             break;
         }
     }
-    assert_eq!(&result[..], &[111, 211, 311, 121, 221, 321,
-                              112, 212, 312, 122, 222, 322,
-                              113, 213, 313, 123, 223, 323,]);
+    assert_eq!(
+        &result[..],
+        &[
+            111, 211, 311, 121, 221, 321, 112, 212, 312, 122, 222, 322, 113, 213, 313, 123, 223,
+            323,
+        ]
+    );
 }

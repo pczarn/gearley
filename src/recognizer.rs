@@ -4,7 +4,7 @@ use std::ops::Range;
 use bit_matrix::BitMatrix;
 use cfg::*;
 
-use events::{PredictedSymbols, MedialItems};
+use events::{MedialItems, PredictedSymbols};
 use forest::{Forest, NullForest};
 use grammar::InternalGrammar;
 use item::{CompletedItem, CompletedItemLinked, Item, Origin};
@@ -16,7 +16,8 @@ use item::{CompletedItem, CompletedItemLinked, Item, Origin};
 /// To save memory, it only retains those parts of the Earley table that may be useful
 /// in the future.
 pub struct Recognizer<'g, F = NullForest>
-    where F: Forest,
+where
+    F: Forest,
 {
     // The forest.
     pub forest: F,
@@ -29,7 +30,7 @@ pub struct Recognizer<'g, F = NullForest>
 
     // Predicted items are stored in a bit matrix. The bit matrix has a row for every Earley set.
     //
-    // Length of `predicted` is earleme + 1, so that earleme points to the last 
+    // Length of `predicted` is earleme + 1, so that earleme points to the last
     pub(super) predicted: BitMatrix,
 
     // Medial items.
@@ -60,9 +61,9 @@ pub struct Recognizer<'g, F = NullForest>
     pub(super) lookahead_hint: Option<Option<Symbol>>,
 }
 
-
 impl<'g, F> Recognizer<'g, F>
-    where F: Forest,
+where
+    F: Forest,
 {
     /// Creates a new recognizer for a given grammar and forest. The recognizer has an initial
     /// Earley set that predicts the grammar's start symbol.
@@ -160,9 +161,13 @@ impl<'g, F> Recognizer<'g, F>
         let grammar = &self.grammar;
         // Build index by postdot
         // These medial positions themselves are sorted by postdot symbol.
-        self.medial[self.current_medial_start..].sort_unstable_by(|a, b|
-            (grammar.get_rhs1_cmp(a.dot), a.dot, a.origin).cmp(&(grammar.get_rhs1_cmp(b.dot), b.dot, b.origin))
-        );
+        self.medial[self.current_medial_start..].sort_unstable_by(|a, b| {
+            (grammar.get_rhs1_cmp(a.dot), a.dot, a.origin).cmp(&(
+                grammar.get_rhs1_cmp(b.dot),
+                b.dot,
+                b.origin,
+            ))
+        });
     }
 
     fn remove_unary_medial_items(&mut self) {
@@ -177,10 +182,10 @@ impl<'g, F> Recognizer<'g, F>
     fn remove_unreachable_sets(&mut self) {
         let origin = |item: &Item<F::NodeRef>| item.origin as usize;
         let max_origin = self.medial[self.current_medial_start..]
-                        .iter()
-                        .map(origin)
-                        .max()
-                        .unwrap_or(self.earleme);
+            .iter()
+            .map(origin)
+            .max()
+            .unwrap_or(self.earleme);
         let diff = self.earleme - max_origin;
         if diff <= 1 {
             return;
@@ -196,10 +201,11 @@ impl<'g, F> Recognizer<'g, F>
         let new_medial_start = self.indices[self.indices.len() - 1 - drop];
         self.indices.truncate(self.indices.len() - drop);
         let current_medial_length = self.medial.len() - self.current_medial_start;
-        for i in 0 .. current_medial_length {
+        for i in 0..current_medial_length {
             self.medial[new_medial_start as usize + i] = self.medial[self.current_medial_start + i];
         }
-        self.medial.truncate(new_medial_start as usize + current_medial_length);
+        self.medial
+            .truncate(new_medial_start as usize + current_medial_length);
         self.current_medial_start = new_medial_start as usize;
         self.earleme -= drop;
         self.predicted.truncate(self.earleme + 1);
@@ -257,12 +263,10 @@ impl<'g, F> Recognizer<'g, F>
                 if !self.grammar.can_follow(self.grammar.get_lhs(dot), hint) {
                     continue;
                 }
-                self.heap_push_linked(
-                    CompletedItemLinked {
-                        idx: idx as u32,
-                        node: Some(rhs_link),
-                    }
-                );
+                self.heap_push_linked(CompletedItemLinked {
+                    idx: idx as u32,
+                    node: Some(rhs_link),
+                });
             }
         } else {
             for idx in set_range {
@@ -271,12 +275,10 @@ impl<'g, F> Recognizer<'g, F>
                 // to   A ::= B   C •
                 //
                 // We might link to medial items by index, here.
-                self.heap_push_linked(
-                    CompletedItemLinked {
-                        idx: idx as u32,
-                        node: Some(rhs_link),
-                    }
-                );
+                self.heap_push_linked(CompletedItemLinked {
+                    idx: idx as u32,
+                    node: Some(rhs_link),
+                });
             }
         }
     }
@@ -285,7 +287,7 @@ impl<'g, F> Recognizer<'g, F>
         // Huh, can we reduce complexity here?
         let outer_start = self.indices[set_id as usize];
         let outer_end = self.indices[set_id as usize + 1];
-        let specific_set = &self.medial[outer_start .. outer_end];
+        let specific_set = &self.medial[outer_start..outer_end];
 
         let inner_start = if specific_set.len() >= 16 {
             // When the set has 16 or more items, we use binary search to narrow down the range of
@@ -294,19 +296,21 @@ impl<'g, F> Recognizer<'g, F>
                 (self.grammar.get_rhs1(ei.dot), Ordering::Greater).cmp(&(Some(sym), Ordering::Less))
             });
             match set_idx {
-                Ok(idx) | Err(idx) => idx
+                Ok(idx) | Err(idx) => idx,
             }
         } else {
-            specific_set.iter().take_while(|ei| {
-                self.grammar.get_rhs1(ei.dot).unwrap() < sym
-            }).count()
+            specific_set
+                .iter()
+                .take_while(|ei| self.grammar.get_rhs1(ei.dot).unwrap() < sym)
+                .count()
         };
 
         // The range contains items that have the same RHS1 symbol.
-        let inner_end = specific_set[inner_start..].iter().take_while(|ei| {
-            self.grammar.get_rhs1(ei.dot) == Some(sym)
-        }).count();
-        outer_start + inner_start .. outer_start + inner_start + inner_end
+        let inner_end = specific_set[inner_start..]
+            .iter()
+            .take_while(|ei| self.grammar.get_rhs1(ei.dot) == Some(sym))
+            .count();
+        outer_start + inner_start..outer_start + inner_start + inner_end
     }
 
     /// Complete predicted items that have a common postdot symbol.
@@ -329,7 +333,10 @@ impl<'g, F> Recognizer<'g, F>
                 // We could push to `medial` as well and link from `complete` to `medial`.
 
                 if let Some(hint) = self.lookahead_hint {
-                    if !self.grammar.can_follow(self.grammar.get_lhs(trans.dot), hint) {
+                    if !self
+                        .grammar
+                        .can_follow(self.grammar.get_lhs(trans.dot), hint)
+                    {
                         continue;
                     }
                 }
@@ -348,7 +355,10 @@ impl<'g, F> Recognizer<'g, F>
         for trans in self.grammar.binary_completions(sym) {
             if self.predicted[set_id as usize].get(trans.symbol.usize()) {
                 if let Some(hint) = self.lookahead_hint {
-                    if !self.grammar.first(self.grammar.get_rhs1(trans.dot).unwrap(), hint) {
+                    if !self
+                        .grammar
+                        .first(self.grammar.get_rhs1(trans.dot).unwrap(), hint)
+                    {
                         continue;
                     }
                 }
@@ -462,7 +472,8 @@ impl<'g, F> Recognizer<'g, F>
 
 /// A group of completed items.
 pub struct CompleteSum<'g, 'r, F>
-    where F: Forest,
+where
+    F: Forest,
 {
     /// The origin location of this completion.
     origin: Origin,
@@ -473,8 +484,9 @@ pub struct CompleteSum<'g, 'r, F>
 }
 
 impl<'g, 'r, F> CompleteSum<'g, 'r, F>
-    where F: Forest,
-          'g: 'r,
+where
+    F: Forest,
+    'g: 'r,
 {
     /// Completes all items.
     pub fn complete_entire_sum(&mut self) {
@@ -492,7 +504,6 @@ impl<'g, 'r, F> CompleteSum<'g, 'r, F>
         // For each item, include it in the completion.
         while let Some(_) = self.next_summand() {}
     }
-
 
     /// Allows iteration through completed items.
     #[inline]

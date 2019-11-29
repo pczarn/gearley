@@ -1,18 +1,23 @@
+pub mod node;
+pub mod order;
+pub mod traverse;
+
 use std::borrow::Borrow;
 use std::hint;
 
 use bit_vec::BitVec;
 use cfg::symbol::Symbol;
 
-use item::CompletedItem;
-use grammar::InternalGrammar;
+use forest::node_handle::NodeHandle;
 use forest::Forest;
+use grammar::InternalGrammar;
+use item::CompletedItem;
 
-use super::node::{Node, NodeHandle, Graph, NULL_ACTION};
-use super::order::Order;
-use super::node::Node::*;
+use self::node::Node::*;
+use self::node::{Graph, Node, NULL_ACTION};
+use self::order::Order;
 
-pub struct Bocage<G> {
+pub struct CompactBocage<G> {
     pub(crate) graph: Graph,
     pub(crate) gc: MarkAndSweep,
     pub(crate) grammar: G,
@@ -26,17 +31,24 @@ pub(crate) struct MarkAndSweep {
     pub(crate) dfs: Vec<NodeHandle>,
 }
 
-impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
+impl<G> CompactBocage<G>
+where
+    G: Borrow<InternalGrammar>,
+{
     pub fn new(grammar: G) -> Self {
-        let mut result = Bocage {
-            graph: Graph::with_capacity(1024),
+        Self::with_capacities(grammar, 1024, 32)
+    }
+
+    pub fn with_capacities(grammar: G, graph_cap: usize, dfs_cap: usize) -> Self {
+        let mut result = CompactBocage {
+            graph: Graph::with_capacity(graph_cap),
             gc: MarkAndSweep {
-                liveness: BitVec::with_capacity(1024),
-                dfs: Vec::with_capacity(32),
+                liveness: BitVec::with_capacity(graph_cap),
+                dfs: Vec::with_capacity(dfs_cap),
             },
             grammar,
-            first_summand: NodeHandle(0),
             summand_count: 0,
+            first_summand: NodeHandle(0),
         };
         result.initialize_nulling();
         result
@@ -48,9 +60,11 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
         let nulling_leaf_count = self.nulling_symbol_count();
         // Ensure that `max` is not ridiculously large.
         assert!(nulling_leaf_count < (1 << 20), "invalid nullable symbol");
-        let mut graph: Vec<Node> = (0 .. nulling_leaf_count).map(|i|
-            NullingLeaf { symbol: Symbol::from(i) }
-        ).collect();
+        let mut graph: Vec<Node> = (0..nulling_leaf_count)
+            .map(|i| NullingLeaf {
+                symbol: Symbol::from(i),
+            })
+            .collect();
         for &(lhs, rhs0, rhs1) in self.grammar.borrow().eliminated_nulling_intermediate() {
             graph[lhs.usize()] = Product {
                 left_factor: NodeHandle::nulling(rhs0),
@@ -66,7 +80,11 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
         }
         for node in graph {
             match node {
-                Product { action, left_factor, right_factor } => {
+                Product {
+                    action,
+                    left_factor,
+                    right_factor,
+                } => {
                     self.graph.push(Product {
                         action,
                         left_factor: relocation[left_factor.usize()],
@@ -82,7 +100,10 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
 
     fn nulling_symbol_count(&self) -> usize {
         // why 1?
-        self.grammar.borrow().max_nulling_symbol().map_or(1, |m| m + 1)
+        self.grammar
+            .borrow()
+            .max_nulling_symbol()
+            .map_or(1, |m| m + 1)
     }
 
     #[inline]
@@ -92,7 +113,7 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
         self.gc.dfs.push(root);
         while let Some(node) = self.gc.dfs.pop() {
             self.gc.liveness.set(node.usize(), true);
-            let summands = Bocage::<G>::summands(&self.graph, node);
+            let summands = CompactBocage::<G>::summands(&self.graph, node);
             // let summands = order.sum(summands);
             for summand in summands {
                 // TODO: use order for products.
@@ -102,21 +123,25 @@ impl<G> Bocage<G> where G: Borrow<InternalGrammar> {
     }
 
     #[inline]
-    fn summands<'a>(graph: &'a Graph, node: NodeHandle) -> impl Iterator<Item=Node> + 'a {
+    fn summands<'a>(graph: &'a Graph, node: NodeHandle) -> impl Iterator<Item = Node> + 'a {
         let mut iter = graph.iter_from(node);
         match iter.peek() {
             Some(Sum { count, .. }) => {
                 iter.next();
                 iter.take(count as usize)
             }
-            _ => iter.take(1)
+            _ => iter.take(1),
         }
     }
 
     #[inline]
     fn process_product_tree_node(&self, mut node: Node) -> Node {
         match node {
-            Product { ref mut left_factor, ref mut right_factor, action } => {
+            Product {
+                ref mut left_factor,
+                ref mut right_factor,
+                action,
+            } => {
                 if right_factor.is_none() {
                     // Add omitted phantom syms here.
                     if let Some((sym, dir)) = self.grammar.borrow().nulling(action) {
@@ -174,7 +199,11 @@ impl MarkAndSweep {
     #[inline]
     fn dfs_queue_factors(&mut self, summand: Node) {
         match summand {
-            Product { left_factor, right_factor, .. } => {
+            Product {
+                left_factor,
+                right_factor,
+                ..
+            } => {
                 if let Some(factor) = right_factor {
                     if let Some(false) = self.liveness.get(factor.usize()) {
                         self.dfs.push(factor);
@@ -185,12 +214,15 @@ impl MarkAndSweep {
                 }
             }
             NullingLeaf { .. } | Evaluated { .. } => {}
-            Sum { .. } => unreachable!()
+            Sum { .. } => unreachable!(),
         }
     }
 }
 
-impl<G> Forest for Bocage<G> where G: Borrow<InternalGrammar> {
+impl<G> Forest for CompactBocage<G>
+where
+    G: Borrow<InternalGrammar>,
+{
     type NodeRef = NodeHandle;
     type LeafValue = u32;
 
@@ -203,13 +235,11 @@ impl<G> Forest for Bocage<G> where G: Borrow<InternalGrammar> {
 
     #[inline]
     fn push_summand(&mut self, item: CompletedItem<Self::NodeRef>) {
-        self.graph.push(
-            self.process_product_tree_node(Product {
-                action: item.dot,
-                left_factor: item.left_node,
-                right_factor: item.right_node,
-            })
-        );
+        self.graph.push(self.process_product_tree_node(Product {
+            action: item.dot,
+            left_factor: item.left_node,
+            right_factor: item.right_node,
+        }));
         self.summand_count += 1;
     }
 

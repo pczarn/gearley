@@ -1,10 +1,10 @@
-use std::cell::Cell;
-
 use cfg::symbol::Symbol;
+
+use super::node::CompactNode;
 
 pub trait Order {
     /// Apply the order to sum node alternatives.
-    fn sum<'b>(&mut self, alternatives: &'b [Cell<u16>]) -> &'b [Cell<u16>] {
+    fn sum<'b>(&mut self, alternatives: &'b [CompactNode]) -> &'b [CompactNode] {
         alternatives
     }
 
@@ -21,6 +21,6 @@ impl Order for NullOrder {}
 
 impl NullOrder {
     pub fn new() -> Self {
-    	NullOrder
+        NullOrder
     }
 }

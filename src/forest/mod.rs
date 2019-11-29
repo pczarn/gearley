@@ -1,14 +1,14 @@
+pub mod bocage;
+pub mod compact_bocage;
+pub mod node_handle;
 pub mod null_forest;
-pub mod order;
-pub mod traverse;
-pub(crate) mod bocage;
-pub mod node;
 
 pub use self::bocage::Bocage;
+pub use self::compact_bocage::CompactBocage;
 pub use self::null_forest::NullForest;
 
-use std::fmt;
 use cfg::Symbol;
+use std::fmt;
 
 use item::CompletedItem;
 

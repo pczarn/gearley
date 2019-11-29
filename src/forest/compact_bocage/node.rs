@@ -5,6 +5,7 @@ use cfg::symbol::Symbol;
 
 pub use self::Node::*;
 use self::Tag::*;
+use forest::node_handle::{NodeHandle, NULL_HANDLE};
 
 pub struct Graph {
     pub(crate) vec: Vec<Cell<u16>>,
@@ -13,7 +14,7 @@ pub struct Graph {
 impl Graph {
     pub(crate) fn with_capacity(capacity: usize) -> Self {
         Graph {
-            vec: Vec::with_capacity(capacity)
+            vec: Vec::with_capacity(capacity),
         }
     }
 
@@ -21,7 +22,8 @@ impl Graph {
         let position = self.vec.len() as u32;
         let (node_repr, size) = node.to_repr(position);
         unsafe {
-            self.vec.extend(node_repr.fields[..size].iter().cloned().map(Cell::new));
+            self.vec
+                .extend(node_repr.fields[..size].iter().cloned().map(Cell::new));
         }
         NodeHandle(position)
     }
@@ -34,7 +36,7 @@ impl Graph {
             self.push(current_node);
             current_handle.0 += current_node.classify(current_handle.0).size() as u32;
         }
-        for i in 0 .. size {
+        for i in 0..size {
             unsafe {
                 self.vec[handle.usize() + i].set(node_repr.fields[i]);
             }
@@ -66,7 +68,7 @@ pub(crate) struct Iter<'a> {
 
 impl<'a> Iterator for Iter<'a> {
     type Item = Node;
-    
+
     fn next(&mut self) -> Option<Node> {
         unsafe {
             let head = if let Some(head) = self.vec.get(self.handle.usize()).cloned() {
@@ -81,7 +83,7 @@ impl<'a> Iterator for Iter<'a> {
             } else {
                 let mut node_repr = NodeRepr { fields: [0; 6] };
                 node_repr.fields[0] = head;
-                let slice = &self.vec[self.handle.usize() + 1 .. self.handle.usize() + tag.size()];
+                let slice = &self.vec[self.handle.usize() + 1..self.handle.usize() + tag.size()];
                 for (i, val) in slice.iter().enumerate() {
                     node_repr.fields[1 + i] = val.get();
                 }
@@ -125,14 +127,6 @@ pub enum Node {
         symbol: Symbol,
     },
 }
-
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
-pub struct NodeHandle(pub(crate) u32);
-
-// #[derive(Clone)]
-// pub struct CompactNode {
-//     cell: Cell<[CompactField; 3]>,
-// }
 
 #[derive(Clone, Copy)]
 union NodeRepr {
@@ -196,12 +190,12 @@ struct ProductRepr {
 struct SmallNullingLeafRepr {
     symbol: u16,
 }
-            
+
 #[derive(Clone, Copy)]
 struct LeafRepr {
     symbol: Symbol,
 }
-            
+
 #[derive(Clone, Copy)]
 struct SmallLeafRepr {
     symbol: u16,
@@ -211,42 +205,6 @@ struct SmallLeafRepr {
 struct NopRepr {
     nop: u16,
 }
-
-// // Node variants `Sum`/`Product` are better known in literature as `OR`/`AND`.
-// #[derive(Copy, Clone)]
-// union CompactField {
-//     // // small sum
-//     // count: u5,
-//     // nonterminal: u8,
-//     // //small link
-//     // factor: u5, (relative)
-//     // action: u8,
-//     // //medium link
-//     // factor: u5 + u8,
-//     // action: u16,
-//     // //small product
-//     // right_factor: u5,
-//     // left_factor: u8,
-//     // action: u16,
-//     // //small leaf
-//     // symbol: u4 + u8,
-
-//     // sum
-//     nonterminal: Symbol,
-//     count: u32,
-
-//     // product
-//     action: u32,
-//     factor: NodeHandle,
-//     // right_factor: NodeHandle,
-
-//     // leaf
-//     symbol: Symbol,
-//     values: u32,
-
-//     // tag
-//     tag: u32,
-// }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub(super) enum Tag {
@@ -298,7 +256,7 @@ impl Tag {
     }
 
     #[inline]
-    pub(super)fn to_u16(self) -> u16 {
+    pub(super) fn to_u16(self) -> u16 {
         match self {
             SmallSumTag => 0b000 << TAG_BIT,
             SmallLinkTag => 0b001 << TAG_BIT,
@@ -351,7 +309,6 @@ impl Tag {
 const TAG_BIT: usize = 5 + 8;
 const TAG_MASK: u16 = 0b111 << TAG_BIT;
 const SMALL_LEAF_TAG_MASK: u16 = 0b1111 << (TAG_BIT - 1);
-const NULL_HANDLE: NodeHandle = NodeHandle(0xFFFF_FFFF);
 pub(super) const NULL_ACTION: u32 = !((TAG_MASK as u32) << 16);
 
 impl NodeRepr {
@@ -360,139 +317,93 @@ impl NodeRepr {
             match (self, tag) {
                 (
                     NodeRepr {
-                        small_sum: SmallSumRepr {
-                            nonterminal, count
-                        }
+                        small_sum: SmallSumRepr { nonterminal, count },
                     },
-                    SmallSumTag
-                ) => {
-                    Sum {
-                        nonterminal: Symbol::from(nonterminal as u32),
-                        count: count as u32,
-                    }
-                }
+                    SmallSumTag,
+                ) => Sum {
+                    nonterminal: Symbol::from(nonterminal as u32),
+                    count: count as u32,
+                },
                 (
                     NodeRepr {
-                        sum: SumRepr {
-                            nonterminal,
-                            count
-                        }
+                        sum: SumRepr { nonterminal, count },
                     },
-                    SumTag
-                ) => {
-                    Sum {
-                        nonterminal, count
-                    }
-                }
+                    SumTag,
+                ) => Sum { nonterminal, count },
                 (
                     NodeRepr {
-                        small_link: SmallLinkRepr {
-                            distance,
-                            action,
-                        }
+                        small_link: SmallLinkRepr { distance, action },
                     },
-                    SmallLinkTag
-                ) => {
-                    Product {
-                        action: action as u32,
-                        left_factor: NodeHandle(position - distance as u32),
-                        right_factor: None,
-                    }
-                }
+                    SmallLinkTag,
+                ) => Product {
+                    action: action as u32,
+                    left_factor: NodeHandle(position - distance as u32),
+                    right_factor: None,
+                },
                 (
                     NodeRepr {
-                        medium_link: MediumLinkRepr {
-                            distance,
-                            action,
-                        }
+                        medium_link: MediumLinkRepr { distance, action },
                     },
-                    MediumLinkTag
-                ) => {
-                    Product {
-                        action: action as u32,
-                        left_factor: NodeHandle(position - distance as u32),
-                        right_factor: None,
-                    }
-                }
+                    MediumLinkTag,
+                ) => Product {
+                    action: action as u32,
+                    left_factor: NodeHandle(position - distance as u32),
+                    right_factor: None,
+                },
                 (
                     NodeRepr {
-                        small_product: SmallProductRepr {
-                            right_distance,
-                            left_distance,
-                            action,
-                        }
+                        small_product:
+                            SmallProductRepr {
+                                right_distance,
+                                left_distance,
+                                action,
+                            },
                     },
-                    SmallProductTag
-                ) => {
-                    Product {
-                        action: action as u32,
-                        left_factor: NodeHandle(position - left_distance as u32),
-                        right_factor: Some(NodeHandle(position - right_distance as u32)),
-                    }
-                }
+                    SmallProductTag,
+                ) => Product {
+                    action: action as u32,
+                    left_factor: NodeHandle(position - left_distance as u32),
+                    right_factor: Some(NodeHandle(position - right_distance as u32)),
+                },
                 (
                     NodeRepr {
-                        product: ProductRepr {
-                            upper_action,
-                            lower_action,
-                            left_factor,
-                            right_factor,
-                        }
+                        product:
+                            ProductRepr {
+                                upper_action,
+                                lower_action,
+                                left_factor,
+                                right_factor,
+                            },
                     },
-                    ProductTag
-                ) => {
-                    Product {
-                        action: (upper_action as u32) << 16 | (lower_action as u32),
-                        left_factor,
-                        right_factor: right_factor.to_option(),
-                    }
-                }
+                    ProductTag,
+                ) => Product {
+                    action: (upper_action as u32) << 16 | (lower_action as u32),
+                    left_factor,
+                    right_factor: right_factor.to_option(),
+                },
                 (
                     NodeRepr {
-                        small_nulling_leaf: SmallNullingLeafRepr {
-                            symbol,
-                        }
+                        small_nulling_leaf: SmallNullingLeafRepr { symbol },
                     },
-                    SmallNullingLeafTag
-                ) => {
-                    NullingLeaf { symbol: Symbol::from(symbol as u32) }
-                }
-                // (
-                //     NodeRepr {
-                //         leaf: LeafRepr {
-                //             symbol,
-                //             values: 0,
-                //         },
-                //     },
-                //     LeafTag
-                // ) => {
-                //     NullingLeaf { symbol }
-                // }
+                    SmallNullingLeafTag,
+                ) => NullingLeaf {
+                    symbol: Symbol::from(symbol as u32),
+                },
                 (
                     NodeRepr {
-                        small_leaf: SmallLeafRepr {
-                            symbol,
-                        }
+                        small_leaf: SmallLeafRepr { symbol },
                     },
-                    SmallLeafTag
-                ) => {
-                    Evaluated {
-                        symbol: Symbol::from(symbol as u32),
-                    }
-                }
+                    SmallLeafTag,
+                ) => Evaluated {
+                    symbol: Symbol::from(symbol as u32),
+                },
                 (
                     NodeRepr {
-                        leaf: LeafRepr {
-                            symbol,
-                        }
+                        leaf: LeafRepr { symbol },
                     },
-                    LeafTag
-                ) => {
-                    Evaluated {
-                        symbol,
-                    }
-                }
-                _ => unreachable!()
+                    LeafTag,
+                ) => Evaluated { symbol },
+                _ => unreachable!(),
             }
         }
     }
@@ -504,86 +415,87 @@ impl Node {
         let tag = self.classify(position);
         unsafe {
             let mut result = match (self, tag) {
-                (Sum { nonterminal, count }, SmallSumTag) => {
-                    NodeRepr {
-                        small_sum: SmallSumRepr {
-                            nonterminal: nonterminal.usize() as u8,
-                            count: count as u8,
-                        }
-                    }
-                }
-                (Sum { nonterminal, count }, SumTag) => {
-                    NodeRepr {
-                        sum: SumRepr {
-                            nonterminal,
-                            count,
-                        }
-                    }
-                }
-                (Product { left_factor, right_factor: None, action }, SmallLinkTag) => {
-                    NodeRepr {
-                        small_link: SmallLinkRepr {
-                            distance: (position - left_factor.0) as u8,
-                            action: action as u8,
-                        }
-                    }
-                }
-                (Product { left_factor, right_factor: None, action }, MediumLinkTag) => {
-                    NodeRepr {
-                        medium_link: MediumLinkRepr {
-                            distance: (position - left_factor.0) as u16,
-                            action: action as u16,
-                        }
-                    }
-                }
-                (Product { left_factor, right_factor: Some(right), action }, SmallProductTag) => {
-                    NodeRepr {
-                        small_product: SmallProductRepr {
-                            right_distance: (position - right.0) as u8,
-                            left_distance: (position - left_factor.0) as u8,
-                            action: action as u16,
-                        }
-                    }                
-                }
-                (Product { left_factor, right_factor, action }, ProductTag) => {
-                    NodeRepr {
-                        product: ProductRepr {
-                            upper_action: (action >> 16) as u16,
-                            lower_action: action as u16,
-                            left_factor,
-                            right_factor: right_factor.unwrap_or(NULL_HANDLE),
-                        }
-                    }
-                }
-                (NullingLeaf { symbol }, SmallNullingLeafTag) => {
-                    NodeRepr {
-                        small_nulling_leaf: SmallNullingLeafRepr {
-                            symbol: symbol.usize() as u16,
-                        }
-                    }
-                }
-                (NullingLeaf { symbol }, LeafTag) => {
-                    NodeRepr {
-                        leaf: LeafRepr {
-                            symbol,
-                        },
-                    }
-                }
-                (Evaluated { symbol }, SmallLeafTag) => {
-                    NodeRepr {
-                        small_leaf: SmallLeafRepr {
-                            symbol: symbol.usize() as u16,
-                        }
-                    }
-                }
-                (Evaluated { symbol }, LeafTag) => {
-                    NodeRepr {
-                        leaf: LeafRepr {
-                            symbol,
-                        }
-                    }
-                }
-                _ => unreachable!()
+                (Sum { nonterminal, count }, SmallSumTag) => NodeRepr {
+                    small_sum: SmallSumRepr {
+                        nonterminal: nonterminal.usize() as u8,
+                        count: count as u8,
+                    },
+                },
+                (Sum { nonterminal, count }, SumTag) => NodeRepr {
+                    sum: SumRepr { nonterminal, count },
+                },
+                (
+                    Product {
+                        left_factor,
+                        right_factor: None,
+                        action,
+                    },
+                    SmallLinkTag,
+                ) => NodeRepr {
+                    small_link: SmallLinkRepr {
+                        distance: (position - left_factor.0) as u8,
+                        action: action as u8,
+                    },
+                },
+                (
+                    Product {
+                        left_factor,
+                        right_factor: None,
+                        action,
+                    },
+                    MediumLinkTag,
+                ) => NodeRepr {
+                    medium_link: MediumLinkRepr {
+                        distance: (position - left_factor.0) as u16,
+                        action: action as u16,
+                    },
+                },
+                (
+                    Product {
+                        left_factor,
+                        right_factor: Some(right),
+                        action,
+                    },
+                    SmallProductTag,
+                ) => NodeRepr {
+                    small_product: SmallProductRepr {
+                        right_distance: (position - right.0) as u8,
+                        left_distance: (position - left_factor.0) as u8,
+                        action: action as u16,
+                    },
+                },
+                (
+                    Product {
+                        left_factor,
+                        right_factor,
+                        action,
+                    },
+                    ProductTag,
+                ) => NodeRepr {
+                    product: ProductRepr {
+                        upper_action: (action >> 16) as u16,
+                        lower_action: action as u16,
+                        left_factor,
+                        right_factor: right_factor.unwrap_or(NULL_HANDLE),
+                    },
+                },
+                (NullingLeaf { symbol }, SmallNullingLeafTag) => NodeRepr {
+                    small_nulling_leaf: SmallNullingLeafRepr {
+                        symbol: symbol.usize() as u16,
+                    },
+                },
+                (NullingLeaf { symbol }, LeafTag) => NodeRepr {
+                    leaf: LeafRepr { symbol },
+                },
+                (Evaluated { symbol }, SmallLeafTag) => NodeRepr {
+                    small_leaf: SmallLeafRepr {
+                        symbol: symbol.usize() as u16,
+                    },
+                },
+                (Evaluated { symbol }, LeafTag) => NodeRepr {
+                    leaf: LeafRepr { symbol },
+                },
+                _ => unreachable!(),
             };
             result.fields[0] |= tag.to_u16();
             (result, tag.size())
@@ -593,26 +505,39 @@ impl Node {
     #[inline]
     pub(super) fn classify(self, position: u32) -> Tag {
         match self {
-            Product { left_factor, right_factor, action } => {
-                match right_factor {
-                    Some(handle) => {
-                        if position >= handle.0 && position >= left_factor.0 && position - handle.0 < (1 << 5) && position - left_factor.0 < (1 << 8) && action < (1 << 16) {
-                            SmallProductTag
-                        } else {
-                            ProductTag
-                        }
-                    }
-                    None => {
-                        if position >= left_factor.0 && position - left_factor.0 < (1 << 5) && action < (1 << 8) {
-                            SmallLinkTag
-                        } else if position >= left_factor.0 && position - left_factor.0 < (1 << (5 + 8)) && action < (1 << 16) {
-                            MediumLinkTag
-                        } else {
-                            ProductTag
-                        }
+            Product {
+                left_factor,
+                right_factor,
+                action,
+            } => match right_factor {
+                Some(handle) => {
+                    if position >= handle.0
+                        && position >= left_factor.0
+                        && position - handle.0 < (1 << 5)
+                        && position - left_factor.0 < (1 << 8)
+                        && action < (1 << 16)
+                    {
+                        SmallProductTag
+                    } else {
+                        ProductTag
                     }
                 }
-            }
+                None => {
+                    if position >= left_factor.0
+                        && position - left_factor.0 < (1 << 5)
+                        && action < (1 << 8)
+                    {
+                        SmallLinkTag
+                    } else if position >= left_factor.0
+                        && position - left_factor.0 < (1 << (5 + 8))
+                        && action < (1 << 16)
+                    {
+                        MediumLinkTag
+                    } else {
+                        ProductTag
+                    }
+                }
+            },
             NullingLeaf { symbol } => {
                 if symbol.usize() < (1 << (4 + 8)) {
                     SmallNullingLeafTag
@@ -638,27 +563,6 @@ impl Node {
     }
 }
 
-impl NodeHandle {
-    #[inline]
-    pub(in super) fn nulling(symbol: Symbol) -> Self {
-        NodeHandle(symbol.usize() as u32)
-    }
-
-    #[inline]
-    pub(in super) fn usize(self) -> usize {
-        self.0 as usize
-    }
-
-    #[inline]
-    fn to_option(self) -> Option<NodeHandle> {
-        if self == NULL_HANDLE {
-            None
-        } else {
-            Some(self)
-        }
-    }
-}
-
 #[inline]
 unsafe fn unwrap_unchecked<T>(opt: Option<T>) -> T {
     match opt {
@@ -666,11 +570,6 @@ unsafe fn unwrap_unchecked<T>(opt: Option<T>) -> T {
         None => hint::unreachable_unchecked(),
     }
 }
-
-// #[inline]
-// unsafe fn set_tag(fields: &mut u16, tag: Tag) {
-//     *fields |= tag.to_u16();
-// }
 
 #[inline]
 unsafe fn get_and_erase_tag(field: u16) -> (Tag, u16) {

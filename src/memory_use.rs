@@ -1,14 +1,13 @@
 use std::mem;
 
-use bit_vec::BitVec;
 use bit_matrix::BitMatrix;
+use bit_vec::BitVec;
 
-use forest::{Forest, NullForest, Bocage};
-use forest::bocage::MarkAndSweep;
-use forest::node::{NodeHandle, Graph};
+use forest::node_handle::NodeHandle;
+use forest::{Bocage, CompactBocage, Forest, NullForest};
 use grammar::InternalGrammar;
+use item::{CompletedItem, Item};
 use recognizer::Recognizer;
-use item::{Item, CompletedItem};
 
 const ITEMS_PER_SET: usize = 16;
 
@@ -20,7 +19,8 @@ pub trait MemoryUse {
 }
 
 impl<'g, F> MemoryUse for Recognizer<'g, F>
-    where F: MemoryUse<Arg=&'g InternalGrammar> + Forest,
+where
+    F: MemoryUse<Arg = &'g InternalGrammar> + Forest,
 {
     type Arg = &'g InternalGrammar;
 
@@ -33,7 +33,8 @@ impl<'g, F> MemoryUse for Recognizer<'g, F>
     }
 
     fn new_with_limit(grammar: &'g InternalGrammar, memory_limit: usize) -> Self {
-        let forest_use_bytes = memory_limit * F::FOREST_BYTES_PER_RECOGNIZER_BYTE / (F::FOREST_BYTES_PER_RECOGNIZER_BYTE + 1);
+        let forest_use_bytes = memory_limit * F::FOREST_BYTES_PER_RECOGNIZER_BYTE
+            / (F::FOREST_BYTES_PER_RECOGNIZER_BYTE + 1);
         let complete_use = match memory_limit {
             0..=1000 => 16,
             1000..=500_000 => 32,
@@ -69,7 +70,8 @@ impl<'g, F> MemoryUse for Recognizer<'g, F>
 }
 
 impl<'g, F> Recognizer<'g, F>
-    where F: MemoryUse<Arg=&'g InternalGrammar> + Forest,
+where
+    F: MemoryUse<Arg = &'g InternalGrammar> + Forest,
 {
     #[inline]
     pub fn new_with_hint(grammar: &'g InternalGrammar, tokens: usize) -> Self {
@@ -119,8 +121,8 @@ impl<'g> MemoryUse for Recognizer<'g, NullForest> {
             500_000..=2_000_000 => 64,
             _ => 128,
         };
-        let recognizer_use_bytes = memory_limit
-            - complete_use * mem::size_of::<CompletedItem<()>>();
+        let recognizer_use_bytes =
+            memory_limit - complete_use * mem::size_of::<CompletedItem<()>>();
         let bytes_per_set = mem::size_of::<usize>()
             + (grammar.num_syms() + 31) / 32 * 4
             + ITEMS_PER_SET * mem::size_of::<Item<()>>();
@@ -203,6 +205,26 @@ impl<'g> MemoryUse for Bocage<&'g InternalGrammar> {
     type Arg = &'g InternalGrammar;
 
     fn memory_use(&self) -> usize {
+        self.graph.memory_use() + self.gc.liveness.memory_use() + self.gc.dfs.memory_use()
+    }
+
+    fn new_with_limit(grammar: &'g InternalGrammar, memory_limit: usize) -> Self {
+        let dfs_size = match memory_limit {
+            0..=1000 => 8,
+            1000..=100_000 => 32,
+            _ => 64,
+        };
+        let remaining_use = memory_limit - dfs_size * std::mem::size_of::<NodeHandle>();
+        let bytes_per_node = mem::size_of::<u16>() as f32 + 1.0 / 8.0;
+        let graph_size = (remaining_use as f32 / bytes_per_node) as usize;
+        Bocage::with_capacities(grammar, graph_size, dfs_size)
+    }
+}
+
+impl<'g> MemoryUse for CompactBocage<&'g InternalGrammar> {
+    type Arg = &'g InternalGrammar;
+
+    fn memory_use(&self) -> usize {
         self.graph.vec.memory_use() + self.gc.liveness.memory_use() + self.gc.dfs.memory_use()
     }
 
@@ -215,17 +237,6 @@ impl<'g> MemoryUse for Bocage<&'g InternalGrammar> {
         let remaining_use = memory_limit - dfs_size * std::mem::size_of::<NodeHandle>();
         let bytes_per_node = mem::size_of::<u16>() as f32 + 1.0 / 8.0;
         let graph_size = (remaining_use as f32 / bytes_per_node) as usize;
-        let mut result = Bocage {
-            graph: Graph::with_capacity(graph_size),
-            gc: MarkAndSweep {
-                liveness: BitVec::with_capacity(graph_size),
-                dfs: Vec::with_capacity(dfs_size),
-            },
-            grammar,
-            summand_count: 0,
-            first_summand: NodeHandle(0),
-        };
-        result.initialize_nulling();
-        result
+        CompactBocage::with_capacities(grammar, graph_size, dfs_size)
     }
 }
