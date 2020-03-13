@@ -68,22 +68,40 @@ where
     /// Creates a new recognizer for a given grammar and forest. The recognizer has an initial
     /// Earley set that predicts the grammar's start symbol.
     pub fn new(grammar: &'g InternalGrammar, forest: F) -> Recognizer<'g, F> {
-        let mut recognizer = Recognizer {
+        let mut recognizer = Recognizer::empty(grammar, forest);
+        recognizer.indices = Vec::with_capacity(64);
+        recognizer.predicted = BitMatrix::new(8, grammar.num_syms());
+        recognizer.medial = Vec::with_capacity(256);
+        recognizer.complete = Vec::with_capacity(32);
+        recognizer.initialize();
+        recognizer
+    }
+
+    /// Creates a new recognizer for a given grammar and forest. The recognizer has an initial
+    /// Earley set that predicts the grammar's start symbol.
+    #[inline]
+    pub fn empty(grammar: &'g InternalGrammar, forest: F) -> Recognizer<'g, F> {
+        Recognizer {
             forest,
             grammar,
             // The initial location is 0.
             earleme: 0,
-            // The first Earley set begins at 0 and ends at 0. The second Earley set begins at 0.
-            indices: vec![0, 0],
+            indices: Vec::new(),
             current_medial_start: 0,
             // Reserve some capacity for vectors.
-            predicted: BitMatrix::new(8, grammar.num_syms()),
-            medial: Vec::with_capacity(256),
-            complete: Vec::with_capacity(32),
+            predicted: BitMatrix::new(0, grammar.num_syms()),
+            medial: Vec::new(),
+            complete: Vec::new(),
             lookahead_hint: None,
-        };
-        recognizer.predict(grammar.start_sym());
-        recognizer
+        }
+    }
+
+    pub(super) fn initialize(&mut self) {
+        // The first Earley set begins at 0 and ends at 0.
+        self.indices.push(0);
+        // The second Earley set begins at 0.
+        self.indices.push(0);
+        self.predict(self.grammar.start_sym());
     }
 
     /// Makes the current Earley set predict a given symbol.
@@ -379,16 +397,14 @@ where
     /// Resets the recognizer to its initial state by removing all contents.
     pub fn reset(&mut self) {
         self.earleme = 0;
-        self.predict(self.grammar.start_sym());
         // Indices reset to [0, 0].
         self.indices.clear();
-        self.indices.push(0);
-        self.indices.push(0);
         // Current medial start reset to 0.
         self.current_medial_start = 0;
         // Remove items.
         self.medial.clear();
         self.complete.clear();
+        self.initialize();
     }
 
     // Finished node access.
