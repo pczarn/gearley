@@ -466,8 +466,8 @@ fn bench_parse_c(b: &mut test::Bencher) {
         tok.map(|t| t.usize() as u32)
     }).collect();
     let mut first = true;
+    let cfg = InternalGrammar::from_grammar(&external);
     b.iter(|| {
-        let cfg = InternalGrammar::from_grammar(&external);
         let bocage = Bocage::new(&cfg);
         let mut rec: Recognizer<Bocage<&'_ InternalGrammar>> = Recognizer::new_with_limit(&cfg, 2_00_000);
         rec.forest = bocage;

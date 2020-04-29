@@ -12,6 +12,8 @@ use item::Dot;
 pub use cfg::earley::{Grammar, BinarizedGrammar};
 pub use cfg::earley::history::History;
 
+use recognizer::Predicted;
+
 // For efficiency, the recognizer works on processed grammars. Grammars described by the user
 // are transformed to meet the following properties:
 //
@@ -234,22 +236,44 @@ impl InternalGrammar {
     }
 
     fn populate_predictions(&mut self, grammar: &BinarizedGrammar) {
-        self.populate_prediction_matrix(grammar);
+        let unary_table = self.compute_unary_completion_table(grammar);
+        let binary_table = self.compute_binary_completion_table(grammar);
+        self.populate_prediction_matrix(grammar, &unary_table, &binary_table);
         self.populate_prediction_events(grammar);
-        self.populate_completion_tables(grammar);
+        self.populate_completion_tables(grammar, &unary_table, &binary_table);
         self.populate_follow_sets(grammar);
     }
 
-    fn populate_prediction_matrix(&mut self, grammar: &BinarizedGrammar) {
-        self.prediction_matrix = BitMatrix::new(self.size.syms, self.size.syms);
+    fn populate_prediction_matrix(&mut self, grammar: &BinarizedGrammar, unary: &CompletionTable, binary: &CompletionTable) {
+        let mut general_prediction_matrix = BitMatrix::new(self.size.syms, self.size.syms);
         // Precompute DFA.
         for rule in grammar.rules() {
-            self.prediction_matrix.set(rule.lhs().usize(), rule.rhs()[0].usize(), true);
+            general_prediction_matrix.set(rule.lhs().usize(), rule.rhs()[0].usize(), true);
         }
-        self.prediction_matrix.transitive_closure();
+        general_prediction_matrix.transitive_closure();
         // Prediction relation is reflexive.
         for i in 0..self.size.syms {
-            self.prediction_matrix.set(i, i, true);
+            general_prediction_matrix.set(i, i, true);
+        }
+        self.prediction_matrix = BitMatrix::new(self.size.syms, self.size.syms * 4);
+        for i in 0..self.size.syms {
+            for j in 0..self.size.syms {
+                if general_prediction_matrix[(i, j)] {
+                    // println!("({}, {})", i, j);
+                    self.prediction_matrix.set(i, Predicted::Any(j.into()).usize(), true);
+                    if i == j {
+                        self.prediction_matrix.set(i, Predicted::Medial(i.into()).usize(), true);
+                    }
+                    if unary[j].iter().any(|transition| general_prediction_matrix[(i, transition.symbol.usize())]) {
+                        // println!("unary");
+                        self.prediction_matrix.set(i, Predicted::Unary(j.into()).usize(), true);
+                    }
+                    if binary[j].iter().any(|transition| general_prediction_matrix[(i, transition.symbol.usize())]) {
+                        // println!("binary");
+                        self.prediction_matrix.set(i, Predicted::Binary(j.into()).usize(), true);
+                    }
+                }
+            }
         }
     }
 
@@ -275,15 +299,14 @@ impl InternalGrammar {
         }
     }
 
-    fn populate_completion_tables(&mut self, grammar: &BinarizedGrammar) {
-        self.populate_unary_completion_table(grammar);
-        self.populate_binary_completion_table(grammar);
+    fn populate_completion_tables(&mut self, grammar: &BinarizedGrammar, unary: &CompletionTable, binary: &CompletionTable) {
+        self.populate_unary_completion_table(grammar, unary);
+        self.populate_binary_completion_table(grammar, binary);
     }
 
-    fn populate_unary_completion_table(&mut self, grammar: &BinarizedGrammar) {
-        let table = self.compute_unary_completion_table(grammar);
-        self.populate_unary_completion_index(&table);
-        self.populate_unary_completions(&table);
+    fn populate_unary_completion_table(&mut self, grammar: &BinarizedGrammar, table: &CompletionTable) {
+        self.populate_unary_completion_index(table);
+        self.populate_unary_completions(table);
     }
 
     fn compute_unary_completion_table(&self, grammar: &BinarizedGrammar) -> CompletionTable {
@@ -321,10 +344,9 @@ impl InternalGrammar {
         self.unary_completions.extend(iter_table);
     }
 
-    fn populate_binary_completion_table(&mut self, grammar: &BinarizedGrammar) {
-        let table = self.compute_binary_completion_table(grammar);
-        self.populate_binary_completion_index(&table);
-        self.populate_binary_completions(&table);
+    fn populate_binary_completion_table(&mut self, grammar: &BinarizedGrammar, table: &CompletionTable) {
+        self.populate_binary_completion_index(table);
+        self.populate_binary_completions(table);
     }
 
     fn compute_binary_completion_table(&self, grammar: &BinarizedGrammar) -> CompletionTable {

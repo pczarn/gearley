@@ -7,7 +7,7 @@ use forest::node_handle::NodeHandle;
 use forest::{Bocage, CompactBocage, Forest, NullForest};
 use grammar::InternalGrammar;
 use item::{CompletedItem, Item};
-use recognizer::Recognizer;
+use recognizer::{Recognizer, Predicted};
 
 const ITEMS_PER_SET: usize = 16;
 
@@ -45,7 +45,7 @@ where
             - forest_use_bytes
             - complete_use * mem::size_of::<CompletedItem<F::NodeRef>>();
         let bytes_per_set = mem::size_of::<usize>()
-            + (grammar.num_syms() + 31) / 32 * 4
+            + (Predicted::row_size(grammar) + 31) / 32 * 4
             + ITEMS_PER_SET * mem::size_of::<Item<F::NodeRef>>();
         let sets_use = recognizer_use_bytes / bytes_per_set;
         let mut recognizer = Recognizer {
@@ -57,14 +57,12 @@ where
             indices: Vec::with_capacity(sets_use),
             current_medial_start: 0,
             // Reserve some capacity for vectors.
-            predicted: BitMatrix::new(sets_use, grammar.num_syms()),
+            predicted: BitMatrix::new(sets_use, Predicted::row_size(grammar)),
             medial: Vec::with_capacity(sets_use * ITEMS_PER_SET),
             complete: Vec::with_capacity(complete_use),
             lookahead_hint: None,
         };
-        recognizer.indices.push(0);
-        recognizer.indices.push(0);
-        recognizer.predict(grammar.start_sym());
+        recognizer.initialize();
         recognizer
     }
 }
@@ -91,14 +89,12 @@ where
             indices: Vec::with_capacity(tokens + 1),
             current_medial_start: 0,
             // Reserve some capacity for vectors.
-            predicted: BitMatrix::new(tokens + 1, grammar.num_syms()),
+            predicted: BitMatrix::new(tokens + 1, Predicted::row_size(grammar)),
             medial: Vec::with_capacity(tokens * ITEMS_PER_SET),
             complete: Vec::with_capacity(complete_use),
             lookahead_hint: None,
         };
-        recognizer.indices.push(0);
-        recognizer.indices.push(0);
-        recognizer.predict(grammar.start_sym());
+        recognizer.initialize();
         recognizer
     }
 }
@@ -124,7 +120,7 @@ impl<'g> MemoryUse for Recognizer<'g, NullForest> {
         let recognizer_use_bytes =
             memory_limit - complete_use * mem::size_of::<CompletedItem<()>>();
         let bytes_per_set = mem::size_of::<usize>()
-            + (grammar.num_syms() + 31) / 32 * 4
+            + (Predicted::row_size(grammar) + 31) / 32 * 4
             + ITEMS_PER_SET * mem::size_of::<Item<()>>();
         let sets_use = recognizer_use_bytes / bytes_per_set;
         let mut recognizer = Recognizer {
@@ -136,14 +132,12 @@ impl<'g> MemoryUse for Recognizer<'g, NullForest> {
             indices: Vec::with_capacity(sets_use),
             current_medial_start: 0,
             // Reserve some capacity for vectors.
-            predicted: BitMatrix::new(sets_use, grammar.num_syms()),
+            predicted: BitMatrix::new(sets_use, Predicted::row_size(grammar)),
             medial: Vec::with_capacity(sets_use * ITEMS_PER_SET),
             complete: Vec::with_capacity(complete_use),
             lookahead_hint: None,
         };
-        recognizer.indices.push(0);
-        recognizer.indices.push(0);
-        recognizer.predict(grammar.start_sym());
+        recognizer.initialize();
         recognizer
     }
 }

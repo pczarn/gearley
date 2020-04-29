@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::ops::Range;
 
-use bit_matrix::BitMatrix;
+use bit_matrix::{BitMatrix, row::BitVecSlice};
 use cfg::*;
 
 use events::{MedialItems, PredictedSymbols};
@@ -61,6 +61,38 @@ where
     pub(super) lookahead_hint: Option<Option<Symbol>>,
 }
 
+#[derive(Copy, Clone)]
+pub(crate) enum Predicted {
+    Any(Symbol),
+    Medial(Symbol),
+    Unary(Symbol),
+    Binary(Symbol),
+}
+
+impl Predicted {
+    #[inline]
+    pub(crate) fn usize(self) -> usize {
+        match self {
+            Predicted::Any(sym) => sym.usize() * 4,
+            Predicted::Medial(sym) => sym.usize() * 4 + 1,
+            Predicted::Unary(sym) => sym.usize() * 4 + 2,
+            Predicted::Binary(sym) => sym.usize() * 4 + 3,
+        }
+    }
+
+    #[inline]
+    fn any(sym: Symbol, row: &BitVecSlice) -> bool {
+        // row[Predicted::Medial(sym).usize()]
+        // || row[Predicted::Unary(sym).usize()]
+        // || row[Predicted::Binary(sym).usize()]
+        row[Predicted::Any(sym).usize()]
+    }
+
+    pub(crate) fn row_size(grammar: &InternalGrammar) -> usize {
+        grammar.num_syms() * 4
+    }
+}
+
 impl<'g, F> Recognizer<'g, F>
 where
     F: Forest,
@@ -68,9 +100,10 @@ where
     /// Creates a new recognizer for a given grammar and forest. The recognizer has an initial
     /// Earley set that predicts the grammar's start symbol.
     pub fn new(grammar: &'g InternalGrammar, forest: F) -> Recognizer<'g, F> {
+        // println!("new");
         let mut recognizer = Recognizer::empty(grammar, forest);
         recognizer.indices = Vec::with_capacity(64);
-        recognizer.predicted = BitMatrix::new(8, grammar.num_syms());
+        recognizer.predicted = BitMatrix::new(8, Predicted::row_size(grammar));
         recognizer.medial = Vec::with_capacity(256);
         recognizer.complete = Vec::with_capacity(32);
         recognizer.initialize();
@@ -81,6 +114,7 @@ where
     /// Earley set that predicts the grammar's start symbol.
     #[inline]
     pub fn empty(grammar: &'g InternalGrammar, forest: F) -> Recognizer<'g, F> {
+        // println!("empty");
         Recognizer {
             forest,
             grammar,
@@ -89,7 +123,7 @@ where
             indices: Vec::new(),
             current_medial_start: 0,
             // Reserve some capacity for vectors.
-            predicted: BitMatrix::new(0, grammar.num_syms()),
+            predicted: BitMatrix::new(0, Predicted::row_size(grammar)),
             medial: Vec::new(),
             complete: Vec::new(),
             lookahead_hint: None,
@@ -101,6 +135,7 @@ where
         self.indices.push(0);
         // The second Earley set begins at 0.
         self.indices.push(0);
+        // println!("predict {:?}", self.grammar.start_sym().usize());
         self.predict(self.grammar.start_sym());
     }
 
@@ -246,7 +281,7 @@ where
             } else {
                 continue;
             };
-            if !destination[postdot.usize()] {
+            if !destination[Predicted::Medial(postdot).usize()] {
                 // Prediction happens here. We would prefer to call `self.predict`, but we can't,
                 // because `self.medial` is borrowed by `iter`.
                 let source = &self.grammar.prediction_matrix()[postdot.usize()];
@@ -260,9 +295,43 @@ where
     /// Complete items.
     pub fn complete(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
         debug_assert!(sym != self.grammar.eof());
-        if self.predicted[set_id as usize].get(sym.usize()) {
+        // New completed item.
+        // from A ::= B • C
+        // to   A ::= B   C •
+        // println!("complete {:?}", sym.usize());
+        let predicted = unsafe {
+            &*(&self.predicted[set_id as usize] as *const BitVecSlice)
+        };
+        if predicted.get(Predicted::Medial(sym).usize()) {
+            // println!("complete medial {:?}", sym.usize());
             self.complete_medial_items(set_id, sym, rhs_link);
-            self.complete_predictions(set_id, sym, rhs_link);
+        // } else {
+        //     if self.medial_item_set_range(set_id, sym).count() != 0 {
+        //         println!("FAULT MEDIAL");
+        //     }
+        }
+        // New item, either completed or pre-terminal. Ensure uniqueness.
+        // from A ::= • B   c
+        // to   A ::=   B • c
+        if predicted.get(Predicted::Unary(sym).usize()) {
+            // println!("complete unary {:?}", sym.usize());
+            self.complete_unary_predictions(set_id, sym, rhs_link, predicted);
+        // } else {
+        //     if self.grammar.unary_completions(sym).iter().any(|trans|
+        //         Predicted::any(trans.symbol, &self.predicted[set_id as usize])
+        //     ) {
+        //         println!("FAULT UNARY");
+        //     }
+        }
+        if predicted.get(Predicted::Binary(sym).usize()) {
+            // println!("complete binary {:?}", sym.usize());
+            self.complete_binary_predictions(set_id, sym, rhs_link, predicted);
+        // } else {
+        //     if self.grammar.unary_completions(sym).iter().any(|trans|
+        //         Predicted::any(trans.symbol, &self.predicted[set_id as usize])
+        //     ) {
+        //         println!("FAULT BINARY");
+        //     }
         }
     }
 
@@ -272,11 +341,6 @@ where
         let set_range = self.medial_item_set_range(set_id, sym);
         if let Some(hint) = self.lookahead_hint {
             for idx in set_range {
-                // New completed item.
-                // from A ::= B • C
-                // to   A ::= B   C •
-                //
-                // We might link to medial items by index, here.
                 let dot = self.medial[idx].dot;
                 if !self.grammar.can_follow(self.grammar.get_lhs(dot), hint) {
                     continue;
@@ -288,11 +352,6 @@ where
             }
         } else {
             for idx in set_range {
-                // New completed item.
-                // from A ::= B • C
-                // to   A ::= B   C •
-                //
-                // We might link to medial items by index, here.
                 self.heap_push_linked(CompletedItemLinked {
                     idx: idx as u32,
                     node: Some(rhs_link),
@@ -331,19 +390,14 @@ where
         outer_start + inner_start..outer_start + inner_start + inner_end
     }
 
-    /// Complete predicted items that have a common postdot symbol.
-    fn complete_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
-        // New item, either completed or pre-terminal. Ensure uniqueness.
-        // from A ::= • B   c
-        // to   A ::=   B • c
-        self.complete_unary_predictions(set_id, sym, rhs_link);
-        self.complete_binary_predictions(set_id, sym, rhs_link);
-    }
+    // /// Complete predicted items that have a common postdot symbol.
+    // fn complete_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
+    // }
 
     /// Complete an item if predicted at rhs0.
-    fn complete_unary_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
+    fn complete_unary_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef, predicted: &BitVecSlice) {
         for trans in self.grammar.unary_completions(sym) {
-            if self.predicted[set_id as usize].get(trans.symbol.usize()) {
+            if predicted[Predicted::Any(trans.symbol).usize()] {
                 // No checks for uniqueness, because `medial` will be deduplicated.
                 // from A ::= • B
                 // to   A ::=   B •
@@ -369,9 +423,9 @@ where
     }
 
     /// Complete an item if predicted at rhs1.
-    fn complete_binary_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
+    fn complete_binary_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef, predicted: &BitVecSlice) {
         for trans in self.grammar.binary_completions(sym) {
-            if self.predicted[set_id as usize].get(trans.symbol.usize()) {
+            if predicted[Predicted::Any(trans.symbol).usize()] {
                 if let Some(hint) = self.lookahead_hint {
                     if !self
                         .grammar
