@@ -295,43 +295,24 @@ where
     /// Complete items.
     pub fn complete(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
         debug_assert!(sym != self.grammar.eof());
-        // New completed item.
-        // from A ::= B • C
-        // to   A ::= B   C •
-        // println!("complete {:?}", sym.usize());
         let predicted = unsafe {
             &*(&self.predicted[set_id as usize] as *const BitVecSlice)
         };
-        if predicted.get(Predicted::Medial(sym).usize()) {
-            // println!("complete medial {:?}", sym.usize());
+        let slice = predicted.small_slice_aligned(Predicted::Medial(sym).usize(), 3) as u8;
+        // New completed item.
+        // from A ::= B • C
+        // to   A ::= B   C •
+        if slice & 0b001 != 0 {
             self.complete_medial_items(set_id, sym, rhs_link);
-        // } else {
-        //     if self.medial_item_set_range(set_id, sym).count() != 0 {
-        //         println!("FAULT MEDIAL");
-        //     }
         }
         // New item, either completed or pre-terminal. Ensure uniqueness.
         // from A ::= • B   c
         // to   A ::=   B • c
-        if predicted.get(Predicted::Unary(sym).usize()) {
-            // println!("complete unary {:?}", sym.usize());
+        if slice & 0b010 != 0 {
             self.complete_unary_predictions(set_id, sym, rhs_link, predicted);
-        // } else {
-        //     if self.grammar.unary_completions(sym).iter().any(|trans|
-        //         Predicted::any(trans.symbol, &self.predicted[set_id as usize])
-        //     ) {
-        //         println!("FAULT UNARY");
-        //     }
         }
-        if predicted.get(Predicted::Binary(sym).usize()) {
-            // println!("complete binary {:?}", sym.usize());
+        if slice & 0b100 != 0 {
             self.complete_binary_predictions(set_id, sym, rhs_link, predicted);
-        // } else {
-        //     if self.grammar.unary_completions(sym).iter().any(|trans|
-        //         Predicted::any(trans.symbol, &self.predicted[set_id as usize])
-        //     ) {
-        //         println!("FAULT BINARY");
-        //     }
         }
     }
 
@@ -361,7 +342,6 @@ where
     }
 
     fn medial_item_set_range(&mut self, set_id: Origin, sym: Symbol) -> Range<usize> {
-        // Huh, can we reduce complexity here?
         let outer_start = self.indices[set_id as usize];
         let outer_end = self.indices[set_id as usize + 1];
         let specific_set = &self.medial[outer_start..outer_end];
@@ -382,12 +362,8 @@ where
                 .count()
         };
 
-        // The range contains items that have the same RHS1 symbol.
-        let inner_end = specific_set[inner_start..]
-            .iter()
-            .take_while(|ei| self.grammar.get_rhs1(ei.dot) == Some(sym))
-            .count();
-        outer_start + inner_start..outer_start + inner_start + inner_end
+        // // The beginning of the range points to items that have the same RHS1 symbol.
+        outer_start + inner_start .. outer_end
     }
 
     // /// Complete predicted items that have a common postdot symbol.
