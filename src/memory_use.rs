@@ -8,6 +8,7 @@ use forest::{Bocage, CompactBocage, Forest, NullForest};
 use grammar::InternalGrammar;
 use item::{CompletedItem, Item};
 use recognizer::{Recognizer, Predicted};
+use policy::PerformancePolicy;
 
 const ITEMS_PER_SET: usize = 16;
 
@@ -18,11 +19,11 @@ pub trait MemoryUse {
     fn new_with_limit(arg: Self::Arg, memory_limit: usize) -> Self;
 }
 
-impl<'g, F> MemoryUse for Recognizer<'g, F>
+impl<'g, F, P: PerformancePolicy> MemoryUse for Recognizer<'g, F, P>
 where
-    F: MemoryUse<Arg = &'g InternalGrammar> + Forest,
+    F: MemoryUse<Arg = &'g InternalGrammar<P>> + Forest,
 {
-    type Arg = &'g InternalGrammar;
+    type Arg = &'g InternalGrammar<P>;
 
     fn memory_use(&self) -> usize {
         self.forest.memory_use()
@@ -32,7 +33,7 @@ where
             + self.indices.memory_use()
     }
 
-    fn new_with_limit(grammar: &'g InternalGrammar, memory_limit: usize) -> Self {
+    fn new_with_limit(grammar: &'g InternalGrammar<P>, memory_limit: usize) -> Self {
         let forest_use_bytes = memory_limit * F::FOREST_BYTES_PER_RECOGNIZER_BYTE
             / (F::FOREST_BYTES_PER_RECOGNIZER_BYTE + 1);
         let complete_use = match memory_limit {
@@ -45,8 +46,8 @@ where
             - forest_use_bytes
             - complete_use * mem::size_of::<CompletedItem<F::NodeRef>>();
         let bytes_per_set = mem::size_of::<usize>()
-            + (Predicted::row_size(grammar) + 31) / 32 * 4
-            + ITEMS_PER_SET * mem::size_of::<Item<F::NodeRef>>();
+            + (grammar.predicted_row_size() + 31) / 32 * 4
+            + ITEMS_PER_SET * mem::size_of::<Item<F::NodeRef, P>>();
         let sets_use = recognizer_use_bytes / bytes_per_set;
         let mut recognizer = Recognizer {
             forest: F::new_with_limit(grammar, forest_use_bytes),
@@ -57,7 +58,7 @@ where
             indices: Vec::with_capacity(sets_use),
             current_medial_start: 0,
             // Reserve some capacity for vectors.
-            predicted: BitMatrix::new(sets_use, Predicted::row_size(grammar)),
+            predicted: BitMatrix::new(sets_use, grammar.predicted_row_size()),
             medial: Vec::with_capacity(sets_use * ITEMS_PER_SET),
             complete: Vec::with_capacity(complete_use),
             lookahead_hint: None,
@@ -67,12 +68,12 @@ where
     }
 }
 
-impl<'g, F> Recognizer<'g, F>
+impl<'g, F, P: PerformancePolicy> Recognizer<'g, F, P>
 where
-    F: MemoryUse<Arg = &'g InternalGrammar> + Forest,
+    F: MemoryUse<Arg = &'g InternalGrammar<P>> + Forest,
 {
     #[inline]
-    pub fn new_with_hint(grammar: &'g InternalGrammar, tokens: usize) -> Self {
+    pub fn new_with_hint(grammar: &'g InternalGrammar<P>, tokens: usize) -> Self {
         let forest_use_bytes = tokens * 16;
         let complete_use = match tokens {
             0..=200 => 16,
@@ -89,7 +90,7 @@ where
             indices: Vec::with_capacity(tokens + 1),
             current_medial_start: 0,
             // Reserve some capacity for vectors.
-            predicted: BitMatrix::new(tokens + 1, Predicted::row_size(grammar)),
+            predicted: BitMatrix::new(tokens + 1, grammar.predicted_row_size()),
             medial: Vec::with_capacity(tokens * ITEMS_PER_SET),
             complete: Vec::with_capacity(complete_use),
             lookahead_hint: None,
@@ -99,8 +100,8 @@ where
     }
 }
 
-impl<'g> MemoryUse for Recognizer<'g, NullForest> {
-    type Arg = &'g InternalGrammar;
+impl<'g, P: PerformancePolicy> MemoryUse for Recognizer<'g, NullForest, P> {
+    type Arg = &'g InternalGrammar<P>;
 
     fn memory_use(&self) -> usize {
         self.forest.memory_use()
@@ -110,7 +111,7 @@ impl<'g> MemoryUse for Recognizer<'g, NullForest> {
             + self.indices.memory_use()
     }
 
-    fn new_with_limit(grammar: &'g InternalGrammar, memory_limit: usize) -> Self {
+    fn new_with_limit(grammar: &'g InternalGrammar<P>, memory_limit: usize) -> Self {
         let complete_use = match memory_limit {
             0..=1000 => 16,
             1000..=500_000 => 32,
@@ -120,8 +121,8 @@ impl<'g> MemoryUse for Recognizer<'g, NullForest> {
         let recognizer_use_bytes =
             memory_limit - complete_use * mem::size_of::<CompletedItem<()>>();
         let bytes_per_set = mem::size_of::<usize>()
-            + (Predicted::row_size(grammar) + 31) / 32 * 4
-            + ITEMS_PER_SET * mem::size_of::<Item<()>>();
+            + (grammar.predicted_row_size() + 31) / 32 * 4
+            + ITEMS_PER_SET * mem::size_of::<Item<(), P>>();
         let sets_use = recognizer_use_bytes / bytes_per_set;
         let mut recognizer = Recognizer {
             forest: NullForest,
@@ -132,7 +133,7 @@ impl<'g> MemoryUse for Recognizer<'g, NullForest> {
             indices: Vec::with_capacity(sets_use),
             current_medial_start: 0,
             // Reserve some capacity for vectors.
-            predicted: BitMatrix::new(sets_use, Predicted::row_size(grammar)),
+            predicted: BitMatrix::new(sets_use, grammar.predicted_row_size()),
             medial: Vec::with_capacity(sets_use * ITEMS_PER_SET),
             complete: Vec::with_capacity(complete_use),
             lookahead_hint: None,
@@ -195,14 +196,14 @@ impl MemoryUse for NullForest {
     }
 }
 
-impl<'g> MemoryUse for Bocage<&'g InternalGrammar> {
-    type Arg = &'g InternalGrammar;
+impl<'g, P: PerformancePolicy> MemoryUse for Bocage<&'g InternalGrammar<P>, P> {
+    type Arg = &'g InternalGrammar<P>;
 
     fn memory_use(&self) -> usize {
         self.graph.memory_use() + self.gc.liveness.memory_use() + self.gc.dfs.memory_use()
     }
 
-    fn new_with_limit(grammar: &'g InternalGrammar, memory_limit: usize) -> Self {
+    fn new_with_limit(grammar: &'g InternalGrammar<P>, memory_limit: usize) -> Self {
         let dfs_size = match memory_limit {
             0..=1000 => 8,
             1000..=100_000 => 32,
@@ -215,14 +216,14 @@ impl<'g> MemoryUse for Bocage<&'g InternalGrammar> {
     }
 }
 
-impl<'g> MemoryUse for CompactBocage<&'g InternalGrammar> {
-    type Arg = &'g InternalGrammar;
+impl<'g, P: PerformancePolicy> MemoryUse for CompactBocage<&'g InternalGrammar<P>, P> {
+    type Arg = &'g InternalGrammar<P>;
 
     fn memory_use(&self) -> usize {
         self.graph.vec.memory_use() + self.gc.liveness.memory_use() + self.gc.dfs.memory_use()
     }
 
-    fn new_with_limit(grammar: &'g InternalGrammar, memory_limit: usize) -> Self {
+    fn new_with_limit(grammar: &'g InternalGrammar<P>, memory_limit: usize) -> Self {
         let dfs_size = match memory_limit {
             0..=1000 => 8,
             1000..=100_000 => 32,

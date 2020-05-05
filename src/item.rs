@@ -1,23 +1,26 @@
 use std::cmp::Ordering;
+use std::convert::TryInto;
 
-pub type Dot = u32;
+use policy::PerformancePolicy;
+
 pub type Origin = u32;
 
 #[derive(Clone, Copy, Debug)]
-pub struct Item<N> {
-    pub(in super) origin: Origin,
-    pub(in super) dot: Dot,
+pub struct Item<N, P> where P: PerformancePolicy {
+    pub(crate) origin: Origin,
+    pub(crate) dot: P::Dot,
+    // pub(crate) rhs1: P::Symbol,
     pub node: N,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct CompletedItem<N> {
     /// The dot position.
-    pub(in super) dot: Dot,
+    pub(crate) dot: u32,
     /// The origin location.
     /// It comes after `dot`, so that (origin, dot) can be compared in a single instruction
     /// on little-endian systems.
-    pub(in super) origin: Origin,
+    pub(crate) origin: Origin,
     /// Left bocage node.
     pub left_node: N,
     /// Right bocage node.
@@ -32,27 +35,27 @@ pub struct CompletedItemLinked<N> {
     pub node: Option<N>,
 }
 
-impl<L> PartialEq for Item<L> {
+impl<N, P: PerformancePolicy> PartialEq for Item<N, P> {
     fn eq(&self, other: &Self) -> bool {
         (self.origin, self.dot) == (other.origin, other.dot)
     }
 }
 
-impl<L> Eq for Item<L> {}
+impl<N, P: PerformancePolicy> Eq for Item<N, P> {}
 
-impl<L> PartialOrd for Item<L> {
+impl<N, P: PerformancePolicy> PartialOrd for Item<N, P> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<L> Ord for Item<L> {
+impl<N, P: PerformancePolicy> Ord for Item<N, P> {
     fn cmp(&self, other: &Self) -> Ordering {
         (self.origin, self.dot).cmp(&(other.origin, other.dot))
     }
 }
 
-impl<L> PartialEq for CompletedItem<L> {
+impl<N> PartialEq for CompletedItem<N> {
     fn eq(&self, other: &Self) -> bool {
         (self.origin, self.dot) == (other.origin, other.dot)
     }
@@ -72,11 +75,11 @@ impl<L> Ord for CompletedItem<L> {
     }
 }
 
-impl<N> Into<Item<N>> for CompletedItem<N> {
-    fn into(self) -> Item<N> {
+impl<N, P: PerformancePolicy> Into<Item<N, P>> for CompletedItem<N> {
+    fn into(self) -> Item<N, P> {
         Item {
             origin: self.origin,
-            dot: self.dot,
+            dot: self.dot.try_into().ok().unwrap(),
             node: self.left_node,
         }
     }

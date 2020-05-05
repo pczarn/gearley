@@ -11,6 +11,7 @@ use cfg::Symbol;
 use gearley::forest::{Bocage, CompactBocage};
 use gearley::grammar::InternalGrammar;
 use gearley::recognizer::Recognizer;
+use gearley::policy::PerformancePolicy16;
 
 use helpers::{Parse, SimpleCompactEvaluator, SimpleEvaluator};
 
@@ -21,7 +22,7 @@ macro_rules! test_trivial_grammar {
         let start = external.sym();
         external.rule(start).rhs([]);
         external.set_start(start);
-        let cfg = InternalGrammar::from_grammar(&external);
+        let cfg = InternalGrammar::<PerformancePolicy16>::from_grammar(&external);
         let mut evaluator = $SimpleEvaluator::new(
             |_: Symbol| unreachable!(),
             |_: u32, _: &[&bool]| unreachable!(),
@@ -70,7 +71,7 @@ macro_rules! test_grammar_with_nulling_intermediate {
             .rule(d)
             .rhs([]);
         external.set_start(start);
-        let cfg = InternalGrammar::from_grammar(&external);
+        let cfg = InternalGrammar::<PerformancePolicy16>::from_grammar(&external);
         let mut evaluator = $SimpleEvaluator::new(
             |sym: Symbol| {
                 if sym == foo {

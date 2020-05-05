@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use std::iter;
 
 use bit_matrix::BitMatrix;
@@ -7,12 +8,11 @@ use cfg::remap::Mapping;
 use cfg::prediction::{FirstSetsCollector, FollowSets};
 use optional::Optioned;
 
-use item::Dot;
-
 pub use cfg::earley::{Grammar, BinarizedGrammar};
 pub use cfg::earley::history::History;
 
 use recognizer::Predicted;
+use policy::PerformancePolicy;
 
 // For efficiency, the recognizer works on processed grammars. Grammars described by the user
 // are transformed to meet the following properties:
@@ -61,32 +61,32 @@ use recognizer::Predicted;
 // Parameterize the representation over symbol type (u32, u16, u8).
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug)]
-pub(in super) struct PredictionTransition {
-    pub symbol: Symbol,
-    pub dot: Dot,
+pub(in super) struct PredictionTransition<P: PerformancePolicy> {
+    pub symbol: P::Symbol,
+    pub dot: P::Dot,
 }
 
 #[derive(Eq, PartialEq, Ord, PartialOrd)]
-pub(in super) enum MaybePostdot {
-    Binary(Symbol),
+pub(in super) enum MaybePostdot<S> {
+    Binary(S),
     Unary,
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug)]
-pub struct InternalGrammar {
-    start_sym: Symbol,
-    original_start_sym: Symbol,
+pub struct InternalGrammar<P: PerformancePolicy> {
+    start_sym: P::Symbol,
+    original_start_sym: P::Symbol,
     has_trivial_derivation: bool,
-    eof_sym: Symbol,
-    dot_before_eof: Dot,
+    eof_sym: P::Symbol,
+    dot_before_eof: P::Dot,
     size: InternalGrammarSize,
 
     prediction_matrix: BitMatrix,
     // Inverse prediction lookup.
-    unary_completions: Vec<PredictionTransition>,
+    unary_completions: Vec<PredictionTransition<P>>,
     unary_completion_index: Vec<u32>,
 
-    binary_completions: Vec<PredictionTransition>,
+    binary_completions: Vec<PredictionTransition<P>>,
     binary_completion_index: Vec<u32>,
 
     follow_sets: BitMatrix,
@@ -99,9 +99,9 @@ pub struct InternalGrammar {
     // Each rule can have only one eliminated nulling symbol.
     nulling_eliminated: Vec<NullingEliminated>,
     // Rules stored in column-major order.
-    lhs: Vec<Option<Symbol>>,
-    rhs0: Vec<Option<Symbol>>,
-    rhs1: Vec<Option<Symbol>>,
+    lhs: Vec<Option<P::Symbol>>,
+    rhs0: Vec<Option<P::Symbol>>,
+    rhs1: Vec<Option<P::Symbol>>,
     // Rule origin preserved for post-parse actions.
     eval: Vec<ExternalOrigin>,
     // Mapping between external and internal symbols.
@@ -124,9 +124,9 @@ type MinimalDistance = Optioned<u32>;
 pub(in super) type Event = (EventId, MinimalDistance);
 type NullingEliminated = Option<(Symbol, bool)>;
 type NullingIntermediateRule = (Symbol, Symbol, Symbol);
-type CompletionTable = Vec<Vec<PredictionTransition>>;
+type CompletionTable<P> = Vec<Vec<PredictionTransition<P>>>;
 
-impl InternalGrammar {
+impl<P: PerformancePolicy> InternalGrammar<P> {
     fn new() -> Self {
         Self::default()
     }
@@ -186,19 +186,19 @@ impl InternalGrammar {
 
     fn populate_start_sym(&mut self, grammar: &BinarizedGrammar) {
         let start = grammar.start();
-        self.start_sym = start;
-        self.eof_sym = grammar.eof().unwrap();
-        self.dot_before_eof = grammar.dot_before_eof().unwrap();
-        self.original_start_sym = grammar.original_start().unwrap();
+        self.start_sym = start.into();
+        self.eof_sym = grammar.eof().unwrap().into();
+        self.dot_before_eof = grammar.dot_before_eof().unwrap().try_into().ok().unwrap();
+        self.original_start_sym = grammar.original_start().unwrap().into();
     }
 
     fn populate_grammar_with_lhs(&mut self, grammar: &BinarizedGrammar) {
-        self.lhs.extend(grammar.rules().map(|rule| Some(rule.lhs())));
+        self.lhs.extend(grammar.rules().map(|rule| Some(rule.lhs().into())));
     }
 
     fn populate_grammar_with_rhs(&mut self, grammar: &BinarizedGrammar) {
-        self.rhs0.extend(grammar.rules().map(|rule| rule.rhs().get(0).cloned()));
-        self.rhs1.extend(grammar.rules().map(|rule| rule.rhs().get(1).cloned()));
+        self.rhs0.extend(grammar.rules().map(|rule| rule.rhs().get(0).cloned().map(|s| s.into())));
+        self.rhs1.extend(grammar.rules().map(|rule| rule.rhs().get(1).cloned().map(|s| s.into())));
     }
 
     fn populate_grammar_with_history(&mut self, grammar: &BinarizedGrammar) {
@@ -241,10 +241,10 @@ impl InternalGrammar {
         self.populate_prediction_matrix(grammar, &unary_table, &binary_table);
         self.populate_prediction_events(grammar);
         self.populate_completion_tables(grammar, &unary_table, &binary_table);
-        self.populate_follow_sets(grammar);
+        self.populate_first_and_follow_sets(grammar);
     }
 
-    fn populate_prediction_matrix(&mut self, grammar: &BinarizedGrammar, unary: &CompletionTable, binary: &CompletionTable) {
+    fn populate_prediction_matrix(&mut self, grammar: &BinarizedGrammar, unary: &CompletionTable<P>, binary: &CompletionTable<P>) {
         let mut general_prediction_matrix = BitMatrix::new(self.size.syms, self.size.syms);
         // Precompute DFA.
         for rule in grammar.rules() {
@@ -260,26 +260,26 @@ impl InternalGrammar {
             for j in 0..self.size.syms {
                 if general_prediction_matrix[(i, j)] {
                     // println!("({}, {})", i, j);
-                    self.prediction_matrix.set(i, Predicted::Any(j.into()).usize(), true);
+                    self.prediction_matrix.set(i, Predicted::Any(j).usize(), true);
                     if i == j {
-                        self.prediction_matrix.set(i, Predicted::Medial(i.into()).usize(), true);
+                        self.prediction_matrix.set(i, Predicted::Medial(i).usize(), true);
                     }
-                    if unary[j].iter().any(|transition| general_prediction_matrix[(i, transition.symbol.usize())]) {
+                    if unary[j].iter().any(|transition| general_prediction_matrix[(i, transition.symbol.into().usize())]) {
                         // println!("unary");
-                        self.prediction_matrix.set(i, Predicted::Unary(j.into()).usize(), true);
+                        self.prediction_matrix.set(i, Predicted::Unary(j).usize(), true);
                     }
-                    if binary[j].iter().any(|transition| general_prediction_matrix[(i, transition.symbol.usize())]) {
+                    if binary[j].iter().any(|transition| general_prediction_matrix[(i, transition.symbol.into().usize())]) {
                         // println!("binary");
-                        self.prediction_matrix.set(i, Predicted::Binary(j.into()).usize(), true);
+                        self.prediction_matrix.set(i, Predicted::Binary(j).usize(), true);
                     }
                 }
             }
         }
     }
 
-    fn populate_follow_sets(&mut self, grammar: &BinarizedGrammar) {
-        self.follow_sets = BitMatrix::new(self.size.syms, self.size.syms);
-        self.first_sets = BitMatrix::new(self.size.syms, self.size.syms);
+    fn populate_first_and_follow_sets(&mut self, grammar: &BinarizedGrammar) {
+        self.follow_sets = BitMatrix::new(self.size.syms, self.size.syms + 1);
+        self.first_sets = BitMatrix::new(self.size.syms, self.size.syms + 1);
         let first_sets = FirstSetsCollector::new(grammar);
         for (outer, inner) in first_sets.first_sets() {
             for elem_inner in inner.into_iter() {
@@ -297,19 +297,23 @@ impl InternalGrammar {
                 }
             }
         }
+        for i in 0 .. self.size.syms {
+            self.follow_sets.set(i, self.size.syms, true);
+            self.first_sets.set(i, self.size.syms, true);
+        }
     }
 
-    fn populate_completion_tables(&mut self, grammar: &BinarizedGrammar, unary: &CompletionTable, binary: &CompletionTable) {
+    fn populate_completion_tables(&mut self, grammar: &BinarizedGrammar, unary: &CompletionTable<P>, binary: &CompletionTable<P>) {
         self.populate_unary_completion_table(grammar, unary);
         self.populate_binary_completion_table(grammar, binary);
     }
 
-    fn populate_unary_completion_table(&mut self, grammar: &BinarizedGrammar, table: &CompletionTable) {
+    fn populate_unary_completion_table(&mut self, grammar: &BinarizedGrammar, table: &CompletionTable<P>) {
         self.populate_unary_completion_index(table);
         self.populate_unary_completions(table);
     }
 
-    fn compute_unary_completion_table(&self, grammar: &BinarizedGrammar) -> CompletionTable {
+    fn compute_unary_completion_table(&self, grammar: &BinarizedGrammar) -> CompletionTable<P> {
         let mut table = iter::repeat(vec![]).take(self.size.syms).collect::<Vec<_>>();
 
         let mut unary_rules = vec![];
@@ -323,14 +327,14 @@ impl InternalGrammar {
         }
         for (rhs0_sym, lhs_sym, dot) in unary_rules.into_iter() {
             table[rhs0_sym].push(PredictionTransition {
-                symbol: lhs_sym,
-                dot: dot as u32
+                symbol: lhs_sym.into(),
+                dot: dot.try_into().ok().unwrap(),
             });
         }
         table
     }
 
-    fn populate_unary_completion_index(&mut self, table: &CompletionTable) {
+    fn populate_unary_completion_index(&mut self, table: &CompletionTable<P>) {
         let mut current_idx = 0u32;
         self.unary_completion_index.push(0u32);
         self.unary_completion_index.extend(table.iter().map(|run| {
@@ -339,17 +343,17 @@ impl InternalGrammar {
         }));
     }
 
-    fn populate_unary_completions(&mut self, table: &CompletionTable) {
+    fn populate_unary_completions(&mut self, table: &CompletionTable<P>) {
         let iter_table = table.into_iter().flat_map(|v| v.into_iter());
         self.unary_completions.extend(iter_table);
     }
 
-    fn populate_binary_completion_table(&mut self, grammar: &BinarizedGrammar, table: &CompletionTable) {
+    fn populate_binary_completion_table(&mut self, grammar: &BinarizedGrammar, table: &CompletionTable<P>) {
         self.populate_binary_completion_index(table);
         self.populate_binary_completions(table);
     }
 
-    fn compute_binary_completion_table(&self, grammar: &BinarizedGrammar) -> CompletionTable {
+    fn compute_binary_completion_table(&self, grammar: &BinarizedGrammar) -> CompletionTable<P> {
         let mut table = iter::repeat(vec![]).take(self.size.syms).collect::<Vec<_>>();
 
         let mut binary_rules = vec![];
@@ -363,14 +367,14 @@ impl InternalGrammar {
         }
         for (rhs0_sym, lhs_sym, dot) in binary_rules.into_iter() {
             table[rhs0_sym].push(PredictionTransition {
-                symbol: lhs_sym,
-                dot: dot as u32
+                symbol: lhs_sym.into(),
+                dot: dot.try_into().ok().unwrap(),
             });
         }
         table
     }
 
-    fn populate_binary_completion_index(&mut self, table: &CompletionTable) {
+    fn populate_binary_completion_index(&mut self, table: &CompletionTable<P>) {
         let mut current_idx = 0u32;
         self.binary_completion_index.push(0u32);
         self.binary_completion_index.extend(table.iter().map(|run| {
@@ -379,7 +383,7 @@ impl InternalGrammar {
         }));
     }
 
-    fn populate_binary_completions(&mut self, table: &CompletionTable) {
+    fn populate_binary_completions(&mut self, table: &CompletionTable<P>) {
         let iter_table = table.into_iter().flat_map(|v| v.into_iter());
         self.binary_completions.extend(iter_table);
     }
@@ -414,24 +418,30 @@ impl InternalGrammar {
     }
 
     #[inline]
-    pub(in super) fn eof(&self) -> Symbol {
+    pub(in super) fn eof(&self) -> P::Symbol {
         self.eof_sym
     }
 
     #[inline]
-    pub(in super) fn can_follow(&self, before: Symbol, after: Option<Symbol>) -> bool {
-        let after = after.unwrap_or(self.eof()).usize();
-        self.follow_sets[(before.usize(), after)]
+    fn neutral_sym(&self) -> P::Symbol {
+        let sym: Symbol = (self.num_syms() as u32).into();
+        sym.into()
     }
 
     #[inline]
-    pub(in super) fn first(&self, outer: Symbol, maybe_inner: Option<Symbol>) -> bool {
-        let inner = if let Some(inner) = maybe_inner {
+    pub(in super) fn can_follow(&self, before: P::Symbol, after: Option<Option<P::Symbol>>) -> bool {
+        let after = after.unwrap_or(Some(self.neutral_sym())).unwrap_or(self.eof()).into().usize();
+        self.follow_sets[(before.into().usize(), after)]
+    }
+
+    #[inline]
+    pub(in super) fn first(&self, outer: P::Symbol, maybe_inner: Option<Option<P::Symbol>>) -> bool {
+        let inner = if let Some(inner) = maybe_inner.unwrap_or(Some(self.neutral_sym())) {
             inner
         } else {
             return outer == self.eof()
         };
-        self.first_sets[(outer.usize(), inner.usize())]
+        self.first_sets[(outer.into().usize(), inner.into().usize())]
     }
 
     #[inline]
@@ -445,16 +455,21 @@ impl InternalGrammar {
     }
 
     #[inline]
+    pub(in super) fn predicted_row_size(&self) -> usize {
+        self.num_syms() * 4
+    }
+
+    #[inline]
     pub(in super) fn num_rules(&self) -> usize {
         self.size.rules
     }
 
     #[inline]
-    pub fn start_sym(&self) -> Symbol {
+    pub fn start_sym(&self) -> P::Symbol {
         self.start_sym
     }
 
-    pub fn externalized_start_sym(&self) -> Symbol {
+    pub fn externalized_start_sym(&self) -> P::Symbol {
         self.to_external(self.original_start_sym)
     }
 
@@ -479,31 +494,31 @@ impl InternalGrammar {
     }
 
     #[inline]
-    pub(in super) fn get_rhs1(&self, dot: Dot) -> Option<Symbol> {
-        self.rhs1[dot as usize]
+    pub(in super) fn get_rhs1(&self, dot: P::Dot) -> Option<P::Symbol> {
+        self.rhs1[dot.into() as usize]
     }
 
     #[inline]
-    pub(in super) fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot {
-        match self.rhs1[dot as usize] {
+    pub(in super) fn get_rhs1_cmp(&self, dot: P::Dot) -> MaybePostdot<P::Symbol> {
+        match self.rhs1[dot.into() as usize] {
             None => MaybePostdot::Unary,
             Some(rhs1) => MaybePostdot::Binary(rhs1),
         }
     }
 
     #[inline]
-    pub(in super) fn rhs1(&self) -> &[Option<Symbol>] {
+    pub(in super) fn rhs1(&self) -> &[Option<P::Symbol>] {
         &self.rhs1[..]
     }
 
     #[inline]
-    pub(in super) fn get_lhs(&self, dot: Dot) -> Symbol {
-        self.lhs[dot as usize].unwrap()
+    pub(in super) fn get_lhs(&self, dot: P::Dot) -> P::Symbol {
+        self.lhs[dot.into() as usize].unwrap()
     }
 
     #[inline]
-    pub(in super) fn external_origin(&self, dot: Dot) -> ExternalOrigin {
-        self.eval.get(dot as usize).cloned().unwrap()
+    pub(in super) fn external_origin(&self, dot: P::Dot) -> ExternalOrigin {
+        self.eval.get(dot.into() as usize).cloned().unwrap()
     }
 
     pub(in super) fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule] {
@@ -511,34 +526,34 @@ impl InternalGrammar {
     }
 
     #[inline(always)]
-    pub(in super) fn unary_completions(&self, sym: Symbol) -> &[PredictionTransition] {
-        let idxs = &self.unary_completion_index[sym.usize() .. sym.usize() + 2];
+    pub(in super) fn unary_completions(&self, sym: P::Symbol) -> &[PredictionTransition<P>] {
+        let idxs = &self.unary_completion_index[sym.into().usize() .. sym.into().usize() + 2];
         let range = idxs[0] as usize .. idxs[1] as usize;
         &self.unary_completions[range]
     }
 
     #[inline(always)]
-    pub(in super) fn binary_completions(&self, sym: Symbol) -> &[PredictionTransition] {
-        let idxs = &self.binary_completion_index[sym.usize() .. sym.usize() + 2];
+    pub(in super) fn binary_completions(&self, sym: P::Symbol) -> &[PredictionTransition<P>] {
+        let idxs = &self.binary_completion_index[sym.into().usize() .. sym.into().usize() + 2];
         let range = idxs[0] as usize .. idxs[1] as usize;
         &self.binary_completions[range]
     }
 
     #[inline(always)]
-    pub(in super) fn to_internal(&self, symbol: Symbol) -> Option<Symbol> {
+    pub(in super) fn to_internal(&self, symbol: P::Symbol) -> Option<P::Symbol> {
         if self.sym_maps.to_internal.is_empty() {
             Some(symbol)
         } else {
-            self.sym_maps.to_internal[symbol.usize()]
+            self.sym_maps.to_internal[symbol.into().usize()].map(|sym| sym.into())
         }
     }
 
     #[inline]
-    pub fn to_external(&self, symbol: Symbol) -> Symbol {
+    pub fn to_external(&self, symbol: P::Symbol) -> P::Symbol {
         if self.sym_maps.to_external.is_empty() {
             symbol
         } else {
-            self.sym_maps.to_external[symbol.usize()]
+            self.sym_maps.to_external[symbol.into().usize()].into()
         }
     }
 
@@ -552,7 +567,7 @@ impl InternalGrammar {
         ).max()
     }
 
-    pub(in super) fn dot_before_eof(&self) -> Dot {
+    pub(in super) fn dot_before_eof(&self) -> P::Dot {
         self.dot_before_eof
     }
 }

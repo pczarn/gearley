@@ -16,6 +16,7 @@ use gearley::grammar::InternalGrammar;
 use gearley::forest::{Bocage, NullForest};
 use gearley::recognizer::Recognizer;
 use gearley::memory_use::MemoryUse;
+use gearley::policy::PerformancePolicy16;
 
 use grammars::*;
 use helpers::{SimpleEvaluator, Parse};
@@ -39,7 +40,7 @@ fn bench_ambiguous_arithmetic(b: &mut test::Bencher) {
             ambiguous_arith::rule,
             |_, _: &mut _| unreachable!()
         );
-        let mut rec: Recognizer<Bocage<&'_ InternalGrammar>> = Recognizer::new_with_hint(&cfg, tokens.len());
+        let mut rec: Recognizer<Bocage<&'_ InternalGrammar<PerformancePolicy16>, PerformancePolicy16>, PerformancePolicy16> = Recognizer::new_with_hint(&cfg, tokens.len());
         assert!(rec.parse(tokens));
         let mut traversal = rec.forest.traverse();
         let results = evaluator.traverse(&mut traversal, rec.finished_node().unwrap());
@@ -50,7 +51,7 @@ fn bench_ambiguous_arithmetic(b: &mut test::Bencher) {
 #[bench]
 fn bench_evaluate_precedenced_arith(b: &mut test::Bencher) {
     let external = precedenced_arith::grammar();
-    let cfg = InternalGrammar::from_grammar(&external);
+    let cfg = InternalGrammar::<PerformancePolicy16>::from_grammar(&external);
     let sum_tokens = test::black_box(SUM_TOKENS);
 
     b.iter(|| {
@@ -73,14 +74,14 @@ fn bench_process_grammar_for_precedenced_arith(b: &mut test::Bencher) {
     let external = precedenced_arith::grammar();
 
     b.iter(|| {
-        test::black_box(InternalGrammar::from_grammar(&external));
+        test::black_box(InternalGrammar::<PerformancePolicy16>::from_grammar(&external));
     })
 }
 
 #[bench]
 fn bench_recognize_precedenced_arith(b: &mut test::Bencher) {
     let grammar = precedenced_arith::grammar();
-    let cfg = InternalGrammar::from_grammar(&grammar);
+    let cfg = InternalGrammar::<PerformancePolicy16>::from_grammar(&grammar);
     let sum_tokens = test::black_box(SUM_TOKENS);
 
     b.iter(|| {

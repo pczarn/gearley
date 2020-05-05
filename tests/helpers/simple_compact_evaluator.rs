@@ -9,6 +9,7 @@ use gearley::forest::compact_bocage::traverse::{LeafHandle, NullingHandle, SumHa
 use gearley::forest::node_handle::NodeHandle;
 
 use gearley::grammar::InternalGrammar;
+use gearley::policy::PerformancePolicy;
 
 use super::cartesian_product::CartesianProduct;
 
@@ -37,9 +38,10 @@ where
         }
     }
 
-    pub fn traverse<'f, G>(&mut self, traverse: &mut Traverse<'f, G>, root: NodeHandle) -> Vec<V>
+    pub fn traverse<'f, G, P>(&mut self, traverse: &mut Traverse<'f, G, P>, root: NodeHandle) -> Vec<V>
     where
-        G: Borrow<InternalGrammar>,
+        G: Borrow<InternalGrammar<P>>,
+        P: PerformancePolicy,
     {
         while let Some(mut item) = traverse.next_node() {
             match &mut item.item {

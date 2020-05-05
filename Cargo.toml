@@ -16,8 +16,8 @@ debug = true
 name = "gearley"
 
 [dependencies]
-cfg = { version = "0.5" }
-bit-matrix = { version = "0.6", features = ["serialize"] }
+cfg = { version = "0.5", path = "../cfg/" }
+bit-matrix = { version = "0.6", path = "../bit-matrix", features = ["serialize"] }
 bit-vec = "0.6"
 optional = { version = "0.5", features = ["serde"] }
 ref_slice = "1.2"

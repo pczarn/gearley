@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use std::iter::{Zip, Chain};
 use std::slice;
 
@@ -8,6 +9,7 @@ use forest::Forest;
 use grammar::{ExternalDottedRule, Event};
 use item::Item;
 use recognizer::Recognizer;
+use policy::PerformancePolicy;
 
 type IterPredictionBitfield<'a> = bit_matrix::row::Iter<'a>;
 
@@ -16,8 +18,8 @@ pub struct PredictedSymbols<'a> {
     pub(in super) idx: usize,
 }
 
-pub struct MedialItems<'a, N: 'a> {
-    pub(in super) iter: slice::Iter<'a, Item<N>>,
+pub struct MedialItems<'a, N: 'a, P> where P: PerformancePolicy {
+    pub(in super) iter: slice::Iter<'a, Item<N, P>>,
 }
 
 pub struct Prediction<'a, T: 'a> {
@@ -25,35 +27,35 @@ pub struct Prediction<'a, T: 'a> {
     origin: usize,
 }
 
-pub struct Medial<'a, T: 'a, N: 'a> {
+pub struct Medial<'a, T: 'a, N: 'a, P> where P: PerformancePolicy {
     events: &'a [T],
-    items: MedialItems<'a, N>,
+    items: MedialItems<'a, N, P>,
 }
 
-pub struct Events<'a, N: 'a> {
+pub struct Events<'a, N: 'a, P> where P: PerformancePolicy {
     iter: Chain<
         Prediction<'a, Event>,
-        Medial<'a, Event, N>
+        Medial<'a, Event, N, P>
     >
 }
 
-pub struct Distances<'a, N: 'a> {
+pub struct Distances<'a, N: 'a, P> where P: PerformancePolicy {
     iter: Chain<
         Prediction<'a, Event>,
-        Medial<'a, Event, N>
+        Medial<'a, Event, N, P>
     >
 }
 
-pub struct Trace<'a, N: 'a> {
+pub struct Trace<'a, N: 'a, P> where P: PerformancePolicy {
     iter: Chain<
         Prediction<'a, Option<ExternalDottedRule>>,
-        Medial<'a, Option<ExternalDottedRule>, N>
+        Medial<'a, Option<ExternalDottedRule>, N, P>
     >
 }
 
-pub struct ExpectedTerminals<'a, N: 'a> {
-    prev_scan_iter: MedialItems<'a, N>,
-    rhs1: &'a [Option<Symbol>],
+pub struct ExpectedTerminals<'a, N: 'a, P> where P: PerformancePolicy {
+    prev_scan_iter: MedialItems<'a, N, P>,
+    rhs1: &'a [Option<P::Symbol>],
 }
 
 impl<'a> Iterator for PredictedSymbols<'a> {
@@ -71,8 +73,8 @@ impl<'a> Iterator for PredictedSymbols<'a> {
     }
 }
 
-impl<'a, N> Iterator for MedialItems<'a, N> {
-    type Item = &'a Item<N>;
+impl<'a, N, P: PerformancePolicy> Iterator for MedialItems<'a, N, P> {
+    type Item = &'a Item<N, P>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
@@ -92,18 +94,18 @@ impl<'a, T> Iterator for Prediction<'a, T> {
     }
 }
 
-impl<'a, T, L> Iterator for Medial<'a, T, L> {
+impl<'a, T, L, P: PerformancePolicy> Iterator for Medial<'a, T, L, P> {
     type Item = (&'a T, usize);
 
     fn next(&mut self) -> Option<Self::Item> {
         let events = &self.events;
         self.items.next().map(|ei| {
-            (&events[ei.dot as usize], ei.origin as usize)
+            (&events[ei.dot.try_into().ok().unwrap()], ei.origin as usize)
         })
     }
 }
 
-impl<'a, L> Iterator for Events<'a, L> {
+impl<'a, L, P: PerformancePolicy> Iterator for Events<'a, L, P> {
     type Item = u32;
 
     fn next(&mut self) -> Option<u32> {
@@ -116,7 +118,7 @@ impl<'a, L> Iterator for Events<'a, L> {
     }
 }
 
-impl<'a, L> Iterator for Distances<'a, L> {
+impl<'a, L, P: PerformancePolicy> Iterator for Distances<'a, L, P> {
     type Item = u32;
 
     fn next(&mut self) -> Option<u32> {
@@ -129,7 +131,7 @@ impl<'a, L> Iterator for Distances<'a, L> {
     }
 }
 
-impl<'a, N> Iterator for Trace<'a, N> {
+impl<'a, N, P: PerformancePolicy> Iterator for Trace<'a, N, P> {
     type Item = (ExternalDottedRule, usize);
 
     fn next(&mut self) -> Option<(ExternalDottedRule, usize)> {
@@ -142,20 +144,21 @@ impl<'a, N> Iterator for Trace<'a, N> {
     }
 }
 
-impl<'a, N> Iterator for ExpectedTerminals<'a, N> {
-    type Item = Symbol;
+impl<'a, N, P: PerformancePolicy> Iterator for ExpectedTerminals<'a, N, P> {
+    type Item = P::Symbol;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.prev_scan_iter.next().map(|item| {
-            self.rhs1[item.dot as usize].unwrap()
+            self.rhs1[item.dot.try_into().ok().unwrap()].unwrap()
         })
     }
 }
 
-impl<'g, F> Recognizer<'g, F>
+impl<'g, F, P> Recognizer<'g, F, P>
     where F: Forest,
+          P: PerformancePolicy,
 {
-    pub fn trace(&self) -> Trace<F::NodeRef> {
+    pub fn trace(&self) -> Trace<F::NodeRef, P> {
         let trace = self.grammar.trace();
         let prediction = Prediction {
             iter: self.predicted_symbols().iter.zip(trace[0].iter()),
@@ -170,7 +173,7 @@ impl<'g, F> Recognizer<'g, F>
         }
     }
 
-    pub fn events(&self) -> Events<F::NodeRef> {
+    pub fn events(&self) -> Events<F::NodeRef, P> {
         let (events_predict, events_flat) = self.grammar.events();
         let prediction = Prediction {
             iter: self.predicted_symbols().iter.zip(events_predict.iter()),
@@ -185,13 +188,13 @@ impl<'g, F> Recognizer<'g, F>
         }
     }
 
-    pub fn minimal_distances(&self) -> Distances<F::NodeRef> {
+    pub fn minimal_distances(&self) -> Distances<F::NodeRef, P> {
         Distances {
             iter: self.events().iter,
         }
     }
 
-    pub fn expected_terminals(&self) -> ExpectedTerminals<F::NodeRef> {
+    pub fn expected_terminals(&self) -> ExpectedTerminals<F::NodeRef, P> {
         ExpectedTerminals {
             prev_scan_iter: self.medial_items(),
             rhs1: self.grammar.rhs1(),

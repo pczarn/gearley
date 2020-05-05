@@ -10,6 +10,7 @@ mod helpers;
 use gearley::grammar::InternalGrammar;
 use gearley::forest::{Bocage, NullForest};
 use gearley::recognizer::Recognizer;
+use gearley::policy::PerformancePolicy16;
 
 use grammars::*;
 use helpers::{SimpleEvaluator, Parse};
@@ -33,7 +34,7 @@ fn test_precedenced_arith() {
 fn test_ambiguous_arithmetic() {
     let tokens = ambiguous_arith!('2' '-' '0' '*' '3' '+' '1');
     let external = ambiguous_arith::grammar();
-    let cfg = InternalGrammar::from_grammar(&external);
+    let cfg = InternalGrammar::<PerformancePolicy16>::from_grammar(&external);
     let mut evaluator = SimpleEvaluator::new(
         ambiguous_arith::leaf,
         ambiguous_arith::rule,

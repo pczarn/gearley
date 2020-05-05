@@ -3,6 +3,7 @@ pub mod order;
 pub mod traverse;
 
 use std::borrow::Borrow;
+use std::convert::TryInto;
 use std::hint;
 
 use bit_vec::BitVec;
@@ -12,17 +13,19 @@ use forest::node_handle::NodeHandle;
 use forest::Forest;
 use grammar::InternalGrammar;
 use item::CompletedItem;
+use policy::PerformancePolicy;
 
 use self::node::Node::*;
 use self::node::{Graph, Node, NULL_ACTION};
 use self::order::Order;
 
-pub struct CompactBocage<G> {
+pub struct CompactBocage<G, P> {
     pub(crate) graph: Graph,
     pub(crate) gc: MarkAndSweep,
     pub(crate) grammar: G,
     pub(crate) first_summand: NodeHandle,
     pub(crate) summand_count: u32,
+    pub(crate) policy: ::std::marker::PhantomData<P>,
 }
 
 pub(crate) struct MarkAndSweep {
@@ -31,9 +34,9 @@ pub(crate) struct MarkAndSweep {
     pub(crate) dfs: Vec<NodeHandle>,
 }
 
-impl<G> CompactBocage<G>
+impl<G, P: PerformancePolicy> CompactBocage<G, P>
 where
-    G: Borrow<InternalGrammar>,
+    G: Borrow<InternalGrammar<P>>,
 {
     pub fn new(grammar: G) -> Self {
         Self::with_capacities(grammar, 1024, 32)
@@ -49,6 +52,7 @@ where
             grammar,
             summand_count: 0,
             first_summand: NodeHandle(0),
+            policy: ::std::marker::PhantomData,
         };
         result.initialize_nulling();
         result
@@ -113,7 +117,7 @@ where
         self.gc.dfs.push(root);
         while let Some(node) = self.gc.dfs.pop() {
             self.gc.liveness.set(node.usize(), true);
-            let summands = CompactBocage::<G>::summands(&self.graph, node);
+            let summands = CompactBocage::<G, P>::summands(&self.graph, node);
             // let summands = order.sum(summands);
             for summand in summands {
                 // TODO: use order for products.
@@ -162,7 +166,7 @@ where
 
     #[inline]
     pub(super) fn is_transparent(&self, action: u32) -> bool {
-        action == NULL_ACTION || self.grammar.borrow().external_origin(action).is_none()
+        action == NULL_ACTION || self.grammar.borrow().external_origin(action.try_into().ok().unwrap()).is_none()
     }
 
     // fn mark_and_sweep(&mut self, root: NodeHandle) {
@@ -219,9 +223,9 @@ impl MarkAndSweep {
     }
 }
 
-impl<G> Forest for CompactBocage<G>
+impl<G, P: PerformancePolicy> Forest for CompactBocage<G, P>
 where
-    G: Borrow<InternalGrammar>,
+    G: Borrow<InternalGrammar<P>>,
 {
     type NodeRef = NodeHandle;
     type LeafValue = u32;

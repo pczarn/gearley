@@ -3,6 +3,7 @@ pub mod order;
 pub mod traverse;
 
 use std::borrow::Borrow;
+use std::convert::TryInto;
 use std::hint;
 
 use bit_vec::BitVec;
@@ -13,16 +14,18 @@ use forest::node_handle::NodeHandle;
 use forest::Forest;
 use grammar::InternalGrammar;
 use item::CompletedItem;
+use policy::PerformancePolicy;
 
 use self::node::Node::*;
 use self::node::{CompactNode, Node, NULL_ACTION};
 use self::order::Order;
 
-pub struct Bocage<G> {
+pub struct Bocage<G, P> {
     pub(crate) graph: Vec<CompactNode>,
     pub(crate) gc: MarkAndSweep,
     pub(crate) grammar: G,
     pub(crate) summand_count: u32,
+    pub(crate) policy: ::std::marker::PhantomData<P>,
 }
 
 pub(crate) struct MarkAndSweep {
@@ -31,9 +34,9 @@ pub(crate) struct MarkAndSweep {
     pub(crate) dfs: Vec<NodeHandle>,
 }
 
-impl<G> Bocage<G>
+impl<G, P: PerformancePolicy> Bocage<G, P>
 where
-    G: Borrow<InternalGrammar>,
+    G: Borrow<InternalGrammar<P>>,
 {
     pub fn new(grammar: G) -> Self {
         Self::with_capacities(grammar, 1024, 32)
@@ -48,6 +51,7 @@ where
             },
             grammar,
             summand_count: 0,
+            policy: ::std::marker::PhantomData,
         };
         result.initialize_nulling();
         result
@@ -88,7 +92,7 @@ where
         self.gc.dfs.push(root);
         while let Some(node) = self.gc.dfs.pop() {
             self.gc.liveness.set(node.usize(), true);
-            let summands = Bocage::<G>::summands(&self.graph, node);
+            let summands = Bocage::<G, P>::summands(&self.graph, node);
             let summands = order.sum(summands);
             for summand in summands {
                 self.postprocess_product_tree_node(summand);
@@ -146,7 +150,7 @@ where
 
     #[inline]
     pub(super) fn is_transparent(&self, action: u32) -> bool {
-        action == NULL_ACTION || self.grammar.borrow().external_origin(action).is_none()
+        action == NULL_ACTION || self.grammar.borrow().external_origin(action.try_into().ok().unwrap()).is_none()
     }
 
     // fn mark_and_sweep(&mut self, root: NodeHandle) {
@@ -203,7 +207,7 @@ impl MarkAndSweep {
     }
 }
 
-impl<G> Forest for Bocage<G> {
+impl<G, P> Forest for Bocage<G, P> {
     type NodeRef = NodeHandle;
     type LeafValue = u32;
 

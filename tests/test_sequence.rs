@@ -13,6 +13,7 @@ use cfg::earley::Grammar;
 use gearley::forest::Bocage;
 use gearley::grammar::InternalGrammar;
 use gearley::recognizer::Recognizer;
+use gearley::policy::PerformancePolicy16;
 
 use helpers::{SimpleEvaluator, Parse};
 
@@ -26,7 +27,7 @@ fn test_sequence() {
     external.sequence(start).separator(Trailing(minus)).inclusive(3, Some(3)).rhs(plus);
     external.set_start(start);
 
-    let cfg = InternalGrammar::from_grammar(&external);
+    let cfg = InternalGrammar::<PerformancePolicy16>::from_grammar(&external);
     let mut evaluator = SimpleEvaluator::new(
         |sym: Symbol| {
             match sym.usize() {

@@ -20,9 +20,11 @@ use std::u32;
 use forest::Forest;
 use item::{CompletedItem, CompletedItemLinked, Item};
 use recognizer::Recognizer;
+use policy::PerformancePolicy;
 
-impl<'g, F> Recognizer<'g, F>
+impl<'g, F, P> Recognizer<'g, F, P>
     where F: Forest,
+          P: PerformancePolicy,
 {
     /// Returns the greatest item in the binary heap, or `None` if it is empty.
     #[inline]
@@ -31,7 +33,7 @@ impl<'g, F> Recognizer<'g, F>
             self.medial.get(right_item.idx as usize).map(|left_item|
                 CompletedItem {
                     origin: left_item.origin,
-                    dot: left_item.dot,
+                    dot: left_item.dot.into(),
                     left_node: left_item.node,
                     right_node: right_item.node,
                 }
@@ -40,7 +42,7 @@ impl<'g, F> Recognizer<'g, F>
     }
 
     #[inline(always)]
-    fn heap_get(&self, idx_idx: usize) -> Option<&Item<F::NodeRef>> {
+    fn heap_get(&self, idx_idx: usize) -> Option<&Item<F::NodeRef, P>> {
         self.complete.get(idx_idx).and_then(|&item| self.medial.get(item.idx as usize))
     }
 
@@ -55,7 +57,7 @@ impl<'g, F> Recognizer<'g, F>
             self.medial.get(right_item.idx as usize).map(|left_item|
                 CompletedItem {
                     origin: left_item.origin,
-                    dot: left_item.dot,
+                    dot: left_item.dot.into(),
                     left_node: left_item.node,
                     right_node: right_item.node,
                 }

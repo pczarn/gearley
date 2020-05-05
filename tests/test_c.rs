@@ -14,6 +14,7 @@ use gearley::forest::Bocage;
 use gearley::grammar::InternalGrammar;
 use gearley::recognizer::Recognizer;
 use gearley::memory_use::MemoryUse;
+use gearley::policy::PerformancePolicy16;
 
 use helpers::Parse;
 
@@ -466,7 +467,7 @@ fn test_parse_c() {
     }).collect();
     let cfg = InternalGrammar::from_grammar(&external);
     let bocage = Bocage::new(&cfg);
-    let mut rec: Recognizer<Bocage<&'_ InternalGrammar>> = Recognizer::new_with_limit(&cfg, 2_00_000);
+    let mut rec: Recognizer<Bocage<&'_ InternalGrammar<_>, _>, PerformancePolicy16> = Recognizer::new_with_limit(&cfg, 2_00_000);
     rec.forest = bocage;
     let finished = rec.parse(&tokens[..]);
     assert!(finished);

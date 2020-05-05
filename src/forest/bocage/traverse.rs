@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::convert::TryInto;
 use std::slice;
 
 use bit_vec;
@@ -10,12 +11,13 @@ use forest::bocage::node::{CompactNode, Node};
 use forest::node_handle::NodeHandle;
 use forest::Bocage;
 use grammar::InternalGrammar;
+use policy::PerformancePolicy;
 
 pub use self::HandleVariant::*;
 
-impl<G> Bocage<G> {
+impl<G, P> Bocage<G, P> {
     // Once node liveness is marked, you may traverse the nodes.
-    pub fn traverse(&self) -> Traverse<G> {
+    pub fn traverse(&self) -> Traverse<G, P> {
         Traverse {
             bocage: self,
             graph_iter: self.graph.iter(),
@@ -26,8 +28,8 @@ impl<G> Bocage<G> {
     }
 }
 
-pub struct Traverse<'f, G> {
-    bocage: &'f Bocage<G>,
+pub struct Traverse<'f, G, P> {
+    bocage: &'f Bocage<G, P>,
     // main iterators
     graph_iter: slice::Iter<'f, CompactNode>,
     liveness_iter: bit_vec::Iter<'f>,
@@ -37,11 +39,11 @@ pub struct Traverse<'f, G> {
     factor_traversal: Vec<NodeHandle>,
 }
 
-impl<'f, G> Traverse<'f, G>
+impl<'f, G, P: PerformancePolicy> Traverse<'f, G, P>
 where
-    G: Borrow<InternalGrammar>,
+    G: Borrow<InternalGrammar<P>>,
 {
-    pub fn next_node<'t>(&'t mut self) -> Option<TraversalHandle<'f, 't, G>> {
+    pub fn next_node<'t>(&'t mut self) -> Option<TraversalHandle<'f, 't, G, P>> {
         while let (Some(node), Some(alive)) = (self.graph_iter.next(), self.liveness_iter.next()) {
             if !alive {
                 continue;
@@ -53,7 +55,7 @@ where
                     }
                     return Some(TraversalHandle {
                         node,
-                        symbol: self.bocage.grammar.borrow().get_lhs(action),
+                        symbol: self.bocage.grammar.borrow().get_lhs(action.try_into().ok().unwrap()).into(),
                         item: SumHandle(Products {
                             products: ref_slice(node).iter(),
                             traverse: self,
@@ -132,21 +134,21 @@ where
     }
 }
 
-pub struct TraversalHandle<'f, 't, G> {
+pub struct TraversalHandle<'f, 't, G, P> {
     pub node: &'f CompactNode,
     pub symbol: Symbol,
-    pub item: HandleVariant<'f, 't, G>,
+    pub item: HandleVariant<'f, 't, G, P>,
 }
 
-pub enum HandleVariant<'f, 't, G> {
-    SumHandle(Products<'f, 't, G>),
+pub enum HandleVariant<'f, 't, G, P> {
+    SumHandle(Products<'f, 't, G, P>),
     NullingHandle,
     LeafHandle(u32),
 }
 
-pub struct Products<'f, 't, G> {
+pub struct Products<'f, 't, G, P> {
     products: slice::Iter<'f, CompactNode>,
-    traverse: &'t mut Traverse<'f, G>,
+    traverse: &'t mut Traverse<'f, G, P>,
 }
 
 pub struct ProductHandle<'t> {
@@ -154,9 +156,9 @@ pub struct ProductHandle<'t> {
     pub factors: &'t [(Symbol, u32)],
 }
 
-impl<'f, 't, G> Products<'f, 't, G>
+impl<'f, 't, G, P: PerformancePolicy> Products<'f, 't, G, P>
 where
-    G: Borrow<InternalGrammar>,
+    G: Borrow<InternalGrammar<P>>,
 {
     pub fn next_product<'p>(&'p mut self) -> Option<ProductHandle> {
         while let Some(node) = self.products.next() {
@@ -171,7 +173,7 @@ where
                         .bocage
                         .grammar
                         .borrow()
-                        .external_origin(action);
+                        .external_origin(action.try_into().ok().unwrap());
                     if let Some(action) = origin {
                         self.traverse.unfold_factors(left_factor, right_factor);
                         return Some(ProductHandle {
@@ -187,7 +189,7 @@ where
     }
 }
 
-impl<'f, 't, G> TraversalHandle<'f, 't, G> {
+impl<'f, 't, G, P> TraversalHandle<'f, 't, G, P> {
     pub fn set_evaluation_result(&self, values: u32) {
         self.node.set(Evaluated {
             symbol: self.symbol,
