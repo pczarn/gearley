@@ -12,7 +12,7 @@ pub use cfg::earley::{Grammar, BinarizedGrammar};
 pub use cfg::earley::history::History;
 
 use recognizer::Predicted;
-use policy::PerformancePolicy;
+use policy::{PerformancePolicy, DefaultPerformancePolicy};
 
 // For efficiency, the recognizer works on processed grammars. Grammars described by the user
 // are transformed to meet the following properties:
@@ -73,7 +73,7 @@ pub(in super) enum MaybePostdot<S> {
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug)]
-pub struct InternalGrammar<P: PerformancePolicy> {
+pub struct InternalGrammar<P: PerformancePolicy = DefaultPerformancePolicy> {
     start_sym: P::Symbol,
     original_start_sym: P::Symbol,
     has_trivial_derivation: bool,
@@ -491,6 +491,24 @@ impl<P: PerformancePolicy> InternalGrammar<P> {
     #[inline]
     pub(in super) fn trace(&self) -> [&[Option<ExternalDottedRule>]; 3] {
         [&self.trace_rhs[0][..], &self.trace_rhs[1][..], &self.trace_rhs[2][..]]
+    }
+
+    #[inline]
+    pub(crate) fn origin(&self, origin_and_lhs: u32) -> u32 {
+        origin_and_lhs / self.num_syms() as u32
+    }
+
+    #[inline]
+    pub(crate) fn lhs_sym(&self, origin_and_lhs: u32) -> P::Symbol {
+        let result: Symbol = (origin_and_lhs % self.num_syms() as u32).into();
+        result.into()
+    }
+
+    #[inline]
+    pub(crate) fn origin_and_lhs(&self, origin: u32, lhs: P::Symbol) -> u32 {
+        let lhs: Symbol = lhs.into();
+        let lhs: u32 = lhs.into();
+        origin * self.num_syms() as u32 + lhs
     }
 
     #[inline]

@@ -15,10 +15,9 @@
 #![cfg_attr(feature = "cargo-clippy", allow(nonminimal_bool))]
 
 use std::mem::swap;
-use std::u32;
 
 use forest::Forest;
-use item::{CompletedItem, CompletedItemLinked, Item};
+use item::CompletedItem;
 use recognizer::Recognizer;
 use policy::PerformancePolicy;
 
@@ -29,57 +28,42 @@ impl<'g, F, P> Recognizer<'g, F, P>
     /// Returns the greatest item in the binary heap, or `None` if it is empty.
     #[inline]
     pub fn heap_peek(&self) -> Option<CompletedItem<F::NodeRef>> {
-        self.complete.get(0).and_then(|&right_item|
-            self.medial.get(right_item.idx as usize).map(|left_item|
-                CompletedItem {
-                    origin: left_item.origin,
-                    dot: left_item.dot.into(),
-                    left_node: left_item.node,
-                    right_node: right_item.node,
-                }
-            )
-        )
+        self.complete.get(0).cloned()
     }
 
     #[inline(always)]
-    fn heap_get(&self, idx_idx: usize) -> Option<&Item<F::NodeRef, P>> {
-        self.complete.get(idx_idx).and_then(|&item| self.medial.get(item.idx as usize))
+    fn heap_get(&self, idx_idx: usize) -> Option<&CompletedItem<F::NodeRef>> {
+        self.complete.get(idx_idx)
     }
 
     /// Removes the greatest item from the binary heap and returns it, or `None` if it
     /// is empty.
     pub fn heap_pop(&mut self) -> Option<CompletedItem<F::NodeRef>> {
-        self.complete.pop().and_then(move |mut right_item| {
+        if let Some(mut right_item) = self.complete.pop() {
             if !self.complete.is_empty() {
                 swap(&mut right_item, &mut self.complete[0]);
                 self.sift_down(0);
             }
-            self.medial.get(right_item.idx as usize).map(|left_item|
-                CompletedItem {
-                    origin: left_item.origin,
-                    dot: left_item.dot.into(),
-                    left_node: left_item.node,
-                    right_node: right_item.node,
-                }
-            )
-        })
+            Some(right_item)
+        } else {
+            None
+        }
     }
+
+    // /// Pushes an item onto the binary heap.
+    // pub fn heap_push(&mut self, item: CompletedItem<F::NodeRef>) {
+    //     let old_indices_len = self.complete.len();
+    //     let old_medial_len = self.medial.len();
+    //     assert!(old_medial_len as u64 <= u32::MAX.into());
+    //     self.complete.push(CompletedItemLinked {
+    //         idx: old_medial_len as u32,
+    //         node: item.right_node,
+    //     });
+    //     self.sift_up(0, old_indices_len);
+    // }
 
     /// Pushes an item onto the binary heap.
     pub fn heap_push(&mut self, item: CompletedItem<F::NodeRef>) {
-        let old_indices_len = self.complete.len();
-        let old_medial_len = self.medial.len();
-        assert!(old_medial_len as u64 <= u32::MAX.into());
-        self.medial.push(item.into());
-        self.complete.push(CompletedItemLinked {
-            idx: old_medial_len as u32,
-            node: item.right_node,
-        });
-        self.sift_up(0, old_indices_len);
-    }
-
-    /// Pushes an item onto the binary heap.
-    pub fn heap_push_linked(&mut self, item: CompletedItemLinked<F::NodeRef>) {
         let old_indices_len = self.complete.len();
         self.complete.push(item);
         self.sift_up(0, old_indices_len);
@@ -88,25 +72,23 @@ impl<'g, F, P> Recognizer<'g, F, P>
     /// Consumes the `BinaryHeap` and returns a vector in sorted
     /// (ascending) order.
     fn sift_up(&mut self, start: usize, mut pos: usize) {
-        let element_idx = self.complete[pos];
-        let element = &self.medial[element_idx.idx as usize];
+        let element = self.complete[pos];
         while pos > start {
             let parent = (pos - 1) / 2;
             let parent_idx = self.complete[parent];
-            if *element <= self.medial[parent_idx.idx as usize] {
+            if element <= parent_idx {
                 break;
             }
             self.complete[pos] = parent_idx;
             pos = parent;
         }
-        self.complete[pos] = element_idx;
+        self.complete[pos] = element;
     }
 
     /// Take an element at `pos` and move it down the heap,
     /// while its children are larger.
     fn sift_down_range(&mut self, mut pos: usize, end: usize) {
-        let element_idx = self.complete[pos];
-        let element = &self.medial[element_idx.idx as usize];
+        let element = self.complete[pos];
         let mut child = 2 * pos + 1;
         while child < end {
             let right = child + 1;
@@ -115,14 +97,14 @@ impl<'g, F, P> Recognizer<'g, F, P>
                 child = right;
             }
             // if we are already in order, stop.
-            if element >= self.heap_get(child).unwrap() {
+            if &element >= self.heap_get(child).unwrap() {
                 break;
             }
             self.complete[pos] = self.complete[child];
             pos = child;
             child = 2 * pos + 1;
         }
-        self.complete[pos] = element_idx;
+        self.complete[pos] = element;
     }
 
     fn sift_down(&mut self, pos: usize) {

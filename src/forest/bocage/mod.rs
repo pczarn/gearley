@@ -13,7 +13,6 @@ use ref_slice::ref_slice;
 use forest::node_handle::NodeHandle;
 use forest::Forest;
 use grammar::InternalGrammar;
-use item::CompletedItem;
 use policy::PerformancePolicy;
 
 use self::node::Node::*;
@@ -22,10 +21,17 @@ use self::order::Order;
 
 pub struct Bocage<G, P> {
     pub(crate) graph: Vec<CompactNode>,
+    pub(crate) products: Vec<ProductItem>,
     pub(crate) gc: MarkAndSweep,
     pub(crate) grammar: G,
     pub(crate) summand_count: u32,
     pub(crate) policy: ::std::marker::PhantomData<P>,
+}
+
+pub(crate) struct ProductItem {
+    dot: u32,
+    left_node: NodeHandle,
+    right_node: Option<NodeHandle>,
 }
 
 pub(crate) struct MarkAndSweep {
@@ -45,6 +51,7 @@ where
     pub fn with_capacities(grammar: G, graph_cap: usize, dfs_cap: usize) -> Self {
         let mut result = Bocage {
             graph: Vec::with_capacity(graph_cap),
+            products: Vec::with_capacity(64),
             gc: MarkAndSweep {
                 liveness: BitVec::with_capacity(graph_cap),
                 dfs: Vec::with_capacity(dfs_cap),
@@ -214,25 +221,38 @@ impl<G, P> Forest for Bocage<G, P> {
     const FOREST_BYTES_PER_RECOGNIZER_BYTE: usize = 2;
 
     #[inline]
-    fn begin_sum(&mut self) {
+    fn product(&mut self, dot: u32, left_node: NodeHandle, right_node: Option<NodeHandle>) -> NodeHandle {
+        self.products.push(
+            ProductItem {
+                dot,
+                left_node,
+                right_node,
+            }
+        );
+        NodeHandle(self.products.len() as u32 - 1)
+    }
+
+    #[inline]
+    fn begin_sum(&mut self, _lhs_sym: Symbol, _origin: u32) {
         // nothing to do
     }
 
     #[inline]
-    fn push_summand(&mut self, item: CompletedItem<Self::NodeRef>) {
+    fn push_summand(&mut self, product: Self::NodeRef) {
+        let ProductItem { dot, left_node, right_node } = self.products[product.usize()];
         self.graph.push(
             Product {
-                action: item.dot,
-                left_factor: item.left_node,
-                right_factor: item.right_node,
-            }
-            .compact(),
+                action: dot,
+                left_factor: left_node,
+                right_factor: right_node,
+            }.compact()
         );
         self.summand_count += 1;
     }
 
     #[inline]
-    fn sum(&mut self, lhs_sym: Symbol, _origin: u32) -> Self::NodeRef {
+    fn end_sum(&mut self, lhs_sym: Symbol, _origin: u32) -> Self::NodeRef {
+        debug_assert!(self.summand_count != 0);
         let result = unsafe {
             match self.summand_count {
                 0 => hint::unreachable_unchecked(),
@@ -271,5 +291,10 @@ impl<G, P> Forest for Bocage<G, P> {
     #[inline]
     fn nulling(&self, token: Symbol) -> Self::NodeRef {
         NodeHandle::nulling(token)
+    }
+
+    #[inline]
+    fn end_earleme(&mut self) {
+        self.products.clear();
     }
 }

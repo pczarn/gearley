@@ -100,7 +100,7 @@ impl<'a, T, L, P: PerformancePolicy> Iterator for Medial<'a, T, L, P> {
     fn next(&mut self) -> Option<Self::Item> {
         let events = &self.events;
         self.items.next().map(|ei| {
-            (&events[ei.dot.try_into().ok().unwrap()], ei.origin as usize)
+            (&events[ei.dot.try_into().ok().unwrap()], ei.origin_and_lhs as usize)
         })
     }
 }

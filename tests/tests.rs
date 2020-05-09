@@ -25,7 +25,7 @@ const SUM_TOKENS: &'static [u32] = precedenced_arith!(
 #[test]
 fn test_precedenced_arith() {
     let external = precedenced_arith::grammar();
-    let cfg = InternalGrammar::from_grammar(&external);
+    let cfg = InternalGrammar::<PerformancePolicy16>::from_grammar(&external);
     let mut rec = Recognizer::new(&cfg, NullForest);
     assert!(rec.parse(SUM_TOKENS));
 }

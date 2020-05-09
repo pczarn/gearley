@@ -11,6 +11,7 @@ use cfg::earley::Grammar;
 use gearley::forest::NullForest;
 use gearley::grammar::InternalGrammar;
 use gearley::recognizer::Recognizer;
+use gearley::policy::DefaultPerformancePolicy;
 
 use helpers::Parse;
 
@@ -22,7 +23,7 @@ fn test_recognize_nested() {
     external.rule(start).rhs([nested, terminal])
             .rule(nested).rhs([terminal, terminal]);
     external.set_start(start);
-    let cfg = InternalGrammar::from_grammar(&external);
+    let cfg = InternalGrammar::<DefaultPerformancePolicy>::from_grammar(&external);
     let mut rec = Recognizer::new(&cfg, NullForest);
     let finished = rec.parse(&[terminal.usize() as u32; 3]);
     assert!(finished);
@@ -36,7 +37,7 @@ fn test_recognize_reset() {
     external.rule(start).rhs([nested, terminal])
             .rule(nested).rhs([terminal, terminal]);
     external.set_start(start);
-    let cfg = InternalGrammar::from_grammar(&external);
+    let cfg = InternalGrammar::<DefaultPerformancePolicy>::from_grammar(&external);
     let mut rec = Recognizer::new(&cfg, NullForest);
     for _ in 0..100 {
         let finished = rec.parse(&[terminal.usize() as u32; 3]);

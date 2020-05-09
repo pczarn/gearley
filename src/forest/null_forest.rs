@@ -1,7 +1,6 @@
 use cfg::symbol::Symbol;
 
 use forest::Forest;
-use item::CompletedItem;
 
 /// An empty forest.
 pub struct NullForest;
@@ -17,11 +16,16 @@ impl Forest for NullForest {
     #[inline(always)]
     fn nulling(&self, _: Symbol) {}
     #[inline(always)]
-    fn begin_sum(&mut self) {}
-    #[inline(always)]
-    fn push_summand(&mut self, _item: CompletedItem<Self::NodeRef>) {}
-    #[inline(always)]
-    fn sum(&mut self, _lhs_sym: Symbol, _origin: u32) -> Self::NodeRef {
+    fn product(&mut self, action: u32, left_node: Self::NodeRef, right_node: Option<Self::NodeRef>) -> Self::NodeRef {
         ()
     }
+    #[inline(always)]
+    fn begin_sum(&mut self, _lhs_sym: Symbol, _origin: u32) {}
+    #[inline(always)]
+    fn push_summand(&mut self, _product: Self::NodeRef) {}
+    #[inline(always)]
+    fn end_sum(&mut self, _lhs_sym: Symbol, _origin: u32) -> Self::NodeRef {
+        ()
+    }
+    fn end_earleme(&mut self) {}
 }

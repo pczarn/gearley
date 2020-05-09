@@ -8,7 +8,7 @@ use cfg::*;
 use events::{MedialItems, PredictedSymbols};
 use forest::{Forest, NullForest};
 use grammar::InternalGrammar;
-use item::{CompletedItem, CompletedItemLinked, Item, Origin};
+use item::{CompletedItem, Item, Origin};
 use policy::{PerformancePolicy, DefaultPerformancePolicy};
 
 /// The recognizer implements the Earley algorithm. It parses the given input according
@@ -46,7 +46,7 @@ where
     // origin and dot. The creation of a completed item can only be caused
     // by a scan or a completion of an item that has a higher (origin, dot)
     // pair value.
-    pub(super) complete: Vec<CompletedItemLinked<F::NodeRef>>,
+    pub(super) complete: Vec<CompletedItem<F::NodeRef>>,
 
     // Chart's indices. They point to the beginning of each Earley set.
     //
@@ -190,7 +190,6 @@ where
         if self.medial.len() - self.current_medial_start >= P::MEDIAL_SORT_THRESHOLD {
             self.sort_medial_items();
         }
-        self.remove_unary_medial_items();
         self.remove_unreachable_sets();
         self.earleme += 1;
         // `earleme` is now at least 1.
@@ -199,6 +198,7 @@ where
         // Store the index.
         self.current_medial_start = self.medial.len();
         self.indices.push(self.current_medial_start);
+        self.forest.end_earleme();
     }
 
     /// Checks whether the recognizer is exhausted. The recognizer is exhausted when it can't accept
@@ -214,29 +214,22 @@ where
         // Build index by postdot
         // These medial positions themselves are sorted by postdot symbol.
         self.medial[self.current_medial_start..].sort_unstable_by(|a, b| {
-            (grammar.get_rhs1_cmp(a.dot), a.dot, a.origin).cmp(&(
-                grammar.get_rhs1_cmp(b.dot),
+            (a.rhs1, a.dot, a.origin_and_lhs).cmp(&(
+                b.rhs1,
                 b.dot,
-                b.origin,
+                b.origin_and_lhs,
             ))
         });
     }
 
-    fn remove_unary_medial_items(&mut self) {
-        while let Some(&item) = self.medial.last() {
-            if self.grammar.get_rhs1(item.dot).is_some() {
-                break;
-            }
-            self.medial.pop();
-        }
-    }
-
     fn remove_unreachable_sets(&mut self) {
-        let origin = |item: &Item<F::NodeRef, P>| item.origin as usize;
+        let origin_and_lhs = |item: &Item<F::NodeRef, P>| item.origin_and_lhs;
+        let origin = |origin_and_lhs: u32| self.grammar.origin(origin_and_lhs) as usize;
         let max_origin = self.medial[self.current_medial_start..]
             .iter()
-            .map(origin)
+            .map(origin_and_lhs)
             .max()
+            .map(origin)
             .unwrap_or(self.earleme);
         let diff = self.earleme - max_origin;
         if diff <= 1 {
@@ -321,30 +314,32 @@ where
         let (set_range, is_sorted) = self.medial_item_set_range(set_id, sym);
         if is_sorted {
             for idx in set_range {
-                let dot = self.medial[idx].dot;
-                if self.grammar.get_rhs1(dot) != Some(sym) {
+                let item = self.medial[idx];
+                if item.rhs1 != sym {
                     break;
                 }
-                if !self.grammar.can_follow(self.grammar.get_lhs(dot), self.lookahead_hint) {
+                if !self.grammar.can_follow(self.grammar.get_lhs(item.dot), self.lookahead_hint) {
                     continue;
                 }
-                self.heap_push_linked(CompletedItemLinked {
-                    idx: idx as u32,
-                    node: Some(rhs_link),
+                let node = self.forest.product(item.dot.into(), item.node, Some(rhs_link));
+                self.heap_push(CompletedItem {
+                    origin_and_lhs: item.origin_and_lhs,
+                    node,
                 });
             }
         } else {
             for idx in set_range {
-                let dot = self.medial[idx].dot;
-                if self.grammar.get_rhs1(dot) != Some(sym) {
+                let item = self.medial[idx];
+                if item.rhs1 != sym {
                     continue;
                 }
-                if !self.grammar.can_follow(self.grammar.get_lhs(dot), self.lookahead_hint) {
+                if !self.grammar.can_follow(self.grammar.get_lhs(item.dot), self.lookahead_hint) {
                     continue;
                 }
-                self.heap_push_linked(CompletedItemLinked {
-                    idx: idx as u32,
-                    node: Some(rhs_link),
+                let node = self.forest.product(item.dot.into(), item.node, Some(rhs_link));
+                self.heap_push(CompletedItem {
+                    origin_and_lhs: item.origin_and_lhs,
+                    node,
                 });
             }
         }
@@ -359,7 +354,7 @@ where
             // When the set has X or more items, we use binary search to narrow down the range of
             // items.
             let set_idx = specific_set.binary_search_by(|ei| {
-                (self.grammar.get_rhs1(ei.dot), Ordering::Greater).cmp(&(Some(sym), Ordering::Less))
+                (ei.rhs1, Ordering::Greater).cmp(&(sym, Ordering::Less))
             });
             match set_idx {
                 Ok(idx) | Err(idx) => (outer_start + idx .. outer_end, true),
@@ -386,11 +381,14 @@ where
                 if !self.grammar.can_follow(self.grammar.get_lhs(trans.dot), self.lookahead_hint) {
                     continue;
                 }
+                let node = self.forest.product(trans.dot.into(), rhs_link, None);
                 self.heap_push(CompletedItem {
-                    origin: set_id,
-                    dot: trans.dot.into(),
-                    left_node: rhs_link,
-                    right_node: None,
+                    origin_and_lhs: self.grammar.origin_and_lhs(set_id, trans.symbol),
+                    node,
+                    // origin: set_id,
+                    // dot: trans.dot.into(),
+                    // left_node: rhs_link,
+                    // right_node: None,
                 });
             }
         }
@@ -400,7 +398,8 @@ where
     fn complete_binary_predictions(&mut self, set_id: Origin, sym: P::Symbol, rhs_link: F::NodeRef, predicted: &BitVecSlice) {
         for trans in self.grammar.binary_completions(sym) {
             if Predicted::any(trans.symbol, predicted) {
-                if !self.grammar.first(self.grammar.get_rhs1(trans.dot).unwrap(), self.lookahead_hint) {
+                let rhs1 = self.grammar.get_rhs1(trans.dot).unwrap();
+                if !self.grammar.first(rhs1, self.lookahead_hint) {
                     continue;
                 }
                 // No checks for uniqueness, because `medial` will be deduplicated.
@@ -409,8 +408,9 @@ where
                 // Where C is terminal or nonterminal.
 
                 self.medial.push(Item {
-                    origin: set_id,
+                    origin_and_lhs: self.grammar.origin_and_lhs(set_id, trans.symbol),
                     dot: trans.dot,
+                    rhs1: rhs1,
                     node: rhs_link,
                 });
             }
@@ -494,13 +494,26 @@ where
         self.lookahead_hint = None;
     }
 
+    // /// Allows iteration through groups of completions that have unique symbol and origin.
+    // pub fn next_origin<'r>(&'r mut self) -> Option<CompleteSum<'g, 'r, F, P>> {
+    //     if let Some(ei) = self.heap_peek() {
+
+    //         let lhs_sym = self.grammar.get_lhs(ei.dot.try_into().ok().unwrap());
+    //         Some(CompleteOrigin {
+    //             origin: ei.origin,
+    //             lhs_sym: lhs_sym.into(),
+    //             recognizer: self,
+    //         })
+    //     } else {
+    //         None
+    //     }
+    // }
+
     /// Allows iteration through groups of completions that have unique symbol and origin.
     pub fn next_sum<'r>(&'r mut self) -> Option<CompleteSum<'g, 'r, F, P>> {
         if let Some(ei) = self.heap_peek() {
-            let lhs_sym = self.grammar.get_lhs(ei.dot.try_into().ok().unwrap());
             Some(CompleteSum {
-                origin: ei.origin,
-                lhs_sym: lhs_sym.into(),
+                origin_and_lhs: ei.origin_and_lhs,
                 recognizer: self,
             })
         } else {
@@ -509,6 +522,18 @@ where
     }
 }
 
+// /// A group of completed items.
+// pub struct CompleteOrigin<'g, 'r, F, P>
+// where
+//     F: Forest,
+//     P: PerformancePolicy,
+// {
+//     /// The origin location of this completion.
+//     origin: Origin,
+//     /// The recognizer.
+//     recognizer: &'r mut Recognizer<'g, F, P>,
+// }
+
 /// A group of completed items.
 pub struct CompleteSum<'g, 'r, F, P>
 where
@@ -516,9 +541,8 @@ where
     P: PerformancePolicy,
 {
     /// The origin location of this completion.
-    origin: Origin,
     /// The symbol of this completion.
-    lhs_sym: Symbol,
+    origin_and_lhs: u32,
     /// The recognizer.
     recognizer: &'r mut Recognizer<'g, F, P>,
 }
@@ -531,7 +555,7 @@ where
 {
     /// Completes all items.
     pub fn complete_entire_sum(&mut self) {
-        self.recognizer.forest.begin_sum();
+        self.recognizer.forest.begin_sum(self.symbol().into(), self.origin());
         // For each item, include it in the completion.
         while let Some(item) = self.next_summand() {
             self.push_summand(item);
@@ -550,8 +574,7 @@ where
     #[inline]
     pub fn next_summand(&mut self) -> Option<CompletedItem<F::NodeRef>> {
         if let Some(completion) = self.recognizer.heap_peek() {
-            let completion_lhs_sym = self.recognizer.grammar.get_lhs(completion.dot.try_into().ok().unwrap());
-            if self.origin == completion.origin && self.lhs_sym == completion_lhs_sym.into() {
+            if self.origin_and_lhs == completion.origin_and_lhs {
                 self.recognizer.heap_pop();
                 Some(completion)
             } else {
@@ -565,26 +588,26 @@ where
     /// Includes an item in the completion.
     #[inline]
     pub fn push_summand(&mut self, completed_item: CompletedItem<F::NodeRef>) {
-        self.recognizer.forest.push_summand(completed_item);
+        self.recognizer.forest.push_summand(completed_item.node);
     }
 
     /// Uses the completion to complete items in the recognizer.
     #[inline]
     pub fn complete_sum(&mut self) -> F::NodeRef {
-        let node = self.recognizer.forest.sum(self.lhs_sym, self.origin);
-        self.recognizer.complete(self.origin, self.lhs_sym.into(), node);
+        let node = self.recognizer.forest.end_sum(self.symbol().into(), self.origin());
+        self.recognizer.complete(self.origin(), self.symbol(), node);
         node
     }
 
     /// Returns the origin location of this completion.
     #[inline]
     pub fn origin(&self) -> Origin {
-        self.origin
+        self.recognizer.grammar.origin(self.origin_and_lhs)
     }
 
     /// Returns the symbol of this completion.
     #[inline]
-    pub fn symbol(&self) -> Symbol {
-        self.lhs_sym
+    pub fn symbol(&self) -> P::Symbol {
+        self.recognizer.grammar.lhs_sym(self.origin_and_lhs)
     }
 }
