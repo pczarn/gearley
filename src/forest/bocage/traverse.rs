@@ -34,7 +34,7 @@ pub struct Traverse<'f, G, P> {
     graph_iter: slice::Iter<'f, CompactNode>,
     liveness_iter: bit_vec::Iter<'f>,
     // Space for unrolling factors
-    factor_stack: Vec<(Symbol, u32)>,
+    factor_stack: Vec<(Symbol, NodeHandle, u32)>,
     // Scratch space for traversal
     factor_traversal: Vec<NodeHandle>,
 }
@@ -62,24 +62,24 @@ where
                         }),
                     });
                 }
-                Sum {
-                    nonterminal: symbol,
-                    count,
-                } => {
-                    let products = self.graph_iter.as_slice()[..count as usize].iter();
-                    for _ in 0..count {
-                        self.graph_iter.next();
-                        self.liveness_iter.next();
-                    }
-                    return Some(TraversalHandle {
-                        node,
-                        symbol,
-                        item: SumHandle(Products {
-                            products,
-                            traverse: self,
-                        }),
-                    });
-                }
+                // Sum {
+                //     nonterminal: symbol,
+                //     count,
+                // } => {
+                //     let products = self.graph_iter.as_slice()[..count as usize].iter();
+                //     for _ in 0..count {
+                //         self.graph_iter.next();
+                //         self.liveness_iter.next();
+                //     }
+                //     return Some(TraversalHandle {
+                //         node,
+                //         symbol,
+                //         item: SumHandle(Products {
+                //             products,
+                //             traverse: self,
+                //         }),
+                //     });
+                // }
                 NullingLeaf { symbol } => {
                     return Some(TraversalHandle {
                         node,
@@ -102,7 +102,7 @@ where
     fn unfold_factors(&mut self, left: NodeHandle, right: Option<NodeHandle>) {
         self.factor_stack.clear();
         self.enqueue_for_unfold(left, right);
-        while let Some(node) = self.pop_for_unfold() {
+        while let Some((node, handle)) = self.pop_for_unfold() {
             match node {
                 Product {
                     left_factor,
@@ -112,7 +112,7 @@ where
                     self.enqueue_for_unfold(left_factor, right_factor);
                 }
                 Evaluated { symbol, values } => {
-                    self.factor_stack.push((symbol, values));
+                    self.factor_stack.push((symbol, handle, values));
                 }
                 _ => unreachable!(),
             }
@@ -126,10 +126,10 @@ where
         self.factor_traversal.push(left);
     }
 
-    fn pop_for_unfold(&mut self) -> Option<Node> {
+    fn pop_for_unfold(&mut self) -> Option<(Node, NodeHandle)> {
         self.factor_traversal.pop().map(|handle| {
             let node = self.bocage.graph[handle.usize()].clone();
-            node.expand()
+            (node.expand(), handle)
         })
     }
 }
@@ -153,7 +153,7 @@ pub struct Products<'f, 't, G, P> {
 
 pub struct ProductHandle<'t> {
     pub action: u32,
-    pub factors: &'t [(Symbol, u32)],
+    pub factors: &'t [(Symbol, NodeHandle, u32)],
 }
 
 impl<'f, 't, G, P: PerformancePolicy> Products<'f, 't, G, P>
@@ -167,6 +167,7 @@ where
                     left_factor,
                     right_factor,
                     action,
+                    ..
                 } => {
                     let origin = self
                         .traverse

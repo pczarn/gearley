@@ -32,10 +32,10 @@ where
         }
         trace!("finished {:?}", &*self);
 
-        if self.is_finished() {
-            self.forest
-                .mark_alive(self.finished_node().unwrap(), NullOrder::new());
-        }
+        // if self.is_finished() {
+        //     self.forest
+        //         .mark_alive(self.finished_node().unwrap(), NullOrder::new());
+        // }
         self.is_finished()
     }
 }
@@ -59,10 +59,10 @@ where
         }
         trace!("finished {:?}", &*self);
 
-        if self.is_finished() {
-            self.forest
-                .mark_alive(self.finished_node().unwrap(), CompactNullOrder::new());
-        }
+        // if self.is_finished() {
+        //     self.forest
+        //         .mark_alive(self.finished_node().unwrap(), CompactNullOrder::new());
+        // }
         self.is_finished()
     }
 }

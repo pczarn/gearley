@@ -13,7 +13,7 @@ use gearley::grammar::InternalGrammar;
 use gearley::recognizer::Recognizer;
 use gearley::policy::PerformancePolicy16;
 
-use helpers::{Parse, SimpleCompactEvaluator, SimpleEvaluator};
+use helpers::{Parse, SimpleCompactEvaluator, SimpleEvaluator, traversal_description, compact_traversal_description};
 
 macro_rules! test_trivial_grammar {
     ($Bocage:ident, $SimpleEvaluator:ident) => {
@@ -55,7 +55,7 @@ fn test_trivial_grammar_compact() {
 }
 
 macro_rules! test_grammar_with_nulling_intermediate {
-    ($Bocage:ident, $SimpleEvaluator:ident) => {
+    ($Bocage:ident, $SimpleEvaluator:ident, $traversal_description:ident) => {
         let _ = env_logger::try_init();
         let mut external = Grammar::new();
         let (start, a, b, c, d, foo) = external.sym();
@@ -102,15 +102,17 @@ macro_rules! test_grammar_with_nulling_intermediate {
         let mut traversal = rec.forest.traverse();
         let results = evaluator.traverse(&mut traversal, rec.finished_node().unwrap());
         assert_eq!(results, &[10]);
+        // let description = $traversal_description(&mut traversal, rec.finished_node().unwrap());
+        // assert_eq!(description, vec![]);
     };
 }
 
 #[test]
 fn test_grammar_with_nulling_intermediate() {
-    test_grammar_with_nulling_intermediate!(Bocage, SimpleEvaluator);
+    test_grammar_with_nulling_intermediate!(Bocage, SimpleEvaluator, traversal_description);
 }
 
 #[test]
 fn test_grammar_with_nulling_intermediate_compact() {
-    test_grammar_with_nulling_intermediate!(CompactBocage, SimpleCompactEvaluator);
+    test_grammar_with_nulling_intermediate!(CompactBocage, SimpleCompactEvaluator, compact_traversal_description);
 }

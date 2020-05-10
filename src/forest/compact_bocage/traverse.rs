@@ -46,10 +46,10 @@ where
         while let Some(node) = self.graph_iter.peek() {
             let iter = self.graph_iter;
             let alive = self.liveness[self.graph_iter.handle.usize()];
-            println!(
-                "next_node @{:?} {:?} {}",
-                self.graph_iter.handle, node, alive
-            );
+            // println!(
+            //     "next_node @{:?} {:?} {}",
+            //     self.graph_iter.handle, node, alive
+            // );
             self.graph_iter.next();
             if !alive {
                 continue;
@@ -59,7 +59,14 @@ where
                     if self.bocage.is_transparent(action) {
                         continue;
                     }
-                    let products = iter.take(1);
+                    let mut consecutive_iter = self.graph_iter;
+                    let consecutive_count = consecutive_iter.take_while(|node| {
+                        match node {
+                            Product { first, .. } => !first,
+                            _ => false,
+                        }
+                    }).count();
+                    let products = iter.take(1 + consecutive_count);
                     return Some(TraversalHandle {
                         iter,
                         symbol: self.bocage.grammar.borrow().get_lhs(action.try_into().ok().unwrap()).into(),
@@ -69,25 +76,25 @@ where
                         }),
                     });
                 }
-                Sum {
-                    nonterminal: symbol,
-                    count,
-                } => {
-                    let products = self.graph_iter.take(count as usize);
-                    for _ in 0..count {
-                        let p = self.graph_iter.handle;
-                        let n = self.graph_iter.next();
-                        println!("next_node product @{:?} {:?}", p, n);
-                    }
-                    return Some(TraversalHandle {
-                        iter,
-                        symbol,
-                        item: SumHandle(Products {
-                            products,
-                            traverse: self,
-                        }),
-                    });
-                }
+                // Sum {
+                //     nonterminal: symbol,
+                //     count,
+                // } => {
+                //     let products = self.graph_iter.take(count as usize);
+                //     for _ in 0..count {
+                //         let p = self.graph_iter.handle;
+                //         let n = self.graph_iter.next();
+                //         println!("next_node product @{:?} {:?}", p, n);
+                //     }
+                //     return Some(TraversalHandle {
+                //         iter,
+                //         symbol,
+                //         item: SumHandle(Products {
+                //             products,
+                //             traverse: self,
+                //         }),
+                //     });
+                // }
                 NullingLeaf { symbol } => {
                     return Some(TraversalHandle {
                         iter,
@@ -122,10 +129,13 @@ where
                 ) => {
                     self.enqueue_for_unfold(left_factor, right_factor);
                 }
-                (Evaluated { symbol }, handle) => {
+                (Evaluated { symbol }, handle) | (NullingLeaf { symbol }, handle) => {
                     self.factor_stack.push((symbol, handle));
                 }
-                _ => unreachable!(),
+                other => {
+                    println!("OTHER {:?}", other);
+                    unreachable!();
+                }
             }
         }
     }
@@ -177,6 +187,7 @@ where
                     left_factor,
                     right_factor,
                     action,
+                    ..
                 } => {
                     let origin = self
                         .traverse
@@ -201,7 +212,8 @@ where
 
 impl<'f, 't, G, P> TraversalHandle<'f, 't, G, P> {
     pub fn end_evaluation(&self) {
-        self.iter.vec[self.iter.handle.usize()].set(Tag::SmallLeafTag.to_u16());
+        println!("end_eval {:?}", self.iter.handle);
+        self.iter.vec[self.iter.handle.usize()].set(Tag::LeafTag.to_u16());
     }
 
     pub fn handle(&self) -> NodeHandle {

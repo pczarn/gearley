@@ -10,18 +10,12 @@ use forest::node_handle::{NodeHandle, NULL_HANDLE};
 // Node variants `Sum`/`Product` are better known in literature as `OR`/`AND`.
 #[derive(Copy, Clone, Debug)]
 pub enum Node {
-    Sum {
-        /// 8 bytes.
-        /// Invariant: count > 1.
-        /// Invariant: This node can only be directly followed by `Product`.
-        nonterminal: Symbol,
-        count: u32,
-    },
     Product {
         /// 12+ bytes.
         action: u32,
         left_factor: NodeHandle,
         right_factor: Option<NodeHandle>,
+        first: bool,
     },
     NullingLeaf {
         /// 4 bytes.
@@ -42,10 +36,6 @@ pub struct CompactNode {
 // Node variants `Sum`/`Product` are better known in literature as `OR`/`AND`.
 #[derive(Copy, Clone)]
 union CompactField {
-    // sum
-    nonterminal: Symbol,
-    count: u32,
-
     // product
     action: u32,
     factor: NodeHandle,
@@ -59,11 +49,11 @@ union CompactField {
     tag: u32,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 enum Tag {
-    LeafTag = 0b00 << TAG_BIT,
-    SumTag = 0b01 << TAG_BIT,
-    ProductTag = 0b10 << TAG_BIT,
+    ProductTagFirst = 0b00 << TAG_BIT,
+    ProductTag = 0b01 << TAG_BIT,
+    LeafTag = 0b10 << TAG_BIT,
 }
 
 impl Tag {
@@ -72,8 +62,8 @@ impl Tag {
         let n = n & TAG_MASK;
         if n == LeafTag.to_u32() {
             Some(LeafTag)
-        } else if n == SumTag.to_u32() {
-            Some(SumTag)
+        } else if n == ProductTagFirst.to_u32() {
+            Some(ProductTagFirst)
         } else if n == ProductTag.to_u32() {
             Some(ProductTag)
         } else {
@@ -84,9 +74,9 @@ impl Tag {
     #[inline]
     fn to_u32(&self) -> u32 {
         match *self {
-            LeafTag => 0b00 << TAG_BIT,
-            SumTag => 0b01 << TAG_BIT,
-            ProductTag => 0b10 << TAG_BIT,
+            ProductTagFirst => 0b00 << TAG_BIT,
+            ProductTag => 0b01 << TAG_BIT,
+            LeafTag => 0b10 << TAG_BIT,
         }
     }
 }
@@ -104,6 +94,7 @@ impl Node {
                 left_factor,
                 right_factor,
                 action,
+                ..
             } => {
                 let right_factor = right_factor.unwrap_or(NULL_HANDLE);
                 [
@@ -116,11 +107,6 @@ impl Node {
                     },
                 ]
             }
-            Sum { nonterminal, count } => [
-                CompactField { nonterminal },
-                CompactField { count },
-                CompactField { tag: 0 },
-            ],
             NullingLeaf { symbol } => [
                 CompactField { symbol },
                 CompactField {
@@ -145,8 +131,13 @@ impl Node {
     #[inline]
     fn tag(&self) -> Tag {
         match self {
-            Product { .. } => ProductTag,
-            Sum { .. } => SumTag,
+            &Product { first, .. } => {
+                if first {
+                    ProductTagFirst
+                } else {
+                    ProductTag
+                }
+            }
             NullingLeaf { .. } | Evaluated { .. } => LeafTag,
         }
     }
@@ -176,16 +167,28 @@ impl CompactNode {
                         }
                     }
                 }
+                ProductTagFirst => Product {
+                    action: fields[0].action,
+                    left_factor: fields[1].factor,
+                    right_factor: fields[2].factor.to_option(),
+                    first: true,
+                },
                 ProductTag => Product {
                     action: fields[0].action,
                     left_factor: fields[1].factor,
                     right_factor: fields[2].factor.to_option(),
-                },
-                SumTag => Sum {
-                    nonterminal: fields[0].nonterminal,
-                    count: fields[1].count,
+                    first: false,
                 },
             }
+        }
+    }
+
+    #[inline]
+    pub(super) fn is_consecutive_product(&self) -> bool {
+        unsafe {
+            let fields = self.cell.get();
+            let tag = get_tag(&fields);
+            tag == ProductTag
         }
     }
 }
@@ -209,4 +212,10 @@ unsafe fn get_and_erase_tag(fields: &mut [CompactField; 3]) -> Tag {
     let extract_tag = *tag;
     *tag = *tag & !TAG_MASK;
     unwrap_unchecked(Tag::from_u32(extract_tag))
+}
+
+#[inline]
+unsafe fn get_tag(fields: &[CompactField; 3]) -> Tag {
+    let CompactField { tag } = fields[0];
+    unwrap_unchecked(Tag::from_u32(tag))
 }

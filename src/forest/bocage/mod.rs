@@ -24,7 +24,7 @@ pub struct Bocage<G, P> {
     pub(crate) products: Vec<ProductItem>,
     pub(crate) gc: MarkAndSweep,
     pub(crate) grammar: G,
-    pub(crate) summand_count: u32,
+    pub(crate) first_summand: NodeHandle,
     pub(crate) policy: ::std::marker::PhantomData<P>,
 }
 
@@ -57,7 +57,7 @@ where
                 dfs: Vec::with_capacity(dfs_cap),
             },
             grammar,
-            summand_count: 0,
+            first_summand: NodeHandle(0),
             policy: ::std::marker::PhantomData,
         };
         result.initialize_nulling();
@@ -83,6 +83,7 @@ where
                     left_factor: NodeHandle::nulling(rhs0),
                     right_factor: Some(NodeHandle::nulling(rhs1)),
                     action: NULL_ACTION,
+                    first: true,
                 },
             );
         }
@@ -111,18 +112,25 @@ where
 
     #[inline]
     fn summands(graph: &Vec<CompactNode>, node: NodeHandle) -> &[CompactNode] {
+        
         unsafe {
-            match graph.get_unchecked(node.usize()).expand() {
-                Sum { count, .. } => {
-                    // back
-                    // let start = node.usize() - count as usize - 1;
-                    // let end = node.usize() - 1;
-                    let start = node.usize() + 1;
-                    let end = node.usize() + count as usize + 1;
-                    graph.get_unchecked(start..end)
-                }
-                _ => ref_slice(graph.get_unchecked(node.usize())),
-            }
+            let count = graph.get_unchecked(node.usize() + 1 ..).iter().take_while(|node| {
+                node.is_consecutive_product()
+            }).count();
+            let start = node.usize();
+            let end = node.usize() + count as usize + 1;
+            graph.get_unchecked(start..end)
+            // match graph.get_unchecked(node.usize()).expand() {
+            //     Sum { count, .. } => {
+            //         // back
+            //         // let start = node.usize() - count as usize - 1;
+            //         // let end = node.usize() - 1;
+            //         let start = node.usize() + 1;
+            //         let end = node.usize() + count as usize + 1;
+            //         graph.get_unchecked(start..end)
+            //     }
+            //     _ => ref_slice(graph.get_unchecked(node.usize())),
+            // }
         }
     }
 
@@ -132,6 +140,7 @@ where
             left_factor: factor,
             right_factor: None,
             action,
+            first,
         } = node.expand()
         {
             // Add omitted phantom syms here.
@@ -145,6 +154,7 @@ where
                     left_factor: left,
                     right_factor: Some(right),
                     action,
+                    first,
                 });
             }
         }
@@ -209,7 +219,6 @@ impl MarkAndSweep {
                 }
             }
             NullingLeaf { .. } | Evaluated { .. } => {}
-            Sum { .. } => unreachable!(),
         }
     }
 }
@@ -234,7 +243,7 @@ impl<G, P> Forest for Bocage<G, P> {
 
     #[inline]
     fn begin_sum(&mut self, _lhs_sym: Symbol, _origin: u32) {
-        // nothing to do
+        self.first_summand = NodeHandle(self.graph.len() as u32);
     }
 
     #[inline]
@@ -245,34 +254,15 @@ impl<G, P> Forest for Bocage<G, P> {
                 action: dot,
                 left_factor: left_node,
                 right_factor: right_node,
+                first: self.graph.len() as u32 == self.first_summand.0,
             }.compact()
         );
-        self.summand_count += 1;
     }
 
     #[inline]
     fn end_sum(&mut self, lhs_sym: Symbol, _origin: u32) -> Self::NodeRef {
-        debug_assert!(self.summand_count != 0);
-        let result = unsafe {
-            match self.summand_count {
-                0 => hint::unreachable_unchecked(),
-                1 => NodeHandle(self.graph.len() as u32 - 1),
-                summand_count => {
-                    // Slower case: ambiguous node.
-                    let first_summand_idx = self.graph.len() - summand_count as usize;
-                    let first_summand = self.graph.get_unchecked(first_summand_idx).clone();
-                    self.graph.push(first_summand);
-                    *self.graph.get_unchecked_mut(first_summand_idx) = Sum {
-                        nonterminal: lhs_sym,
-                        count: self.summand_count as u32,
-                    }
-                    .compact();
-                    NodeHandle(first_summand_idx as u32)
-                }
-            }
-        };
-        self.summand_count = 0;
-        result
+        // debug_assert!(self.summand_count != 0);
+        self.first_summand
     }
 
     #[inline]

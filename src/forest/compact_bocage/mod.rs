@@ -26,6 +26,7 @@ pub struct CompactBocage<G, P> {
     pub(crate) grammar: G,
     pub(crate) first_summand: NodeHandle,
     pub(crate) summand_count: u32,
+    pub(crate) nulling_relocation: Vec<NodeHandle>,
     pub(crate) policy: ::std::marker::PhantomData<P>,
 }
 
@@ -60,6 +61,7 @@ where
             grammar,
             summand_count: 0,
             first_summand: NodeHandle(0),
+            nulling_relocation: Vec::new(),
             policy: ::std::marker::PhantomData,
         };
         result.initialize_nulling();
@@ -72,16 +74,16 @@ where
         let nulling_leaf_count = self.nulling_symbol_count();
         // Ensure that `max` is not ridiculously large.
         assert!(nulling_leaf_count < (1 << 20), "invalid nullable symbol");
-        let mut graph: Vec<Node> = (0..nulling_leaf_count)
-            .map(|i| NullingLeaf {
-                symbol: Symbol::from(i),
-            })
-            .collect();
+        let nulling_leaf = |i| NullingLeaf {
+            symbol: Symbol::from(i),
+        };
+        let mut graph: Vec<Node> = (0..nulling_leaf_count).map(nulling_leaf).collect();
         for &(lhs, rhs0, rhs1) in self.grammar.borrow().eliminated_nulling_intermediate() {
             graph[lhs.usize()] = Product {
                 left_factor: NodeHandle::nulling(rhs0),
                 right_factor: Some(NodeHandle::nulling(rhs1)),
                 action: NULL_ACTION,
+                first: true, // unused here
             };
         }
         let mut pos = 0;
@@ -96,11 +98,13 @@ where
                     action,
                     left_factor,
                     right_factor,
+                    ..
                 } => {
                     self.graph.push(Product {
                         action,
                         left_factor: relocation[left_factor.usize()],
                         right_factor: right_factor.map(|f| relocation[f.usize()]),
+                        first: true,
                     });
                 }
                 other => {
@@ -108,6 +112,8 @@ where
                 }
             }
         }
+        self.graph.nulling_leaf_limit = self.graph.vec.len() as u32;
+        self.nulling_relocation = relocation;
     }
 
     fn nulling_symbol_count(&self) -> usize {
@@ -136,14 +142,21 @@ where
 
     #[inline]
     fn summands<'a>(graph: &'a Graph, node: NodeHandle) -> impl Iterator<Item = Node> + 'a {
-        let mut iter = graph.iter_from(node);
-        match iter.peek() {
-            Some(Sum { count, .. }) => {
-                iter.next();
-                iter.take(count as usize)
-            }
-            _ => iter.take(1),
-        }
+        graph.iter_from(node).enumerate().take_while(|&(i, node)| {
+            let first = i == 0;
+            let consecutive = match node {
+                Product { first, .. } => !first,
+                _ => false,
+            };
+            first || consecutive
+        }).map(|(_, node)| node)
+        // match iter.peek() {
+        //     Some(Sum { count, .. }) => {
+        //         iter.next();
+        //         iter.take(count as usize)
+        //     }
+        //     _ => iter.take(1),
+        // }
     }
 
     #[inline]
@@ -153,14 +166,15 @@ where
                 ref mut left_factor,
                 ref mut right_factor,
                 action,
+                ..
             } => {
                 if right_factor.is_none() {
                     // Add omitted phantom syms here.
                     if let Some((sym, dir)) = self.grammar.borrow().nulling(action) {
                         let (left, right) = if dir {
-                            (*left_factor, NodeHandle::nulling(sym))
+                            (*left_factor, self.nulling_relocation[sym.usize()])
                         } else {
-                            (NodeHandle::nulling(sym), *left_factor)
+                            (self.nulling_relocation[sym.usize()], *left_factor)
                         };
                         *left_factor = left;
                         *right_factor = Some(right);
@@ -226,7 +240,6 @@ impl MarkAndSweep {
                 }
             }
             NullingLeaf { .. } | Evaluated { .. } => {}
-            Sum { .. } => unreachable!(),
         }
     }
 }
@@ -264,29 +277,13 @@ where
             action: dot,
             left_factor: left_node,
             right_factor: right_node,
+            first: self.graph.vec.len() as u32 == self.first_summand.0,
         }));
-        self.summand_count += 1;
     }
 
     #[inline]
     fn end_sum(&mut self, lhs_sym: Symbol, _origin: u32) -> Self::NodeRef {
-        unsafe {
-            match self.summand_count {
-                0 => hint::unreachable_unchecked(),
-                1 => {}
-                summand_count => {
-                    // Slower case: ambiguous node.
-                    let sum = Sum {
-                        nonterminal: lhs_sym,
-                        count: summand_count,
-                    };
-                    self.graph.set_up(self.first_summand, sum);
-                }
-            }
-        };
-        let result = self.first_summand;
-        self.summand_count = 0;
-        result
+        self.first_summand
     }
 
     #[inline]
@@ -300,5 +297,6 @@ where
     }
 
     fn end_earleme(&mut self) {
+        self.products.clear();
     }
 }

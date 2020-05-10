@@ -1,5 +1,6 @@
 use std::cell::Cell;
 use std::hint;
+use std::mem;
 
 use cfg::symbol::Symbol;
 
@@ -9,44 +10,127 @@ use forest::node_handle::{NodeHandle, NULL_HANDLE};
 
 pub struct Graph {
     pub(crate) vec: Vec<Cell<u16>>,
+    pub(crate) nulling_leaf_limit: u32,
 }
 
 impl Graph {
     pub(crate) fn with_capacity(capacity: usize) -> Self {
         Graph {
             vec: Vec::with_capacity(capacity),
+            nulling_leaf_limit: 0,
         }
     }
 
     pub(crate) fn push(&mut self, node: Node) -> NodeHandle {
         let position = self.vec.len() as u32;
-        let (node_repr, size) = node.to_repr(position);
+        // println!("push @{} {:?}", position, node);
+        // let (node_repr, size) = node.to_repr(position);
+        // unsafe {
+        //     self.vec
+        //         .extend(node_repr.fields[..size].iter().cloned().map(Cell::new));
+        // }
+
+        let tag = node.classify(position);
         unsafe {
-            self.vec
-                .extend(node_repr.fields[..size].iter().cloned().map(Cell::new));
+            match (node, tag.erase_first()) {
+                (
+                    Product {
+                        left_factor,
+                        right_factor: None,
+                        action,
+                        ..
+                    },
+                    SmallLinkTag,
+                ) => {
+                    let mut result = NodeRepr {
+                        small_link: SmallLinkRepr {
+                            distance: (position - left_factor.0) as u16,
+                            action: action as u16,
+                        },
+                    };
+                    result.fields[0] |= tag.to_u16();
+                    self.vec.push(Cell::new(result.fields[0]));
+                    self.vec.push(Cell::new(result.fields[1]));
+                },
+                (
+                    Product {
+                        left_factor,
+                        right_factor: Some(right),
+                        action,
+                        ..
+                    },
+                    SmallProductTag,
+                ) => {
+                    let mut result = NodeRepr {
+                        small_product: SmallProductRepr {
+                            right_distance: (position - right.0) as u8,
+                            left_distance: (position - left_factor.0) as u8,
+                            action: action as u16,
+                        },
+                    };
+                    result.fields[0] |= tag.to_u16();
+                    self.vec.push(Cell::new(result.fields[0]));
+                    self.vec.push(Cell::new(result.fields[1]));
+                }
+                (
+                    Product {
+                        left_factor,
+                        right_factor,
+                        action,
+                        ..
+                    },
+                    ProductTag,
+                ) => {
+                    let mut result = NodeRepr {
+                        product: ProductRepr {
+                            upper_action: (action >> 16) as u16,
+                            lower_action: action as u16,
+                            left_factor,
+                            right_factor: right_factor.unwrap_or(NULL_HANDLE),
+                        },
+                    };
+                    result.fields[0] |= tag.to_u16();
+                    self.vec.extend(result.fields[..].iter().map(|&f| Cell::new(f)));
+                    // self.vec.push(Cell::new(result.fields[0]));
+                    // self.vec.push(Cell::new(result.fields[1]));
+                    // self.vec.push(Cell::new(result.fields[2]));
+                    // self.vec.push(Cell::new(result.fields[3]));
+                    // self.vec.push(Cell::new(result.fields[4]));
+                    // self.vec.push(Cell::new(result.fields[5]));
+                }
+                (NullingLeaf { symbol }, LeafTag) | (Evaluated { symbol }, LeafTag) => {
+                    let mut result = NodeRepr {
+                        leaf: LeafRepr { symbol },
+                    };
+                    result.fields[0] |= tag.to_u16();
+                    self.vec.push(Cell::new(result.fields[0]));
+                    self.vec.push(Cell::new(result.fields[1]));
+                }
+                _ => unreachable!(),
+            }
         }
         NodeHandle(position)
     }
 
-    pub(crate) fn set_up(&mut self, mut handle: NodeHandle, node: Node) {
-        let (node_repr, size) = node.to_repr(handle.0);
-        let mut current_handle = handle;
-        while current_handle.usize() < handle.usize() + size {
-            let current_node = self.get(current_handle);
-            self.push(current_node);
-            current_handle.0 += current_node.classify(current_handle.0).size() as u32;
-        }
-        for i in 0..size {
-            unsafe {
-                self.vec[handle.usize() + i].set(node_repr.fields[i]);
-            }
-        }
-        handle.0 += size as u32;
-        while handle.0 < current_handle.0 {
-            self.vec[handle.usize()].set(NopTag.to_u16());
-            handle.0 += 1;
-        }
-    }
+    // pub(crate) fn set_up(&mut self, mut handle: NodeHandle, node: Node) {
+    //     let (node_repr, size) = node.to_repr(handle.0);
+    //     let mut current_handle = handle;
+    //     while current_handle.usize() < handle.usize() + size {
+    //         let current_node = self.get(current_handle);
+    //         self.push(current_node);
+    //         current_handle.0 += current_node.classify(current_handle.0).size() as u32;
+    //     }
+    //     for i in 0..size {
+    //         unsafe {
+    //             self.vec[handle.usize() + i].set(node_repr.fields[i]);
+    //         }
+    //     }
+    //     handle.0 += size as u32;
+    //     while handle.0 < current_handle.0 {
+    //         self.vec[handle.usize()].set(NopTag.to_u16());
+    //         handle.0 += 1;
+    //     }
+    // }
 
     pub(crate) fn get(&self, handle: NodeHandle) -> Node {
         self.iter_from(handle).next().unwrap()
@@ -56,6 +140,7 @@ impl Graph {
         Iter {
             vec: &self.vec[..],
             handle,
+            nulling_leaf_limit: self.nulling_leaf_limit,
         }
     }
 }
@@ -64,6 +149,7 @@ impl Graph {
 pub(crate) struct Iter<'a> {
     pub(crate) vec: &'a [Cell<u16>],
     pub(crate) handle: NodeHandle,
+    pub(crate) nulling_leaf_limit: u32,
 }
 
 impl<'a> Iterator for Iter<'a> {
@@ -77,20 +163,15 @@ impl<'a> Iterator for Iter<'a> {
                 return None;
             };
             let (tag, head) = get_and_erase_tag(head);
-            if let NopTag = tag {
-                self.handle.0 += 1;
-                self.next()
-            } else {
-                let mut node_repr = NodeRepr { fields: [0; 6] };
-                node_repr.fields[0] = head;
-                let slice = &self.vec[self.handle.usize() + 1..self.handle.usize() + tag.size()];
-                for (i, val) in slice.iter().enumerate() {
-                    node_repr.fields[1 + i] = val.get();
-                }
-                let result = node_repr.expand(tag, self.handle.0);
-                self.handle.0 += tag.size() as u32;
-                Some(result)
+            let mut node_repr = NodeRepr { fields: [0; 6] };
+            node_repr.fields[0] = head;
+            let slice = &self.vec[self.handle.usize() + 1..self.handle.usize() + tag.size()];
+            for (i, val) in slice.iter().enumerate() {
+                node_repr.fields[1 + i] = val.get();
             }
+            let result = node_repr.expand(tag, self.handle.0, self.nulling_leaf_limit);
+            self.handle.0 += tag.size() as u32;
+            Some(result)
         }
     }
 }
@@ -105,18 +186,12 @@ impl<'a> Iter<'a> {
 // Node variants `Sum`/`Product` are better known in literature as `OR`/`AND`.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Node {
-    Sum {
-        /// 8 bytes.
-        /// Invariant: count > 1.
-        /// Invariant: This node can only be directly followed by `Product`.
-        count: u32,
-        nonterminal: Symbol,
-    },
     Product {
         /// 12+ bytes.
         action: u32,
         left_factor: NodeHandle,
         right_factor: Option<NodeHandle>,
+        first: bool,
     },
     NullingLeaf {
         /// 4 bytes.
@@ -131,40 +206,36 @@ pub enum Node {
 #[derive(Clone, Copy)]
 union NodeRepr {
     fields: [u16; 6],
-    small_sum: SmallSumRepr,
     small_link: SmallLinkRepr,
-    medium_link: MediumLinkRepr,
+    // medium_link: MediumLinkRepr,
     small_product: SmallProductRepr,
-    small_leaf: SmallLeafRepr,
-    small_nulling_leaf: SmallNullingLeafRepr,
-    sum: SumRepr,
+    // small_leaf: SmallLeafRepr,
     product: ProductRepr,
     leaf: LeafRepr,
-    nop: NopRepr,
 }
 
-#[derive(Clone, Copy)]
-struct SmallSumRepr {
-    nonterminal: u8,
-    // smaller (big end position)
-    count: u8,
-}
+// #[derive(Clone, Copy)]
+// struct SmallSumRepr {
+//     nonterminal: u8,
+//     // smaller (big end position)
+//     count: u8,
+// }
 
-#[derive(Clone, Copy)]
-struct SumRepr {
-    count: u32,
-    nonterminal: Symbol,
-}
+// #[derive(Clone, Copy)]
+// struct SumRepr {
+//     count: u32,
+//     nonterminal: Symbol,
+// }
+
+// #[derive(Clone, Copy)]
+// struct SmallLinkRepr {
+//     action: u8,
+//     // smaller (big end position)
+//     distance: u8,
+// }
 
 #[derive(Clone, Copy)]
 struct SmallLinkRepr {
-    action: u8,
-    // smaller (big end position)
-    distance: u8,
-}
-
-#[derive(Clone, Copy)]
-struct MediumLinkRepr {
     distance: u16,
     action: u16,
 }
@@ -186,170 +257,172 @@ struct ProductRepr {
     right_factor: NodeHandle,
 }
 
-#[derive(Clone, Copy)]
-struct SmallNullingLeafRepr {
-    symbol: u16,
-}
+// #[derive(Clone, Copy)]
+// struct SmallNullingLeafRepr {
+//     symbol: u16,
+// }
 
 #[derive(Clone, Copy)]
 struct LeafRepr {
     symbol: Symbol,
 }
 
-#[derive(Clone, Copy)]
-struct SmallLeafRepr {
-    symbol: u16,
-}
-
-#[derive(Clone, Copy)]
-struct NopRepr {
-    nop: u16,
-}
+// #[derive(Clone, Copy)]
+// struct SmallLeafRepr {
+//     symbol: u16,
+// }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub(super) enum Tag {
-    SmallSumTag = 0b000 << TAG_BIT,
-    SmallLinkTag = 0b001 << TAG_BIT,
-    MediumLinkTag = 0b010 << TAG_BIT,
-    SmallProductTag = 0b011 << TAG_BIT,
-    SmallLeafTag = 0b100 << TAG_BIT,
+    SmallProductTag,
+    SmallProductTagFirst,
+    SmallLinkTag,
+    SmallLinkTagFirst,
+    // SmallLeafTag = 0b011 << TAG_BIT,
     // SmallNonnullingLeaf = 0b1000 << (TAG_BIT - 1),
-    SmallNullingLeafTag = 0b1001 << (TAG_BIT - 1),
-    LeafTag = 0b101 << TAG_BIT,
-    SumTag = 0b111 << TAG_BIT,
-    ProductTag = 0b110 << TAG_BIT,
-    NopTag = 0b1111_1111_1111_1111,
+    // SmallNullingLeafTag = 0b100 << TAG_BIT,
+    ProductTag,
+    ProductTagFirst,
+    LeafTag,
 }
 
 impl Tag {
     #[inline]
     fn from_u16(num: u16) -> Option<Self> {
         let n = num & TAG_MASK;
-        if num == NopTag.to_u16() {
-            Some(NopTag)
-        } else if n == LeafTag.to_u16() {
-            Some(LeafTag)
-        } else if n == SumTag.to_u16() {
-            Some(SumTag)
-        } else if n == ProductTag.to_u16() {
-            Some(ProductTag)
-        } else if n == SmallSumTag.to_u16() {
-            Some(SmallSumTag)
-        } else if n == SmallLinkTag.to_u16() {
-            Some(SmallLinkTag)
-        } else if n == MediumLinkTag.to_u16() {
-            Some(MediumLinkTag)
-        } else if n == SmallProductTag.to_u16() {
-            Some(SmallProductTag)
-        } else if n == SmallLeafTag.to_u16() {
-            let n = num & SMALL_LEAF_TAG_MASK;
-            if n == SmallLeafTag.to_u16() {
-                Some(SmallLeafTag)
-            } else if n == SmallNullingLeafTag.to_u16() {
-                Some(SmallNullingLeafTag)
-            } else {
-                None
+        let tags = &[
+            SmallProductTag,
+            SmallProductTagFirst,
+            SmallLinkTag,
+            SmallLinkTagFirst,
+            ProductTag,
+            ProductTagFirst,
+            LeafTag,
+        ];
+        for &tag in tags {
+            if n == tag.to_u16() {
+                return Some(tag);
             }
-        } else {
-            None
         }
+        None
     }
 
     #[inline]
     pub(super) fn to_u16(self) -> u16 {
         match self {
-            SmallSumTag => 0b000 << TAG_BIT,
-            SmallLinkTag => 0b001 << TAG_BIT,
-            MediumLinkTag => 0b010 << TAG_BIT,
-            SmallProductTag => 0b011 << TAG_BIT,
-            SmallLeafTag => 0b100 << TAG_BIT,
+            SmallProductTag => 0b000 << TAG_BIT,
+            SmallProductTagFirst => 0b001 << TAG_BIT,
+            SmallLinkTag => 0b010 << TAG_BIT,
+            SmallLinkTagFirst => 0b011 << TAG_BIT,
+            ProductTag => 0b100 << TAG_BIT,
             // SmallNonnullingLeaf = 0b1000 << (TAG_BIT - 1),
-            SmallNullingLeafTag => 0b1001 << (TAG_BIT - 1),
-            LeafTag => 0b101 << TAG_BIT,
-            SumTag => 0b111 << TAG_BIT,
-            ProductTag => 0b110 << TAG_BIT,
-            NopTag => 0b1111_1111_1111_1111,
+            ProductTagFirst => 0b101 << TAG_BIT,
+            LeafTag => 0b110 << TAG_BIT,
+            // ProductTag => 0b111 << TAG_BIT,
+        }
+    }
+
+    #[inline]
+    pub(super) fn erase_first(self) -> Tag {
+        match self {
+            SmallProductTag => SmallProductTag,
+            SmallProductTagFirst => SmallProductTag,
+            SmallLinkTag => SmallLinkTag,
+            SmallLinkTagFirst => SmallLinkTag,
+            ProductTag => ProductTag,
+            // SmallNonnullingLeaf = 0b1000 << (TAG_BIT - 1),
+            ProductTagFirst => ProductTag,
+            LeafTag => LeafTag,
+            // ProductTag => 0b111 << TAG_BIT,
+        }
+    }
+
+    #[inline]
+    pub(super) fn is_first(self) -> bool {
+        match self {
+            SmallProductTag => false,
+            SmallProductTagFirst => true,
+            SmallLinkTag => false,
+            SmallLinkTagFirst => true,
+            ProductTag => false,
+            // SmallNonnullingLeaf = 0b1000 << (TAG_BIT - 1),
+            ProductTagFirst => true,
+            LeafTag => true,
+            // ProductTag => 0b111 << TAG_BIT,
         }
     }
 
     #[inline]
     fn mask(self) -> u16 {
-        match self {
-            SmallSumTag => TAG_MASK,
-            SmallLinkTag => TAG_MASK,
-            MediumLinkTag => TAG_MASK,
-            SmallProductTag => TAG_MASK,
-            SmallLeafTag => SMALL_LEAF_TAG_MASK,
-            // SmallNonnullingLeaf = 0b1000 << (TAG_BIT - 1),
-            SmallNullingLeafTag => SMALL_LEAF_TAG_MASK,
-            LeafTag => TAG_MASK,
-            SumTag => TAG_MASK,
-            ProductTag => TAG_MASK,
-            NopTag => 0b1111_1111_1111_1111,
-        }
+        TAG_MASK
+        // match self {
+        //     SmallSumTag => TAG_MASK,
+        //     SmallLinkTag => TAG_MASK,
+        //     MediumLinkTag => TAG_MASK,
+        //     SmallProductTag => TAG_MASK,
+        //     // SmallLeafTag => SMALL_LEAF_TAG_MASK,
+        //     SmallLeafTag => TAG_MASK,
+        //     // SmallNonnullingLeaf = 0b1000 << (TAG_BIT - 1),
+        //     // SmallNullingLeafTag => SMALL_LEAF_TAG_MASK,
+        //     SmallNullingLeafTag => TAG_MASK,
+        //     LeafTag => TAG_MASK,
+        //     SumTag => TAG_MASK,
+        //     ProductTag => TAG_MASK,
+        //     NopTag => TAG_MASK,
+        // }
     }
 
     #[inline]
     pub(super) fn size(self) -> usize {
-        match self {
-            SmallSumTag => 1,
-            SmallLinkTag => 1,
-            MediumLinkTag => 2,
-            SmallProductTag => 2,
-            SmallLeafTag => 1,
-            SmallNullingLeafTag => 1,
-            LeafTag => 4,
-            SumTag => 4,
-            ProductTag => 6,
-            NopTag => 1,
-        }
+        let bytes = match self {
+            SmallLinkTag | SmallLinkTagFirst => mem::size_of::<SmallLinkRepr>(),
+            // MediumLinkTag => 2,
+            SmallProductTag | SmallProductTagFirst => mem::size_of::<SmallProductRepr>(),
+            // SmallLeafTag => 1,
+            // SmallNullingLeafTag => 1,
+            LeafTag => mem::size_of::<LeafRepr>(),
+            ProductTag | ProductTagFirst => mem::size_of::<ProductRepr>(),
+        };
+        bytes / 2
     }
 }
 
 const TAG_BIT: usize = 5 + 8;
+// const FIRST_BIT: usize = 4 + 8;
 const TAG_MASK: u16 = 0b111 << TAG_BIT;
-const SMALL_LEAF_TAG_MASK: u16 = 0b1111 << (TAG_BIT - 1);
+// const FIRST_MASK: u16 = 1 << FIRST_BIT;
+// const SMALL_LEAF_TAG_MASK: u16 = 0b1111 << (TAG_BIT - 1);
 pub(super) const NULL_ACTION: u32 = !((TAG_MASK as u32) << 16);
 
 impl NodeRepr {
-    fn expand(self, tag: Tag, position: u32) -> Node {
+    fn expand(self, tag: Tag, position: u32, nulling_leaf_limit: u32) -> Node {
+        // let first = self.fields[0] & FIRST_MASK != 0;
         unsafe {
-            match (self, tag) {
-                (
-                    NodeRepr {
-                        small_sum: SmallSumRepr { nonterminal, count },
-                    },
-                    SmallSumTag,
-                ) => Sum {
-                    nonterminal: Symbol::from(nonterminal as u32),
-                    count: count as u32,
-                },
-                (
-                    NodeRepr {
-                        sum: SumRepr { nonterminal, count },
-                    },
-                    SumTag,
-                ) => Sum { nonterminal, count },
+            match (self, tag.erase_first()) {
                 (
                     NodeRepr {
                         small_link: SmallLinkRepr { distance, action },
                     },
                     SmallLinkTag,
-                ) => Product {
+                ) => {
+                    // println!("FAULT {} {}", position, distance);
+                    Product {
                     action: action as u32,
                     left_factor: NodeHandle(position - distance as u32),
                     right_factor: None,
-                },
-                (
-                    NodeRepr {
-                        medium_link: MediumLinkRepr { distance, action },
-                    },
-                    MediumLinkTag,
-                ) => Product {
-                    action: action as u32,
-                    left_factor: NodeHandle(position - distance as u32),
-                    right_factor: None,
-                },
+                    first: tag.is_first(),
+                }},
+                // (
+                //     NodeRepr {
+                //         medium_link: MediumLinkRepr { distance, action },
+                //     },
+                //     MediumLinkTag,
+                // ) => Product {
+                //     action: action as u32,
+                //     left_factor: NodeHandle(position - distance as u32),
+                //     right_factor: None,
+                //     first,
+                // },
                 (
                     NodeRepr {
                         small_product:
@@ -364,6 +437,7 @@ impl NodeRepr {
                     action: action as u32,
                     left_factor: NodeHandle(position - left_distance as u32),
                     right_factor: Some(NodeHandle(position - right_distance as u32)),
+                    first: tag.is_first(),
                 },
                 (
                     NodeRepr {
@@ -380,29 +454,36 @@ impl NodeRepr {
                     action: (upper_action as u32) << 16 | (lower_action as u32),
                     left_factor,
                     right_factor: right_factor.to_option(),
+                    first: tag.is_first(),
                 },
-                (
-                    NodeRepr {
-                        small_nulling_leaf: SmallNullingLeafRepr { symbol },
-                    },
-                    SmallNullingLeafTag,
-                ) => NullingLeaf {
-                    symbol: Symbol::from(symbol as u32),
-                },
-                (
-                    NodeRepr {
-                        small_leaf: SmallLeafRepr { symbol },
-                    },
-                    SmallLeafTag,
-                ) => Evaluated {
-                    symbol: Symbol::from(symbol as u32),
-                },
+                // (
+                //     NodeRepr {
+                //         small_nulling_leaf: SmallNullingLeafRepr { symbol },
+                //     },
+                //     SmallNullingLeafTag,
+                // ) => NullingLeaf {
+                //     symbol: Symbol::from(symbol as u32),
+                // },
+                // (
+                //     NodeRepr {
+                //         small_leaf: SmallLeafRepr { symbol },
+                //     },
+                //     SmallLeafTag,
+                // ) => Evaluated {
+                //     symbol: Symbol::from(symbol as u32),
+                // },
                 (
                     NodeRepr {
                         leaf: LeafRepr { symbol },
                     },
                     LeafTag,
-                ) => Evaluated { symbol },
+                ) => {
+                    if position < nulling_leaf_limit {
+                        NullingLeaf { symbol }
+                    } else {
+                        Evaluated { symbol }
+                    }
+                },
                 _ => unreachable!(),
             }
         }
@@ -414,47 +495,28 @@ impl Node {
     fn to_repr(self, position: u32) -> (NodeRepr, usize) {
         let tag = self.classify(position);
         unsafe {
-            let mut result = match (self, tag) {
-                (Sum { nonterminal, count }, SmallSumTag) => NodeRepr {
-                    small_sum: SmallSumRepr {
-                        nonterminal: nonterminal.usize() as u8,
-                        count: count as u8,
-                    },
-                },
-                (Sum { nonterminal, count }, SumTag) => NodeRepr {
-                    sum: SumRepr { nonterminal, count },
-                },
+            let mut result = match (self, tag.erase_first()) {
                 (
                     Product {
                         left_factor,
                         right_factor: None,
                         action,
+                        ..
                     },
                     SmallLinkTag,
-                ) => NodeRepr {
+                ) => {
+                    NodeRepr {
                     small_link: SmallLinkRepr {
-                        distance: (position - left_factor.0) as u8,
-                        action: action as u8,
-                    },
-                },
-                (
-                    Product {
-                        left_factor,
-                        right_factor: None,
-                        action,
-                    },
-                    MediumLinkTag,
-                ) => NodeRepr {
-                    medium_link: MediumLinkRepr {
                         distance: (position - left_factor.0) as u16,
                         action: action as u16,
                     },
-                },
+                }},
                 (
                     Product {
                         left_factor,
                         right_factor: Some(right),
                         action,
+                        ..
                     },
                     SmallProductTag,
                 ) => NodeRepr {
@@ -469,6 +531,7 @@ impl Node {
                         left_factor,
                         right_factor,
                         action,
+                        ..
                     },
                     ProductTag,
                 ) => NodeRepr {
@@ -479,18 +542,8 @@ impl Node {
                         right_factor: right_factor.unwrap_or(NULL_HANDLE),
                     },
                 },
-                (NullingLeaf { symbol }, SmallNullingLeafTag) => NodeRepr {
-                    small_nulling_leaf: SmallNullingLeafRepr {
-                        symbol: symbol.usize() as u16,
-                    },
-                },
                 (NullingLeaf { symbol }, LeafTag) => NodeRepr {
                     leaf: LeafRepr { symbol },
-                },
-                (Evaluated { symbol }, SmallLeafTag) => NodeRepr {
-                    small_leaf: SmallLeafRepr {
-                        symbol: symbol.usize() as u16,
-                    },
                 },
                 (Evaluated { symbol }, LeafTag) => NodeRepr {
                     leaf: LeafRepr { symbol },
@@ -509,6 +562,7 @@ impl Node {
                 left_factor,
                 right_factor,
                 action,
+                first,
             } => match right_factor {
                 Some(handle) => {
                     if position >= handle.0
@@ -517,47 +571,40 @@ impl Node {
                         && position - left_factor.0 < (1 << 8)
                         && action < (1 << 16)
                     {
-                        SmallProductTag
+                        if first {
+                            SmallProductTagFirst
+                        } else {
+                            SmallProductTag
+                        }
                     } else {
-                        ProductTag
+                        if first {
+                            ProductTagFirst
+                        } else {
+                            ProductTag
+                        }
                     }
                 }
                 None => {
                     if position >= left_factor.0
-                        && position - left_factor.0 < (1 << 5)
-                        && action < (1 << 8)
-                    {
-                        SmallLinkTag
-                    } else if position >= left_factor.0
-                        && position - left_factor.0 < (1 << (5 + 8))
+                        && position - left_factor.0 < (1 << TAG_BIT)
                         && action < (1 << 16)
                     {
-                        MediumLinkTag
+                        if first {
+                            SmallLinkTagFirst
+                        } else {
+                            SmallLinkTag
+                        }
                     } else {
-                        ProductTag
+                        if first {
+                            ProductTagFirst
+                        } else {
+                            ProductTag
+                        }
                     }
                 }
             },
-            NullingLeaf { symbol } => {
-                if symbol.usize() < (1 << (4 + 8)) {
-                    SmallNullingLeafTag
-                } else {
-                    LeafTag
-                }
-            }
-            Evaluated { symbol } => {
-                if symbol.usize() < (1 << (4 + 8)) {
-                    SmallLeafTag
-                } else {
-                    LeafTag
-                }
-            }
-            Sum { nonterminal, count } => {
-                if count < (1 << 5) && nonterminal.usize() < (1 << 8) {
-                    SmallSumTag
-                } else {
-                    SumTag
-                }
+            NullingLeaf { symbol } | Evaluated { symbol } => {
+                LeafTag
             }
         }
     }

@@ -12,7 +12,7 @@ mod helpers;
 
 use cfg::sequence::Separator::Proper;
 use cfg::earley::Grammar;
-use gearley::forest::{Bocage, NullForest};
+use gearley::forest::{Bocage, CompactBocage, NullForest};
 use gearley::grammar::InternalGrammar;
 use gearley::recognizer::Recognizer;
 use gearley::memory_use::MemoryUse;

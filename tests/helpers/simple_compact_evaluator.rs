@@ -12,6 +12,7 @@ use gearley::grammar::InternalGrammar;
 use gearley::policy::PerformancePolicy;
 
 use super::cartesian_product::CartesianProduct;
+use super::traversal_description::TraversalItem;
 
 pub struct SimpleCompactEvaluator<V, F, G, H> {
     values: Vec<V>,
@@ -74,4 +75,43 @@ where
         }
         self.evaluated[&root].clone()
     }
+}
+
+pub fn compact_traversal_description<'f, G, P>(traverse: &mut Traverse<'f, G, P>, root: NodeHandle) -> Vec<TraversalItem>
+where
+    G: Borrow<InternalGrammar<P>>,
+    P: PerformancePolicy,
+{
+    let mut description = vec![];
+    while let Some(mut item) = traverse.next_node() {
+        match &mut item.item {
+            &mut SumHandle(ref mut products) => {
+                let mut foo = vec![];
+                while let Some(product) = products.next_product() {
+                    let mut factors = vec![];
+                    for &(_sym, handle) in product.factors {
+                        factors.push(handle);
+                    }
+                    foo.push((product.action, factors));
+                }
+                description.push(TraversalItem::Sum {
+                    products: foo,
+                })
+            }
+            &mut NullingHandle => {
+                description.push(TraversalItem::Nulling {
+                    symbol: item.symbol,
+                });
+            }
+            &mut LeafHandle => {
+                description.push(TraversalItem::Leaf {
+                    symbol: item.symbol,
+                });
+            }
+        }
+        // self.evaluated
+        //     .insert(item.handle(), mem::replace(&mut self.values, vec![]));
+        item.end_evaluation();
+    }
+    description
 }
