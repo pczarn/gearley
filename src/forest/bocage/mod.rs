@@ -112,7 +112,6 @@ where
 
     #[inline]
     fn summands(graph: &Vec<CompactNode>, node: NodeHandle) -> &[CompactNode] {
-        
         unsafe {
             let count = graph.get_unchecked(node.usize() + 1 ..).iter().take_while(|node| {
                 node.is_consecutive_product()
@@ -120,17 +119,6 @@ where
             let start = node.usize();
             let end = node.usize() + count as usize + 1;
             graph.get_unchecked(start..end)
-            // match graph.get_unchecked(node.usize()).expand() {
-            //     Sum { count, .. } => {
-            //         // back
-            //         // let start = node.usize() - count as usize - 1;
-            //         // let end = node.usize() - 1;
-            //         let start = node.usize() + 1;
-            //         let end = node.usize() + count as usize + 1;
-            //         graph.get_unchecked(start..end)
-            //     }
-            //     _ => ref_slice(graph.get_unchecked(node.usize())),
-            // }
         }
     }
 
@@ -260,8 +248,8 @@ impl<G, P> Forest for Bocage<G, P> {
     }
 
     #[inline]
-    fn end_sum(&mut self, lhs_sym: Symbol, _origin: u32) -> Self::NodeRef {
-        // debug_assert!(self.summand_count != 0);
+    fn end_sum(&mut self, _lhs_sym: Symbol, _origin: u32) -> Self::NodeRef {
+        debug_assert!(self.graph.len() as u32 != self.first_summand.0);
         self.first_summand
     }
 
