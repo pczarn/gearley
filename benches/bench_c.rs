@@ -339,8 +339,8 @@ fn grammar() -> Grammar {
 
 #[bench]
 fn bench_parse_c(b: &mut test::Bencher) {
-    use c_lexer::Lexer;
-    use c_lexer::token::Token::*;
+    use c_lexer_logos::Lexer;
+    use c_lexer_logos::token::Token::*;
     let external = grammar();
     let mut grammar = Grammar::new();
     let (

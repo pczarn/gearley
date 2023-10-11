@@ -1,9 +1,6 @@
-#![feature(test)]
-
-extern crate test;
 extern crate cfg;
 extern crate gearley;
-extern crate c_lexer;
+extern crate c_lexer_logos;
 
 macro_rules! trace(($($tt:tt)*) => ());
 
@@ -338,8 +335,8 @@ fn grammar() -> Grammar {
 
 #[test]
 fn test_parse_c() {
-    use c_lexer::Lexer;
-    use c_lexer::token::Token::*;
+    use c_lexer_logos::Lexer;
+    use c_lexer_logos::token::Token::*;
     let external = grammar();
     let mut grammar = Grammar::new();
     let (
