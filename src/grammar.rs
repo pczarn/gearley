@@ -1,3 +1,75 @@
+//! # Grammar transforms
+//!
+//! For efficiency, the recognizer works on processed grammars. Grammars described
+//! by the user are transformed to meet the following properties:
+//!
+//! ## Property 1: Right-hand-sides of all rules have one symbol or two symbols.
+//!
+//! That is, all rules are of the form
+//! `A ::= B C`
+//! or
+//! `D ::= E`.
+//!
+//! ### a) Right-hand-sides of all rules have at least one symbol.
+//!
+//! ### b) Right-hand-sides of all rules have at most two symbols.
+//!
+//! ## Property 2: There are no cycles among unit rules.
+//!
+//! That is, for any nonterminals `A`…`Z`, the set of rules doesn't have a subset
+//! such as {`A ::= B`, `B ::= C`, …, `Y ::= Z`, `Z ::= A`}.
+//!
+//! In other words, for any nonterminal `A`, `A` doesn't derive `A` in two or more steps.
+//!
+//! ## Property 3: Dot numbers for pre-RHS0 dots are ordered by the LHS symbol IDs.
+//!
+//! ## Property 4: Dot numbers for pre-RHS1 dots are ordered by their RHS1 symbol IDs.
+//!
+//! ## Property 5: IDs of unit rules are smaller than IDs of rules which they predict.
+//!
+//! Internal symbols must be remapped, because this property may interfere with (4).
+//! This property also requires (3).
+//!
+//! # Similarities to other parsers
+//!
+//! * 1.a) is required by some Earley parsers, including Marpa.
+//! * 1.b) is required for recognition in CYK parsers, and in a roundabout way for construction
+//!   of bocages.
+//! * 2 is required by PEG and some other parsers.
+//! * 3, 4 and 5 are specific to gearley.
+//!
+//! # Motivation for grammar transforms
+//!
+//! ## Property 1.a), one RHS symbol.
+//!
+//! Handling nullable rules is notoriously difficult in Earley parsers. Even the original Earley's
+//! PhD paper contained an algorithm bug in handling nullable rules. We avoid nullability completely
+//! by remembering all about our null removal and fixing the parse forest post-parse.
+//!
+//! ## Property 1.b), two RHS symbols.
+//!
+//! Think about it: if a rule has three right-hand side symbols, and all of them are nullable,
+//! then property a) would produce 2*2*2 = 8 rules for each combination of missing null and present symbol.
+//! We avoid exponential blowup not only here in grammar preprocessing, but also in the bocage by restricting
+//! ourselves to no more than two symbols at a time.
+//!
+//! ## Property 2, no cycles among unit rules.
+//!
+//! ...
+//!
+//! ## Property 3, dot numbers for pre-RHS0 dots are ordered by the LHS symbol IDs.
+//!
+//! ...
+//!
+//! ## Property 4, dot numbers for pre-RHS1 dots are ordered by their RHS1 symbol IDs.
+//!
+//! ...
+//!
+//! ## Property 5, IDs of unit rules are smaller than IDs of rules which they predict.
+//!
+//! ...
+
+use std::convert::TryInto;
 use std::iter;
 
 use bit_matrix::BitMatrix;
@@ -11,45 +83,6 @@ use item::Dot;
 
 pub use cfg::earley::{Grammar, BinarizedGrammar};
 pub use cfg::earley::history::History;
-
-// For efficiency, the recognizer works on processed grammars. Grammars described by the user
-// are transformed to meet the following properties:
-//
-// Property (1): Right-hand-sides of all rules have at least one symbol.
-//
-// Thanks to property (2), this results in linear, not exponential increase in the
-// number of symbols and dotted rules.
-//
-// Property (2): Right-hand-sides of all rules have at most two symbols.
-//
-// That is, all rules are of the form
-// `A ::= B C`
-// or
-// `D ::= E`.
-//
-// Property (3): There are no cycles among unit rules.
-//
-// That is, for any nonterminals `A`…`Z`, the set of rules doesn't have a subset
-// such as {`A ::= B`, `B ::= C`, …, `Y ::= Z`, `Z ::= A`}.
-//
-// In other words, for any nonterminal `A`, `A` doesn't derive `A` in two or more steps.
-//
-// Property (4): Dot numbers for pre-RHS0 dots are ordered by the LHS symbol IDs.
-//
-// Property (5): Dot numbers for pre-RHS1 dots are ordered by their RHS1 symbol IDs.
-//
-// Property (6): IDs of unit rules are smaller than IDs of rules which they predict.
-//
-// Internal symbols must be remapped, because this property may interfere with (4).
-// This property also requires (3).
-//
-// # Similarities to other parsers
-//
-// * (1) is required by some Earley parsers, including Marpa.
-// * (2) is required for recognition in CYK parsers, and in a roundabout way for construction
-//   of bocages.
-// * (3) is required by PEG and some other parsers.
-// * (4) and (5) are specific to gearley.
 
 // # Future optimizations
 //
