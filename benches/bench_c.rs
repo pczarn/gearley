@@ -3,7 +3,7 @@
 extern crate test;
 extern crate cfg;
 extern crate gearley;
-extern crate c_lexer;
+extern crate c_lexer_logos;
 
 macro_rules! trace(($($tt:tt)*) => ());
 
