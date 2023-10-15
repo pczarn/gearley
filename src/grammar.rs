@@ -73,6 +73,7 @@ use std::convert::TryInto;
 use std::iter;
 
 use bit_matrix::BitMatrix;
+use bit_matrix::row::BitVecSlice;
 use cfg::{ContextFreeRef, GrammarRule, Symbol};
 use cfg::rule::container::RuleContainer;
 use cfg::remap::Mapping;
@@ -448,6 +449,11 @@ impl InternalGrammar {
     #[inline]
     pub(in super) fn prediction_matrix(&self) -> &BitMatrix {
         &self.prediction_matrix
+    }
+
+    #[inline]
+    pub(in super) fn predict(&self, sym: Symbol) -> &BitVecSlice {
+        &self.prediction_matrix[sym.usize()]
     }
 
     #[inline]

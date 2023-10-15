@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use std::ops::Range;
 
 use bit_matrix::BitMatrix;
+use bit_matrix::row::BitVecSlice;
 use cfg::*;
 
 use events::{MedialItems, PredictedSymbols};
@@ -11,7 +12,7 @@ use item::{CompletedItem, CompletedItemLinked, Item, Origin};
 // use policy::{PerformancePolicy, NullPerformancePolicy};
 
 /// The recognizer implements the Earley algorithm. It parses the given input according
-/// to the `grammar`. The `forest` is used to construct a parse result.
+/// to the `grammar`. The parse result is constructed inside the `forest`.
 ///
 /// To save memory, it only retains those parts of the Earley table that may be useful
 /// in the future.
@@ -88,13 +89,7 @@ where
 
     /// Makes the current Earley set predict a given symbol.
     pub fn predict(&mut self, symbol: Symbol) {
-        // The source in the prediction matrix is the row that corresponds to the predicted symbol.
-        let source = &self.grammar.prediction_matrix()[symbol.usize()];
-        // The destination in `predicted` is the row that corresponds to the current location.
-        let destination = &mut self.predicted[self.earleme];
-        for (dst, src) in destination.iter_mut().zip(source.iter()) {
-            *dst |= *src;
-        }
+        self.predicted[self.earleme].predict(symbol, self.grammar.predict(symbol));
     }
 
     pub fn begin_earleme(&mut self) {
@@ -221,21 +216,10 @@ where
         // Iterate through medial items in the current set.
         let iter = self.medial[self.current_medial_start..].iter();
         // For each medial item in the current set, predict its postdot symbol.
-        let destination = &mut self.predicted[self.earleme];
+        let row = &mut self.predicted[self.earleme];
         for ei in iter {
-            let postdot = if let Some(rhs1) = self.grammar.get_rhs1(ei.dot) {
-                rhs1
-            } else {
-                continue;
-            };
-            if !destination[postdot.usize()] {
-                // Prediction happens here. We would prefer to call `self.predict`, but we can't,
-                // because `self.medial` is borrowed by `iter`.
-                let source = &self.grammar.prediction_matrix()[postdot.usize()];
-                for (dst, &src) in destination.iter_mut().zip(source.iter()) {
-                    *dst |= src;
-                }
-            }
+            let postdot = self.grammar.get_rhs1(ei.dot).unwrap();
+            row.predict(postdot, self.grammar.predict(postdot));
         }
     }
 
@@ -545,5 +529,24 @@ where
     #[inline]
     pub fn symbol(&self) -> Symbol {
         self.lhs_sym
+    }
+}
+
+trait Predict {
+    fn predict(&mut self, sym: Symbol, source: &BitVecSlice);
+}
+
+impl Predict for BitVecSlice {
+    fn predict(&mut self, sym: Symbol, source: &BitVecSlice) {
+        if !self[sym.usize()] {
+            // The source in the prediction matrix is the row that corresponds to the predicted
+            // symbol.
+            //
+            // The destination in `predicted` is now the `self` that corresponds to the current
+            // location.
+            for (dst, &src) in self.iter_mut().zip(source.iter()) {
+                *dst |= src;
+            }
+        }
     }
 }
