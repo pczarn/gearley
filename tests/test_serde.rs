@@ -1,8 +1,8 @@
 #![cfg(feature = "serde")]
 #[macro_use]
 extern crate log;
-extern crate env_logger;
 extern crate cfg;
+extern crate env_logger;
 extern crate gearley;
 extern crate serde;
 

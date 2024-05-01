@@ -1,20 +1,15 @@
-use cfg::Symbol;
 use cfg::earley::Grammar;
+use cfg::Symbol;
 
 pub fn grammar() -> Grammar {
     let mut bnf = Grammar::new();
     let (expr, op, num, plus, minus, mul, div) = bnf.sym();
-    bnf.rule(expr).rhs([expr, op, expr])
-                  .rhs([num]);
-    bnf.rule(op).rhs([plus])
-                .rhs([minus])
-                .rhs([mul])
-                .rhs([div]);
+    bnf.rule(expr).rhs([expr, op, expr]).rhs([num]);
+    bnf.rule(op).rhs([plus]).rhs([minus]).rhs([mul]).rhs([div]);
 
     for _ in 0..10 {
         let sym = bnf.sym();
-        bnf.rule(num).rhs([sym, num])
-                     .rhs([sym]);
+        bnf.rule(num).rhs([sym, num]).rhs([sym]);
     }
     bnf.set_start(expr);
     bnf
@@ -30,15 +25,13 @@ pub fn rule(rule: u32, args: &[&i32]) -> i32 {
     let a2 = args.get(2).map(|f| **f).unwrap_or(!0);
 
     match rule {
-        0 => {
-            match a1 {
-                0 => a0 + a2,
-                1 => a0 - a2,
-                2 => a0 * a2,
-                3 => a0 / a2,
-                _ => unreachable!(),
-            }
-        }
+        0 => match a1 {
+            0 => a0 + a2,
+            1 => a0 - a2,
+            2 => a0 * a2,
+            3 => a0 / a2,
+            _ => unreachable!(),
+        },
         1 => a0,
 
         2 => 0,
@@ -54,21 +47,51 @@ pub fn rule(rule: u32, args: &[&i32]) -> i32 {
 
 #[macro_export]
 macro_rules! ambiguous_arith_rhs_elem {
-    ('+') => (0);
-    ('-') => (1);
-    ('*') => (2);
-    ('/') => (3);
-    ('0') => (4);
-    ('1') => (5);
-    ('2') => (6);
-    ('3') => (7);
-    ('4') => (8);
-    ('5') => (9);
-    ('6') => (10);
-    ('7') => (11);
-    ('8') => (12);
-    ('9') => (13);
-    ($e:expr) => ($e);
+    ('+') => {
+        0
+    };
+    ('-') => {
+        1
+    };
+    ('*') => {
+        2
+    };
+    ('/') => {
+        3
+    };
+    ('0') => {
+        4
+    };
+    ('1') => {
+        5
+    };
+    ('2') => {
+        6
+    };
+    ('3') => {
+        7
+    };
+    ('4') => {
+        8
+    };
+    ('5') => {
+        9
+    };
+    ('6') => {
+        10
+    };
+    ('7') => {
+        11
+    };
+    ('8') => {
+        12
+    };
+    ('9') => {
+        13
+    };
+    ($e:expr) => {
+        $e
+    };
 }
 
 #[macro_export]

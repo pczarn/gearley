@@ -7,12 +7,12 @@ extern crate gearley;
 mod grammars;
 mod helpers;
 
-use gearley::grammar::InternalGrammar;
 use gearley::forest::{Bocage, NullForest};
+use gearley::grammar::InternalGrammar;
 use gearley::recognizer::Recognizer;
 
 use grammars::*;
-use helpers::{SimpleEvaluator, Parse};
+use helpers::{Parse, SimpleEvaluator};
 
 const SUM_TOKENS: &'static [u32] = precedenced_arith!(
     '1' '+' '(' '2' '*' '3' '-' '4' ')' '/'
@@ -37,7 +37,7 @@ fn test_ambiguous_arithmetic() {
     let mut evaluator = SimpleEvaluator::new(
         ambiguous_arith::leaf,
         ambiguous_arith::rule,
-        |_, _: &mut Vec<i32>| unreachable!()
+        |_, _: &mut Vec<i32>| unreachable!(),
     );
     let bocage = Bocage::new(&cfg);
     let mut rec = Recognizer::new(&cfg, bocage);

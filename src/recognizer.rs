@@ -1,8 +1,8 @@
 use std::cmp::Ordering;
 use std::ops::Range;
 
-use bit_matrix::BitMatrix;
 use bit_matrix::row::BitVecSlice;
+use bit_matrix::BitMatrix;
 use cfg::*;
 
 use events::{MedialItems, PredictedSymbols};

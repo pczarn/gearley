@@ -3,7 +3,6 @@ use std::slice;
 
 use bit_vec;
 use cfg::symbol::Symbol;
-use ref_slice::ref_slice;
 
 use forest::bocage::node::Node::*;
 use forest::bocage::node::{CompactNode, Node};
@@ -55,7 +54,7 @@ where
                         node,
                         symbol: self.bocage.grammar.borrow().get_lhs(action),
                         item: SumHandle(Products {
-                            products: ref_slice(node).iter(),
+                            products: slice::from_ref(node).iter(),
                             traverse: self,
                         }),
                     });

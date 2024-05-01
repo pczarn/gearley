@@ -1,23 +1,23 @@
-use std::iter::{Zip, Chain};
+use std::iter::{Chain, Zip};
 use std::slice;
 
 use bit_matrix;
 use cfg::symbol::Symbol;
 
 use forest::Forest;
-use grammar::{ExternalDottedRule, Event};
+use grammar::{Event, ExternalDottedRule};
 use item::Item;
 use recognizer::Recognizer;
 
 type IterPredictionBitfield<'a> = bit_matrix::row::Iter<'a>;
 
 pub struct PredictedSymbols<'a> {
-    pub(in super) iter: IterPredictionBitfield<'a>,
-    pub(in super) idx: usize,
+    pub(super) iter: IterPredictionBitfield<'a>,
+    pub(super) idx: usize,
 }
 
 pub struct MedialItems<'a, N: 'a> {
-    pub(in super) iter: slice::Iter<'a, Item<N>>,
+    pub(super) iter: slice::Iter<'a, Item<N>>,
 }
 
 pub struct Prediction<'a, T: 'a> {
@@ -31,24 +31,18 @@ pub struct Medial<'a, T: 'a, N: 'a> {
 }
 
 pub struct Events<'a, N: 'a> {
-    iter: Chain<
-        Prediction<'a, Event>,
-        Medial<'a, Event, N>
-    >
+    iter: Chain<Prediction<'a, Event>, Medial<'a, Event, N>>,
 }
 
 pub struct Distances<'a, N: 'a> {
-    iter: Chain<
-        Prediction<'a, Event>,
-        Medial<'a, Event, N>
-    >
+    iter: Chain<Prediction<'a, Event>, Medial<'a, Event, N>>,
 }
 
 pub struct Trace<'a, N: 'a> {
     iter: Chain<
         Prediction<'a, Option<ExternalDottedRule>>,
-        Medial<'a, Option<ExternalDottedRule>, N>
-    >
+        Medial<'a, Option<ExternalDottedRule>, N>,
+    >,
 }
 
 pub struct ExpectedTerminals<'a, N: 'a> {
@@ -97,9 +91,9 @@ impl<'a, T, L> Iterator for Medial<'a, T, L> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let events = &self.events;
-        self.items.next().map(|ei| {
-            (&events[ei.dot as usize], ei.origin as usize)
-        })
+        self.items
+            .next()
+            .map(|ei| (&events[ei.dot as usize], ei.origin as usize))
     }
 }
 
@@ -146,14 +140,15 @@ impl<'a, N> Iterator for ExpectedTerminals<'a, N> {
     type Item = Symbol;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.prev_scan_iter.next().map(|item| {
-            self.rhs1[item.dot as usize].unwrap()
-        })
+        self.prev_scan_iter
+            .next()
+            .map(|item| self.rhs1[item.dot as usize].unwrap())
     }
 }
 
 impl<'g, F> Recognizer<'g, F>
-    where F: Forest,
+where
+    F: Forest,
 {
     pub fn trace(&self) -> Trace<F::NodeRef> {
         let trace = self.grammar.trace();

@@ -1,34 +1,54 @@
 #![feature(test)]
 
-extern crate test;
 extern crate cfg;
 extern crate gearley;
+extern crate test;
 
 macro_rules! trace(($($tt:tt)*) => ());
 
 #[path = "../tests/helpers/mod.rs"]
 mod helpers;
 
-use cfg::sequence::Separator::Proper;
 use cfg::earley::Grammar;
+use cfg::sequence::Separator::Proper;
 use gearley::forest::{Bocage, NullForest};
 use gearley::grammar::InternalGrammar;
-use gearley::recognizer::Recognizer;
 use gearley::memory_use::MemoryUse;
+use gearley::recognizer::Recognizer;
 
 use helpers::Parse;
 
 macro_rules! rhs_elem {
-    (use) => (0);
-    (as) => (1);
-    (::) => (2);
-    (*) => (3);
-    (,) => (4);
-    (;) => (5);
-    ('{') => (6);
-    ('}') => (7);
-    (pub) => (8);
-    ($i:ident) => (9);
+    (use) => {
+        0
+    };
+    (as) => {
+        1
+    };
+    (::) => {
+        2
+    };
+    (*) => {
+        3
+    };
+    (,) => {
+        4
+    };
+    (;) => {
+        5
+    };
+    ('{') => {
+        6
+    };
+    ('}') => {
+        7
+    };
+    (pub) => {
+        8
+    };
+    ($i:ident) => {
+        9
+    };
 }
 
 macro_rules! rhs {
@@ -105,31 +125,61 @@ const TOKENS: &'static [u32] = rhs!(
 );
 
 const _TOKEN_NAMES: &'static [&'static str] = &[
-"start", "use_decls", "use_decl", "segments", "segment", "import_mod", "import_seq", "import",
-"pub_opt",
-"use_tok", "as_tok", "mod_sep", "star", "comma", "semi", "lbrace", "rbrace", "pub_tok", "ident"
+    "start",
+    "use_decls",
+    "use_decl",
+    "segments",
+    "segment",
+    "import_mod",
+    "import_seq",
+    "import",
+    "pub_opt",
+    "use_tok",
+    "as_tok",
+    "mod_sep",
+    "star",
+    "comma",
+    "semi",
+    "lbrace",
+    "rbrace",
+    "pub_tok",
+    "ident",
 ];
 
 fn grammar() -> Grammar {
     let mut external = Grammar::new();
-    let (start, use_decls, use_decl, segments, segment, import_mod, import_seq, import, pub_opt) = external.sym();
-    let (use_tok, as_tok, mod_sep, star, comma, semi, lbrace, rbrace, pub_tok, ident) = external.sym();
+    let (start, use_decls, use_decl, segments, segment, import_mod, import_seq, import, pub_opt) =
+        external.sym();
+    let (use_tok, as_tok, mod_sep, star, comma, semi, lbrace, rbrace, pub_tok, ident) =
+        external.sym();
     external
-            .sequence(segments).inclusive(0, None).rhs(segment)
-            .sequence(import_seq).separator(Proper(comma)).inclusive(1, None).rhs(import)
-            .sequence(use_decls).inclusive(0, None).rhs(use_decl)
-            ;
-    external.rule(start).rhs([use_decls])
-            .rule(use_decl).rhs([pub_opt, use_tok, segments, import_mod, semi])
-            .rule(segment).rhs([ident, mod_sep])
-            .rule(import_mod).rhs([lbrace, import_seq, rbrace])
-                          .rhs([import])
-                          .rhs([star])
-            .rule(import).rhs([ident])
-                         .rhs([ident, as_tok, ident])
-            .rule(pub_opt).rhs([pub_tok])
-                          .rhs([])
-            ;
+        .sequence(segments)
+        .inclusive(0, None)
+        .rhs(segment)
+        .sequence(import_seq)
+        .separator(Proper(comma))
+        .inclusive(1, None)
+        .rhs(import)
+        .sequence(use_decls)
+        .inclusive(0, None)
+        .rhs(use_decl);
+    external
+        .rule(start)
+        .rhs([use_decls])
+        .rule(use_decl)
+        .rhs([pub_opt, use_tok, segments, import_mod, semi])
+        .rule(segment)
+        .rhs([ident, mod_sep])
+        .rule(import_mod)
+        .rhs([lbrace, import_seq, rbrace])
+        .rhs([import])
+        .rhs([star])
+        .rule(import)
+        .rhs([ident])
+        .rhs([ident, as_tok, ident])
+        .rule(pub_opt)
+        .rhs([pub_tok])
+        .rhs([]);
     external.set_start(start);
     external
 }
@@ -152,7 +202,8 @@ fn bench_parse_decl_use(b: &mut test::Bencher) {
     let cfg = InternalGrammar::from_grammar(&external);
 
     b.iter(|| {
-        let mut rec: Recognizer<Bocage<&'_ InternalGrammar>> = Recognizer::new_with_limit(&cfg, 2_000_000);
+        let mut rec: Recognizer<Bocage<&'_ InternalGrammar>> =
+            Recognizer::new_with_limit(&cfg, 2_000_000);
         let finished = rec.parse(TOKENS);
         assert!(finished);
         test::black_box(&rec.forest);

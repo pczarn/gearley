@@ -71,18 +71,18 @@
 
 use std::iter;
 
-use bit_matrix::BitMatrix;
 use bit_matrix::row::BitVecSlice;
-use cfg::{ContextFreeRef, GrammarRule, Symbol};
-use cfg::rule::container::RuleContainer;
-use cfg::remap::Mapping;
+use bit_matrix::BitMatrix;
 use cfg::prediction::{FirstSetsCollector, FollowSets};
+use cfg::remap::Mapping;
+use cfg::rule::container::RuleContainer;
+use cfg::{ContextFreeRef, GrammarRule, Symbol};
 use optional::Optioned;
 
 use item::Dot;
 
-pub use cfg::earley::{Grammar, BinarizedGrammar};
 pub use cfg::earley::history::History;
+pub use cfg::earley::{BinarizedGrammar, Grammar};
 
 // # Future optimizations
 //
@@ -92,13 +92,13 @@ pub use cfg::earley::history::History;
 // Parameterize the representation over symbol type (u32, u16, u8).
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug)]
-pub(in super) struct PredictionTransition {
+pub(super) struct PredictionTransition {
     pub symbol: Symbol,
     pub dot: Dot,
 }
 
 #[derive(Eq, PartialEq, Ord, PartialOrd)]
-pub(in super) enum MaybePostdot {
+pub(super) enum MaybePostdot {
     Binary(Symbol),
     Unary,
 }
@@ -148,11 +148,11 @@ pub struct InternalGrammarSize {
     pub external_syms: usize,
 }
 
-pub(in super) type ExternalDottedRule = (u32, u32);
+pub(super) type ExternalDottedRule = (u32, u32);
 type ExternalOrigin = Option<u32>;
 type EventId = Optioned<u32>;
 type MinimalDistance = Optioned<u32>;
-pub(in super) type Event = (EventId, MinimalDistance);
+pub(super) type Event = (EventId, MinimalDistance);
 type NullingEliminated = Option<(Symbol, bool)>;
 type NullingIntermediateRule = (Symbol, Symbol, Symbol);
 type CompletionTable = Vec<Vec<PredictionTransition>>;
@@ -185,9 +185,8 @@ impl InternalGrammar {
     pub fn from_processed_grammar_with_maps(
         mut grammar: BinarizedGrammar,
         maps: Mapping,
-        nulling: &BinarizedGrammar)
-        -> Self
-    {
+        nulling: &BinarizedGrammar,
+    ) -> Self {
         grammar.sort_by(|a, b| a.lhs().cmp(&b.lhs()));
         let mut result = InternalGrammar::new();
         result.populate_sizes(&grammar, &maps);
@@ -224,21 +223,22 @@ impl InternalGrammar {
     }
 
     fn populate_grammar_with_lhs(&mut self, grammar: &BinarizedGrammar) {
-        self.lhs.extend(grammar.rules().map(|rule| Some(rule.lhs())));
+        self.lhs
+            .extend(grammar.rules().map(|rule| Some(rule.lhs())));
     }
 
     fn populate_grammar_with_rhs(&mut self, grammar: &BinarizedGrammar) {
-        self.rhs0.extend(grammar.rules().map(|rule| rule.rhs().get(0).cloned()));
-        self.rhs1.extend(grammar.rules().map(|rule| rule.rhs().get(1).cloned()));
+        self.rhs0
+            .extend(grammar.rules().map(|rule| rule.rhs().get(0).cloned()));
+        self.rhs1
+            .extend(grammar.rules().map(|rule| rule.rhs().get(1).cloned()));
     }
 
     fn populate_grammar_with_history(&mut self, grammar: &BinarizedGrammar) {
-        self.eval.extend(
-            grammar.rules().map(|rule| rule.history().origin())
-        );
-        self.nulling_eliminated.extend(
-            grammar.rules().map(|rule| rule.history().nullable())
-        );
+        self.eval
+            .extend(grammar.rules().map(|rule| rule.history().origin()));
+        self.nulling_eliminated
+            .extend(grammar.rules().map(|rule| rule.history().nullable()));
 
         self.populate_grammar_with_events_rhs(grammar);
         self.populate_grammar_with_trace_rhs(grammar);
@@ -246,20 +246,20 @@ impl InternalGrammar {
 
     fn populate_grammar_with_events_rhs(&mut self, grammar: &BinarizedGrammar) {
         self.events_rhs[1].extend(
-            grammar.rules().map(|rule| rule.history().dot(1).event_without_tracing())
+            grammar
+                .rules()
+                .map(|rule| rule.history().dot(1).event_without_tracing()),
         );
         self.events_rhs[2].extend(
-            grammar.rules().map(|rule| rule.history().dot(2).event_without_tracing())
+            grammar
+                .rules()
+                .map(|rule| rule.history().dot(2).event_without_tracing()),
         );
     }
 
     fn populate_grammar_with_trace_rhs(&mut self, grammar: &BinarizedGrammar) {
-        self.trace_rhs[1].extend(
-            grammar.rules().map(|rule| rule.history().dot(1).trace())
-        );
-        self.trace_rhs[2].extend(
-            grammar.rules().map(|rule| rule.history().dot(2).trace())
-        );
+        self.trace_rhs[1].extend(grammar.rules().map(|rule| rule.history().dot(1).trace()));
+        self.trace_rhs[2].extend(grammar.rules().map(|rule| rule.history().dot(2).trace()));
     }
 
     fn populate_maps(&mut self, maps: Mapping) {
@@ -277,7 +277,8 @@ impl InternalGrammar {
         self.prediction_matrix = BitMatrix::new(self.size.syms, self.size.syms);
         // Precompute DFA.
         for rule in grammar.rules() {
-            self.prediction_matrix.set(rule.lhs().usize(), rule.rhs()[0].usize(), true);
+            self.prediction_matrix
+                .set(rule.lhs().usize(), rule.rhs()[0].usize(), true);
         }
         self.prediction_matrix.transitive_closure();
         // Prediction relation is reflexive.
@@ -302,7 +303,8 @@ impl InternalGrammar {
         for (before, after) in follow_sets.follow_sets().into_iter() {
             for elem_after in after.into_iter() {
                 if let Some(after_sym) = elem_after {
-                    self.follow_sets.set(before.usize(), after_sym.usize(), true);
+                    self.follow_sets
+                        .set(before.usize(), after_sym.usize(), true);
                 }
             }
         }
@@ -320,7 +322,9 @@ impl InternalGrammar {
     }
 
     fn compute_unary_completion_table(&self, grammar: &BinarizedGrammar) -> CompletionTable {
-        let mut table = iter::repeat(vec![]).take(self.size.syms).collect::<Vec<_>>();
+        let mut table = iter::repeat(vec![])
+            .take(self.size.syms)
+            .collect::<Vec<_>>();
 
         let mut unary_rules = vec![];
         // check for ordering same as self.rules
@@ -334,7 +338,7 @@ impl InternalGrammar {
         for (rhs0_sym, lhs_sym, dot) in unary_rules.into_iter() {
             table[rhs0_sym].push(PredictionTransition {
                 symbol: lhs_sym,
-                dot: dot as u32
+                dot: dot as u32,
             });
         }
         table
@@ -361,7 +365,9 @@ impl InternalGrammar {
     }
 
     fn compute_binary_completion_table(&self, grammar: &BinarizedGrammar) -> CompletionTable {
-        let mut table = iter::repeat(vec![]).take(self.size.syms).collect::<Vec<_>>();
+        let mut table = iter::repeat(vec![])
+            .take(self.size.syms)
+            .collect::<Vec<_>>();
 
         let mut binary_rules = vec![];
         // check for ordering same as self.rules
@@ -375,7 +381,7 @@ impl InternalGrammar {
         for (rhs0_sym, lhs_sym, dot) in binary_rules.into_iter() {
             table[rhs0_sym].push(PredictionTransition {
                 symbol: lhs_sym,
-                dot: dot as u32
+                dot: dot as u32,
             });
         }
         table
@@ -396,17 +402,16 @@ impl InternalGrammar {
     }
 
     fn populate_prediction_events(&mut self, grammar: &BinarizedGrammar) {
-        let iter_events_pred = iter::repeat((Optioned::none(), Optioned::none())).take(self.size.syms);
+        let iter_events_pred =
+            iter::repeat((Optioned::none(), Optioned::none())).take(self.size.syms);
         self.events_rhs[0].extend(iter_events_pred);
         let iter_trace_pred = iter::repeat(None).take(self.size.syms);
         self.trace_rhs[0].extend(iter_trace_pred);
         for rule in grammar.rules() {
             if let Some(&(pred_event, pred_tracing)) = rule.history().dot(0).event().as_ref() {
                 // Prediction event and tracing.
-                self.events_rhs[0][rule.lhs().usize()] = (
-                    pred_event,
-                    rule.history().dot(0).distance()
-                );
+                self.events_rhs[0][rule.lhs().usize()] =
+                    (pred_event, rule.history().dot(0).distance());
                 self.trace_rhs[0][rule.lhs().usize()] = Some(pred_tracing);
             }
         }
@@ -421,47 +426,48 @@ impl InternalGrammar {
                 None
             }
         });
-        self.nulling_intermediate_rules.extend(iter_nulling_intermediate);
+        self.nulling_intermediate_rules
+            .extend(iter_nulling_intermediate);
     }
 
     #[inline]
-    pub(in super) fn eof(&self) -> Symbol {
+    pub(super) fn eof(&self) -> Symbol {
         self.eof_sym
     }
 
     #[inline]
-    pub(in super) fn can_follow(&self, before: Symbol, after: Option<Symbol>) -> bool {
+    pub(super) fn can_follow(&self, before: Symbol, after: Option<Symbol>) -> bool {
         let after = after.unwrap_or(self.eof()).usize();
         self.follow_sets[(before.usize(), after)]
     }
 
     #[inline]
-    pub(in super) fn first(&self, outer: Symbol, maybe_inner: Option<Symbol>) -> bool {
+    pub(super) fn first(&self, outer: Symbol, maybe_inner: Option<Symbol>) -> bool {
         let inner = if let Some(inner) = maybe_inner {
             inner
         } else {
-            return outer == self.eof()
+            return outer == self.eof();
         };
         self.first_sets[(outer.usize(), inner.usize())]
     }
 
     #[inline]
-    pub(in super) fn prediction_matrix(&self) -> &BitMatrix {
+    pub(super) fn prediction_matrix(&self) -> &BitMatrix {
         &self.prediction_matrix
     }
 
     #[inline]
-    pub(in super) fn predict(&self, sym: Symbol) -> &BitVecSlice {
+    pub(super) fn predict(&self, sym: Symbol) -> &BitVecSlice {
         &self.prediction_matrix[sym.usize()]
     }
 
     #[inline]
-    pub(in super) fn num_syms(&self) -> usize {
+    pub(super) fn num_syms(&self) -> usize {
         self.size.syms
     }
 
     #[inline]
-    pub(in super) fn num_rules(&self) -> usize {
+    pub(super) fn num_rules(&self) -> usize {
         self.size.rules
     }
 
@@ -475,32 +481,36 @@ impl InternalGrammar {
     }
 
     #[inline]
-    pub(in super) fn has_trivial_derivation(&self) -> bool {
+    pub(super) fn has_trivial_derivation(&self) -> bool {
         self.has_trivial_derivation
     }
 
     #[inline]
-    pub(in super) fn nulling(&self, pos: u32) -> NullingEliminated {
+    pub(super) fn nulling(&self, pos: u32) -> NullingEliminated {
         self.nulling_eliminated.get(pos as usize).and_then(|&ne| ne)
     }
 
     #[inline]
-    pub(in super) fn events(&self) -> (&[Event], &[Event]) {
+    pub(super) fn events(&self) -> (&[Event], &[Event]) {
         (&self.events_rhs[1][..], &self.events_rhs[2][..])
     }
 
     #[inline]
-    pub(in super) fn trace(&self) -> [&[Option<ExternalDottedRule>]; 3] {
-        [&self.trace_rhs[0][..], &self.trace_rhs[1][..], &self.trace_rhs[2][..]]
+    pub(super) fn trace(&self) -> [&[Option<ExternalDottedRule>]; 3] {
+        [
+            &self.trace_rhs[0][..],
+            &self.trace_rhs[1][..],
+            &self.trace_rhs[2][..],
+        ]
     }
 
     #[inline]
-    pub(in super) fn get_rhs1(&self, dot: Dot) -> Option<Symbol> {
+    pub(super) fn get_rhs1(&self, dot: Dot) -> Option<Symbol> {
         self.rhs1[dot as usize]
     }
 
     #[inline]
-    pub(in super) fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot {
+    pub(super) fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot {
         match self.rhs1[dot as usize] {
             None => MaybePostdot::Unary,
             Some(rhs1) => MaybePostdot::Binary(rhs1),
@@ -508,40 +518,40 @@ impl InternalGrammar {
     }
 
     #[inline]
-    pub(in super) fn rhs1(&self) -> &[Option<Symbol>] {
+    pub(super) fn rhs1(&self) -> &[Option<Symbol>] {
         &self.rhs1[..]
     }
 
     #[inline]
-    pub(in super) fn get_lhs(&self, dot: Dot) -> Symbol {
+    pub(super) fn get_lhs(&self, dot: Dot) -> Symbol {
         self.lhs[dot as usize].unwrap()
     }
 
     #[inline]
-    pub(in super) fn external_origin(&self, dot: Dot) -> ExternalOrigin {
+    pub(super) fn external_origin(&self, dot: Dot) -> ExternalOrigin {
         self.eval.get(dot as usize).cloned().unwrap()
     }
 
-    pub(in super) fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule] {
+    pub(super) fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule] {
         &*self.nulling_intermediate_rules
     }
 
     #[inline(always)]
-    pub(in super) fn unary_completions(&self, sym: Symbol) -> &[PredictionTransition] {
-        let idxs = &self.unary_completion_index[sym.usize() .. sym.usize() + 2];
-        let range = idxs[0] as usize .. idxs[1] as usize;
+    pub(super) fn unary_completions(&self, sym: Symbol) -> &[PredictionTransition] {
+        let idxs = &self.unary_completion_index[sym.usize()..sym.usize() + 2];
+        let range = idxs[0] as usize..idxs[1] as usize;
         &self.unary_completions[range]
     }
 
     #[inline(always)]
-    pub(in super) fn binary_completions(&self, sym: Symbol) -> &[PredictionTransition] {
-        let idxs = &self.binary_completion_index[sym.usize() .. sym.usize() + 2];
-        let range = idxs[0] as usize .. idxs[1] as usize;
+    pub(super) fn binary_completions(&self, sym: Symbol) -> &[PredictionTransition] {
+        let idxs = &self.binary_completion_index[sym.usize()..sym.usize() + 2];
+        let range = idxs[0] as usize..idxs[1] as usize;
         &self.binary_completions[range]
     }
 
     #[inline(always)]
-    pub(in super) fn to_internal(&self, symbol: Symbol) -> Option<Symbol> {
+    pub(super) fn to_internal(&self, symbol: Symbol) -> Option<Symbol> {
         if self.sym_maps.to_internal.is_empty() {
             Some(symbol)
         } else {
@@ -558,17 +568,18 @@ impl InternalGrammar {
         }
     }
 
-    pub(in super) fn max_nulling_symbol(&self) -> Option<usize> {
-        (0 .. self.num_rules()).filter_map(|action| {
-            self.nulling(action as u32).map(|(sym, _dir)| sym.usize())
-        }).chain(
-            self.eliminated_nulling_intermediate().iter().map(|&(_lhs, rhs0, _rhs1)| {
-                rhs0.usize()
-            })
-        ).max()
+    pub(super) fn max_nulling_symbol(&self) -> Option<usize> {
+        (0..self.num_rules())
+            .filter_map(|action| self.nulling(action as u32).map(|(sym, _dir)| sym.usize()))
+            .chain(
+                self.eliminated_nulling_intermediate()
+                    .iter()
+                    .map(|&(_lhs, rhs0, _rhs1)| rhs0.usize()),
+            )
+            .max()
     }
 
-    pub(in super) fn dot_before_eof(&self) -> Dot {
+    pub(super) fn dot_before_eof(&self) -> Dot {
         self.dot_before_eof
     }
 }

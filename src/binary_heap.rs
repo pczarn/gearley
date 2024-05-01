@@ -22,26 +22,29 @@ use item::{CompletedItem, CompletedItemLinked, Item};
 use recognizer::Recognizer;
 
 impl<'g, F> Recognizer<'g, F>
-    where F: Forest,
+where
+    F: Forest,
 {
     /// Returns the greatest item in the binary heap, or `None` if it is empty.
     #[inline]
     pub fn heap_peek(&self) -> Option<CompletedItem<F::NodeRef>> {
-        self.complete.get(0).and_then(|&right_item|
-            self.medial.get(right_item.idx as usize).map(|left_item|
-                CompletedItem {
+        self.complete.get(0).and_then(|&right_item| {
+            self.medial
+                .get(right_item.idx as usize)
+                .map(|left_item| CompletedItem {
                     origin: left_item.origin,
                     dot: left_item.dot,
                     left_node: left_item.node,
                     right_node: right_item.node,
-                }
-            )
-        )
+                })
+        })
     }
 
     #[inline(always)]
     fn heap_get(&self, idx_idx: usize) -> Option<&Item<F::NodeRef>> {
-        self.complete.get(idx_idx).and_then(|&item| self.medial.get(item.idx as usize))
+        self.complete
+            .get(idx_idx)
+            .and_then(|&item| self.medial.get(item.idx as usize))
     }
 
     /// Removes the greatest item from the binary heap and returns it, or `None` if it
@@ -52,14 +55,14 @@ impl<'g, F> Recognizer<'g, F>
                 swap(&mut right_item, &mut self.complete[0]);
                 self.sift_down(0);
             }
-            self.medial.get(right_item.idx as usize).map(|left_item|
-                CompletedItem {
+            self.medial
+                .get(right_item.idx as usize)
+                .map(|left_item| CompletedItem {
                     origin: left_item.origin,
                     dot: left_item.dot,
                     left_node: left_item.node,
                     right_node: right_item.node,
-                }
-            )
+                })
         })
     }
 

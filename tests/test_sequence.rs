@@ -1,20 +1,20 @@
 #[macro_use]
 extern crate log;
-extern crate env_logger;
 extern crate cfg;
+extern crate env_logger;
 extern crate gearley;
 
 mod helpers;
 
-use cfg::Symbol;
-use cfg::sequence::Separator::Trailing;
 use cfg::earley::Grammar;
+use cfg::sequence::Separator::Trailing;
+use cfg::Symbol;
 
 use gearley::forest::Bocage;
 use gearley::grammar::InternalGrammar;
 use gearley::recognizer::Recognizer;
 
-use helpers::{SimpleEvaluator, Parse};
+use helpers::{Parse, SimpleEvaluator};
 
 #[test]
 fn test_sequence() {
@@ -23,17 +23,19 @@ fn test_sequence() {
     let tokens = &[plus, minus, plus, minus, plus, minus];
     let mut external = Grammar::new();
     let (start, plus, minus) = external.sym();
-    external.sequence(start).separator(Trailing(minus)).inclusive(3, Some(3)).rhs(plus);
+    external
+        .sequence(start)
+        .separator(Trailing(minus))
+        .inclusive(3, Some(3))
+        .rhs(plus);
     external.set_start(start);
 
     let cfg = InternalGrammar::from_grammar(&external);
     let mut evaluator = SimpleEvaluator::new(
-        |sym: Symbol| {
-            match sym.usize() {
-                1 => 1,
-                2 => -1,
-                _ => unreachable!()
-            }
+        |sym: Symbol| match sym.usize() {
+            1 => 1,
+            2 => -1,
+            _ => unreachable!(),
         },
         |rule: u32, args: &[&i32]| {
             if rule == 0 {
@@ -42,7 +44,7 @@ fn test_sequence() {
                 unreachable!()
             }
         },
-        |_, _: &mut Vec<i32>| unreachable!()
+        |_, _: &mut Vec<i32>| unreachable!(),
     );
     let bocage = Bocage::new(&cfg);
     let mut recognizer = Recognizer::new(&cfg, bocage);

@@ -5,19 +5,19 @@ pub type Origin = u32;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Item<N> {
-    pub(in super) origin: Origin,
-    pub(in super) dot: Dot,
+    pub(super) origin: Origin,
+    pub(super) dot: Dot,
     pub node: N,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct CompletedItem<N> {
     /// The dot position.
-    pub(in super) dot: Dot,
+    pub(super) dot: Dot,
     /// The origin location.
     /// It comes after `dot`, so that (origin, dot) can be compared in a single instruction
     /// on little-endian systems.
-    pub(in super) origin: Origin,
+    pub(super) origin: Origin,
     /// Left bocage node.
     pub left_node: N,
     /// Right bocage node.

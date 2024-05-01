@@ -1,8 +1,8 @@
 #![feature(test)]
 
-extern crate test;
 extern crate cfg;
 extern crate gearley;
+extern crate test;
 
 macro_rules! trace(($($tt:tt)*) => ());
 
@@ -12,13 +12,13 @@ mod grammars;
 #[path = "../tests/helpers/mod.rs"]
 mod helpers;
 
-use gearley::grammar::InternalGrammar;
 use gearley::forest::{Bocage, NullForest};
-use gearley::recognizer::Recognizer;
+use gearley::grammar::InternalGrammar;
 use gearley::memory_use::MemoryUse;
+use gearley::recognizer::Recognizer;
 
 use grammars::*;
-use helpers::{SimpleEvaluator, Parse};
+use helpers::{Parse, SimpleEvaluator};
 
 const SUM_TOKENS: &'static [u32] = precedenced_arith!(
     '1' '+' '(' '2' '*' '3' '-' '4' ')' '/'
@@ -37,9 +37,10 @@ fn bench_ambiguous_arithmetic(b: &mut test::Bencher) {
         let mut evaluator = SimpleEvaluator::new(
             ambiguous_arith::leaf,
             ambiguous_arith::rule,
-            |_, _: &mut _| unreachable!()
+            |_, _: &mut _| unreachable!(),
         );
-        let mut rec: Recognizer<Bocage<&'_ InternalGrammar>> = Recognizer::new_with_hint(&cfg, tokens.len());
+        let mut rec: Recognizer<Bocage<&'_ InternalGrammar>> =
+            Recognizer::new_with_hint(&cfg, tokens.len());
         assert!(rec.parse(tokens));
         let mut traversal = rec.forest.traverse();
         let results = evaluator.traverse(&mut traversal, rec.finished_node().unwrap());
