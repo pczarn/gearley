@@ -19,12 +19,12 @@
 
 [crates.io shield]: https://img.shields.io/crates/v/gearley?label=latest
 [crates.io link]: https://crates.io/crates/gearley
-[docs.rs badge]: https://docs.rs/gearley/badge.svg?version=0.0.4
-[docs.rs link]: https://docs.rs/gearley/0.0.4/gearley/
+[docs.rs badge]: https://docs.rs/gearley/badge.svg?version=0.0.5
+[docs.rs link]: https://docs.rs/gearley/0.0.5/gearley/
 [github ci badge]: https://github.com/pczarn/gearley/workflows/CI/badge.svg?branch=master
 [rustc 1.65+]: https://img.shields.io/badge/rustc-1.65%2B-blue.svg
-[deps.rs status]: https://deps.rs/crate/gearley/0.0.4/status.svg
-[deps.rs link]: https://deps.rs/crate/gearley/0.0.4
+[deps.rs status]: https://deps.rs/crate/gearley/0.0.5/status.svg
+[deps.rs link]: https://deps.rs/crate/gearley/0.0.5
 [shields.io download count]: https://img.shields.io/crates/d/gearley.svg
 
 Work in progress.
@@ -99,15 +99,15 @@ by Jeffrey Kegler.
 
 ## Extending gearley
 
-The grammar is stored in a byte string. You may [serialize or deserialize it](https://docs.rs/gearley/0.0.4/gearley/grammar/struct.InternalGrammar.html)
+The grammar is stored in a byte string. You may [serialize or deserialize it](https://docs.rs/gearley/0.0.5/gearley/grammar/struct.InternalGrammar.html)
 yourself. Grammar construction is implemented in the
 [cfg library](https://github.com/pczarn/cfg).
 
-The recognizer provides [an interface](https://docs.rs/gearley/0.0.4/gearley/forest/trait.Forest.html) for writing a custom parse forest. Or you
+The recognizer provides [an interface](https://docs.rs/gearley/0.0.5/gearley/forest/trait.Forest.html) for writing a custom parse forest. Or you
 may reuse the default parse forest algorithm, but write your own code for [controlling
-rule order](https://docs.rs/gearley/0.0.4/gearley/forest/order/trait.Order.html), and for storing evaluated values within each tree node.
+rule order](https://docs.rs/gearley/0.0.5/gearley/forest/order/trait.Order.html), and for storing evaluated values within each tree node.
 
-Yet another interface gives [control over rule completion](https://docs.rs/gearley/0.0.4/gearley/recognizer/struct.CompleteSum.html). You may reject certain
+Yet another interface gives [control over rule completion](https://docs.rs/gearley/0.0.5/gearley/recognizer/struct.CompleteSum.html). You may reject certain
 completed rules or modify their parse forests as the parse progresses.
 
 Gearley is perfectly extensible on every level.
