@@ -36,8 +36,8 @@ where
         let forest_use_bytes = memory_limit * F::FOREST_BYTES_PER_RECOGNIZER_BYTE
             / (F::FOREST_BYTES_PER_RECOGNIZER_BYTE + 1);
         let complete_use = match memory_limit {
-            0..=1000 => 16,
-            1000..=500_000 => 32,
+            0..=999 => 16,
+            1000..=499_999 => 32,
             500_000..=2_000_000 => 64,
             _ => 128,
         };
@@ -77,8 +77,8 @@ where
     pub fn new_with_hint(grammar: &'g InternalGrammar, tokens: usize) -> Self {
         let forest_use_bytes = tokens * 16;
         let complete_use = match tokens {
-            0..=200 => 16,
-            200..=10_000 => 32,
+            0..=199 => 16,
+            200..=9_999 => 32,
             10_000..=100_000 => 64,
             _ => 128,
         };
@@ -116,8 +116,8 @@ impl<'g> MemoryUse for Recognizer<'g, NullForest> {
 
     fn new_with_limit(grammar: &'g InternalGrammar, memory_limit: usize) -> Self {
         let complete_use = match memory_limit {
-            0..=1000 => 16,
-            1000..=500_000 => 32,
+            0..=999 => 16,
+            1000..=499_999 => 32,
             500_000..=2_000_000 => 64,
             _ => 128,
         };
@@ -210,7 +210,7 @@ impl<'g> MemoryUse for Bocage<&'g InternalGrammar> {
 
     fn new_with_limit(grammar: &'g InternalGrammar, memory_limit: usize) -> Self {
         let dfs_size = match memory_limit {
-            0..=1000 => 8,
+            0..=999 => 8,
             1000..=100_000 => 32,
             _ => 64,
         };
@@ -230,7 +230,7 @@ impl<'g> MemoryUse for CompactBocage<&'g InternalGrammar> {
 
     fn new_with_limit(grammar: &'g InternalGrammar, memory_limit: usize) -> Self {
         let dfs_size = match memory_limit {
-            0..=1000 => 8,
+            0..=999 => 8,
             1000..=100_000 => 32,
             _ => 64,
         };

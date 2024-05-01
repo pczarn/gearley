@@ -452,11 +452,6 @@ impl InternalGrammar {
     }
 
     #[inline]
-    pub(super) fn prediction_matrix(&self) -> &BitMatrix {
-        &self.prediction_matrix
-    }
-
-    #[inline]
     pub(super) fn predict(&self, sym: Symbol) -> &BitVecSlice {
         &self.prediction_matrix[sym.usize()]
     }

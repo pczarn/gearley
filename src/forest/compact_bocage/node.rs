@@ -140,7 +140,7 @@ union NodeRepr {
     sum: SumRepr,
     product: ProductRepr,
     leaf: LeafRepr,
-    nop: NopRepr,
+    _nop: NopRepr,
 }
 
 #[derive(Clone, Copy)]
@@ -203,7 +203,7 @@ struct SmallLeafRepr {
 
 #[derive(Clone, Copy)]
 struct NopRepr {
-    nop: u16,
+    _nop: u16,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
