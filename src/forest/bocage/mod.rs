@@ -7,7 +7,7 @@ use std::hint;
 
 use bit_vec::BitVec;
 use cfg::symbol::Symbol;
-use ref_slice::ref_slice;
+use std::slice;
 
 use forest::node_handle::NodeHandle;
 use forest::Forest;
@@ -110,7 +110,7 @@ where
                     let end = node.usize() + count as usize + 1;
                     graph.get_unchecked(start..end)
                 }
-                _ => ref_slice(graph.get_unchecked(node.usize())),
+                _ => slice::from_ref(graph.get_unchecked(node.usize())),
             }
         }
     }

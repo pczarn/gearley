@@ -69,7 +69,6 @@
 //!
 //! ...
 
-use std::convert::TryInto;
 use std::iter;
 
 use bit_matrix::BitMatrix;
