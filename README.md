@@ -97,6 +97,27 @@ by Jeffrey Kegler.
 * open source
     * free is a fair price
 
+Made in Poland ❤️🤍.
+
+## Research
+
+While coding and optimizing the engine, we have discovered new optimizations for parsers in the Marpa/Earley lineage, and the result is an algorithm called Panini:
+
+1. Optimization of partial parse completion for the recognizer and the parse result.
+    1.a) Application of a priority queue for orderly bottom-up completion of partial parses.
+        * We use a binary heap for online sorting by priority.
+        * This enables us to create a simpler parse result by building a directed acyclic graph with topological order.
+    1.b) Furthermore, in-order evaluation of the parse result and its partial parses, which is more efficient in runtime and memory use.
+2. Application of a 3D bit matrix of size N x |S| x 2 for top-down prediction of partial parses and for Leo optimization.
+    * We use a flat dynamic array of bits for the bit matrix.
+    * A `symbol` is predicted at `input_location` when predicted[input_location][symbol][0] is set.
+    * Leo optimization for LHS `symbol` at `input_location` is possible when predicted[input_location][symbol][1] is set.
+3. Removal of unreachable Earley sets for smaller memory use.
+
+Kudos to the Rust team for creating a language that easily enables research during coding.
+
+These have already been published in this repository, never to be patented.
+
 ## Extending gearley
 
 The grammar is stored in a byte string. You may [serialize or deserialize it](https://docs.rs/gearley/0.0.5/gearley/grammar/struct.InternalGrammar.html)
@@ -149,10 +170,11 @@ its own history.
 | leaf node          | bocage symbol          | leaf node                  |
 | root node          | peak glade             | top node                   |
 
-Bocage — a parse forest in the form of a Directed Acyclic Graph.
+Bocage — a parse forest in the form of a Directed Acyclic Graph with topological order.
 
-Depth-first bocage — a bocage that is traversed by evaluating one whole bocage
-node at a time.
+Compact bocage — a parse forest with the tradeoff of smaller memory footprint and slightly more computation.
+
+Depth-first bocage — a parse forest which allows evaluation one tree at a time.
 
 Sum node — a node that sums the number of trees in the forest.
 
