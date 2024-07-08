@@ -1,6 +1,6 @@
 use std::mem;
 
-use crate::utils::vec2d::Vec2dCapacity;
+use gearley_vec2d::Vec2dCapacity;
 
 use gearley_forest::completed_item::CompletedItem;
 

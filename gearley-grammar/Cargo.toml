@@ -8,5 +8,4 @@ edition = "2021"
 [dependencies]
 bit-matrix = "0.7"
 cfg-symbol = { path = "../../cfg/cfg-symbol/", features = ["serialize"] }
-serde = "1.0"
-serde_derive = "1.0"
+miniserde = "0.1"

@@ -1,7 +1,6 @@
 use bit_matrix::row::BitSlice;
 use cfg_symbol::Symbol;
-use std::num::NonZeroU32;
-use serde_derive::{Serialize, Deserialize};
+use miniserde::{Serialize, Deserialize};
 
 type Dot = u32;
 
@@ -18,12 +17,14 @@ pub enum MaybePostdot {
     Unary,
 }
 
+pub type Id = Symbol;
+
 pub type ExternalDottedRule = (u32, u32);
 pub type Event = (EventId, MinimalDistance);
 
-pub type ExternalOrigin = Option<u32>;
-pub type EventId = Option<NonZeroU32>;
-pub type MinimalDistance = Option<NonZeroU32>;
+pub type ExternalOrigin = Option<Id>;
+pub type EventId = Option<Id>;
+pub type MinimalDistance = Option<Id>;
 pub type NullingEliminated = Option<(Symbol, bool)>;
 pub type NullingIntermediateRule = (Symbol, Symbol, Symbol);
 

@@ -1,8 +1,8 @@
 use bit_matrix::row::BitSlice;
 use cfg_symbol::Symbol;
 
-use crate::local_prelude::*;
-
+use gearley_forest::Forest;
+use gearley_grammar::Grammar;
 use super::{performance_policy::PerformancePolicy, Recognizer};
 
 pub(super) trait Predict {

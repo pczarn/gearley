@@ -4,11 +4,10 @@ use std::slice;
 use bit_matrix;
 use cfg_symbol::Symbol;
 
-use crate::local_prelude::*;
 use gearley_forest::Forest;
-use gearley_grammar::{Event, ExternalDottedRule};
-use crate::recognizer::item::Item;
-use crate::recognizer::Recognizer;
+use gearley_grammar::{Grammar, Event, ExternalDottedRule};
+use crate::item::Item;
+use crate::Recognizer;
 
 use super::performance_policy::PerformancePolicy;
 
@@ -106,7 +105,7 @@ impl<'a, L> Iterator for Events<'a, L> {
     fn next(&mut self) -> Option<u32> {
         for (&(event_id, _distance), _origin) in &mut self.iter {
             if event_id.is_some() {
-                return event_id.map(|nonzero| nonzero.get());
+                return event_id.map(|nonzero| nonzero.into());
             }
         }
         None
@@ -119,7 +118,7 @@ impl<'a, L> Iterator for Distances<'a, L> {
     fn next(&mut self) -> Option<u32> {
         for (&(_event_id, distance), _origin) in &mut self.iter {
             if distance.is_some() {
-                return distance.map(|nonzero| nonzero.get());
+                return distance.map(|nonzero| nonzero.into());
             }
         }
         None

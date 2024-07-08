@@ -2,9 +2,12 @@
 
 members = [
     "gearley",
+    "gearley-recognizer",
+    "gearley-grammar",
+    "gearley-default-grammar",
     "gearley-forest",
-    "compact-forest",
-    "simple-forest",
+    "compact-bocage",
+    "simple-bocage",
 ]
 
 resolver = "2"

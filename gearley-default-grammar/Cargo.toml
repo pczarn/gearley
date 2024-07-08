@@ -6,3 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+gearley-grammar = { path = "../gearley-grammar/" }
+gearley-vec2d = { path = "../gearley-vec2d/" }
+cfg = { path = "../../cfg/cfg/" }
+bit-matrix = "0.7"
+cfg-symbol = { path = "../../cfg/cfg-symbol/" }
+miniserde = "0.1"

@@ -1,18 +1,20 @@
 use std::ops;
 
+#[cfg(feature = "serialize")]
 use serde_derive::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub(crate) struct Vec2d<I> {
-    pub(crate) chart: Vec<I>,
-    pub(crate) indices: Vec<usize>,
-    pub(crate) current_start: usize,
+#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+#[derive(Clone, Debug)]
+pub struct Vec2d<I> {
+    chart: Vec<I>,
+    indices: Vec<usize>,
+    current_start: usize,
 }
 
 #[derive(Default)]
-pub(crate) struct Vec2dCapacity {
-    pub(crate) chart_capacity: usize,
-    pub(crate) indices_capacity: usize,
+pub struct Vec2dCapacity {
+    pub chart_capacity: usize,
+    pub indices_capacity: usize,
 }
 
 impl<I> Vec2d<I> {

@@ -2,10 +2,12 @@ use std::cmp;
 
 use cfg_symbol::Symbol;
 
-use crate::local_prelude::*;
+use gearley_forest::Forest;
+use gearley_grammar::Grammar;
 use gearley_forest::completed_item::CompletedItem;
 use super::{item::{CompletedItemLinked, Origin}, performance_policy::PerformancePolicy, Recognizer};
 use super::lookahead::Lookahead;
+use crate::item::Item;
 
 /// A group of completed items.
 pub struct CompleteSum<'r, F, G, P>

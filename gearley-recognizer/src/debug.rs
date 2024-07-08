@@ -1,8 +1,8 @@
 use std::fmt;
 
-use crate::local_prelude::*;
 use gearley_forest::Forest;
-use crate::recognizer::Recognizer;
+use gearley_grammar::Grammar;
+use crate::Recognizer;
 
 use super::performance_policy::PerformancePolicy;
 

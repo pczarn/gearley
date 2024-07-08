@@ -25,8 +25,15 @@ serde_derive = "1.0"
 memusage = { version = "0.2.0", optional = true }
 gearley-forest = { path = "../gearley-forest/" }
 gearley-grammar = { path = "../gearley-grammar/" }
+gearley-recognizer = { path = "../gearley-recognizer/" }
+gearley-default-grammar = { path = "../gearley-default-grammar/", optional = true }
+simple-bocage = { path = "../simple-bocage/", optional = true }
 
 [dev-dependencies]
 c_lexer_logos = "0.1.1"
 log = "0.4"
 env_logger = "0.7"
+cfg = { path = "../../cfg/cfg/" }
+
+[features]
+default = ["gearley-default-grammar", "simple-bocage"]

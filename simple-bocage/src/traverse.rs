@@ -174,7 +174,7 @@ where
                     if let Some(action) = origin {
                         self.traverse.unfold_factors(left_factor, right_factor);
                         return Some(ProductHandle {
-                            action,
+                            action: action.into(),
                             factors: &self.traverse.factor_stack[..],
                         });
                     }

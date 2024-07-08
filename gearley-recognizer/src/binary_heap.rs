@@ -16,11 +16,14 @@
 
 use std::mem::swap;
 
+use gearley_forest::Forest;
+use gearley_grammar::Grammar;
 use gearley_forest::completed_item::CompletedItem;
 
-use crate::local_prelude::*;
-use crate::recognizer::item::CompletedItemLinked;
-use crate::utils::vec2d::Vec2d;
+use crate::Recognizer;
+use crate::item::Item;
+use crate::item::CompletedItemLinked;
+use gearley_vec2d::Vec2d;
 
 use super::performance_policy::PerformancePolicy;
 

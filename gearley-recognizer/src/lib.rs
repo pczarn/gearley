@@ -1,9 +1,10 @@
 use bit_matrix::BitMatrix;
 use cfg_symbol::*;
 
-use crate::local_prelude::*;
-use crate::recognizer::item::CompletedItemLinked;
-use crate::utils::vec2d::Vec2d;
+use gearley_forest::{Forest, NullForest};
+use gearley_grammar::Grammar;
+use crate::item::{Item, CompletedItemLinked, Origin};
+use gearley_vec2d::Vec2d;
 
 use event::{MedialItems, PredictedSymbols};
 use performance_policy::{PerformancePolicy, DefaultPerformancePolicy};
@@ -46,7 +47,7 @@ where
     // Predicted items are stored in a bit matrix. The bit matrix has a row for every Earley set.
     //
     // Length of `predicted` is earleme + 1, so that earleme points to the last
-    pub(super) predicted: BitMatrix,
+    predicted: BitMatrix,
 
     // Medial items, charted, and chart indices.
     //
@@ -60,7 +61,7 @@ where
     //
     // Has the index that points to the beginning of the latest set in the chart.
     // Equivalent to the last element of `indices`.
-    pub(super) medial: Vec2d<Item<F::NodeRef>>,
+    medial: Vec2d<Item<F::NodeRef>>,
     // Gearley's secret sauce: we have a binary heap for online sorting.
     //
     // Completed items are stored for the latest Earley set.
@@ -68,7 +69,7 @@ where
     // origin and dot. The creation of a completed item can only be caused
     // by a scan or a completion of an item that has a higher (origin, dot)
     // pair value.
-    pub(super) complete: BinaryHeap<CompletedItemLinked<F::NodeRef>>,
+    complete: BinaryHeap<CompletedItemLinked<F::NodeRef>>,
 }
 
 impl<F, G, P> Recognizer<G, F, P>

@@ -1,5 +1,6 @@
 use crate::local_prelude::*;
 use crate::memory_usage::MemoryUse;
+use bit_vec::BitVec;
 
 use super::vec2d::Vec2d;
 use super::binary_heap::BinaryHeap;
@@ -29,3 +30,10 @@ impl<T> MemoryReport for BinaryHeap<T> {
         self.0.indirect()
     }
 }
+
+impl MemoryReport for BitVec {
+    fn indirect(&self) -> usize {
+        (self.capacity() + 31) / 32 * 4
+    }
+}
+

@@ -16,6 +16,7 @@ use gearley::prelude::*;
 use gearley::memory_usage::MemoryUse;
 
 use helpers::Parse;
+use test::Bencher;
 
 const SYM_NAMES: &'static [&'static str] = &[
     "term",
@@ -868,8 +869,7 @@ fn grammar() -> Grammar {
     grammar
 }
 
-#[bench]
-fn bench_parse_c(b: &mut test::Bencher) {
+fn bench_parse_c(b: &mut test::Bencher, contents: &str) {
     use c_lexer_logos::token::Token::*;
     use c_lexer_logos::Lexer;
     let external = grammar();
@@ -964,7 +964,6 @@ fn bench_parse_c(b: &mut test::Bencher) {
         equal,
     ) = grammar.sym();
 
-    let contents = include_str!("part_gcc_test.i");
     let tokens: Vec<_> = Lexer::lex(&contents[..])
         .unwrap()
         .into_iter()
@@ -1097,4 +1096,16 @@ fn bench_parse_c(b: &mut test::Bencher) {
         }
         test::black_box(&rec.forest);
     });
+}
+
+#[bench]
+fn bench_part_c(b: &mut Bencher) {
+    let contents = include_str!("part_gcc_test.i");
+    bench_parse_c(b, contents);
+}
+
+#[bench]
+fn bench_test_c(b: &mut Bencher) {
+    let contents = include_str!("test.i");
+    bench_parse_c(b, contents);
 }
