@@ -3,7 +3,6 @@
 use std::{cmp, iter};
 
 use bit_matrix::row::BitSlice;
-use bit_matrix::submatrix::BitSubMatrix;
 use bit_matrix::BitMatrix;
 use cfg::classify::CfgClassifyExt;
 use cfg::predict_sets::{FirstSets, FollowSets, PredictSets};

@@ -3,8 +3,6 @@
 
 extern crate test;
 
-macro_rules! trace(($($tt:tt)*) => ());
-
 use std::hint::black_box;
 
 use cfg::sequence::CfgSequenceExt;

@@ -19,7 +19,7 @@ fn test_serde() {
             assert_eq!(x.externalized_start_sym(), test);
             assert_eq!(x.num_rules(), original.num_rules());
         }
-        Err(err) => {
+        Err(_err) => {
             // if let Err(err) = serde_json::from_str::<DefaultGrammar>(&json) {
             //     panic!("{:?}", err);
             // }

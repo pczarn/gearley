@@ -955,7 +955,7 @@ fn test_parse_c() {
     // assert!(from_examples.equivalent(&external));
     assert_eq!(from_examples.to_bnf(), external.to_bnf());
 
-    let contents = include_str!("../benches/part_gcc_test.i");
+    let contents = include_str!("../benches/test_case_gcc_part.txt");
     let tokens: Vec<_> = Lexer::lex(&contents[..])
         .unwrap()
         .into_iter()

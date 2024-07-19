@@ -1,13 +1,15 @@
 #![feature(test)]
-#![cfg(feature = "nightly")]
 
-macro_rules! trace(($($tt:tt)*) => ());
+extern crate c_lexer_logos;
+extern crate cfg;
+extern crate gearley;
+extern crate test;
 
-use gearley::*;
-
+use cfg::Cfg;
+use gearley::{utils::RecognizerParseExt, Bocage, DefaultGrammar, Recognizer};
 use test::Bencher;
 
-const SYM_NAMES: &'static [&'static str] = &[
+const _SYM_NAMES: &'static [&'static str] = &[
     "term",
     "identifier",
     "signed",
@@ -186,10 +188,11 @@ const SYM_NAMES: &'static [&'static str] = &[
     "error",
 ];
 
-fn grammar() -> Grammar {
-    let mut grammar = Grammar::new();
-    let (
-        term,
+#[allow(non_snake_case)]
+fn grammar() -> Cfg {
+    let mut grammar = Cfg::new();
+    let [
+        _term,
         identifier,
         signed,
         const_,
@@ -276,9 +279,9 @@ fn grammar() -> Grammar {
         pipe,
         question,
         equal,
-    ) = grammar.sym();
+    ] = grammar.sym();
 
-    let (
+    let [
         start,
         primary_expression,
         postfix_expression,
@@ -368,7 +371,7 @@ fn grammar() -> Grammar {
         enumeration_constant,
         type_name,
         error,
-    ) = grammar.sym();
+    ] = grammar.sym();
 
     grammar.rule(start).rhs([translation_unit]);
     grammar
@@ -854,7 +857,7 @@ fn grammar() -> Grammar {
         .rhs([declaration_list, declaration]);
     grammar.rule(enumeration_constant).rhs([identifier]);
 
-    grammar.set_start(start);
+    grammar.set_roots([start]);
     grammar
 }
 
@@ -862,14 +865,14 @@ fn bench_parse_c(b: &mut test::Bencher, contents: &str) {
     use c_lexer_logos::token::Token::*;
     use c_lexer_logos::Lexer;
     let external = grammar();
-    let mut grammar = Grammar::new();
-    let (
-        term,
+    let mut grammar = Cfg::new();
+    let [
+        _term,
         identifier,
         signed,
         const_,
         inline,
-        auto,
+        _auto,
         break_,
         case,
         char_,
@@ -951,14 +954,14 @@ fn bench_parse_c(b: &mut test::Bencher, contents: &str) {
         pipe,
         question,
         equal,
-    ) = grammar.sym();
+    ] = grammar.sym();
 
     let tokens: Vec<_> = Lexer::lex(&contents[..])
         .unwrap()
         .into_iter()
         .filter_map(|token| {
             // println!("{:?}", token);
-            let tok = match token {
+            match token {
                 LBrace => Some(lbrace),
                 RBrace => Some(rbrace),
                 LParen => Some(lparen),
@@ -983,9 +986,9 @@ fn bench_parse_c(b: &mut test::Bencher, contents: &str) {
                 InclusiveOr => Some(pipe),
                 ExclusiveOr => Some(xor),
                 Mod => Some(percent),
-                Identifier(i_str) => Some(identifier),
-                NumericLiteral(num) => Some(constant),
-                StringLiteral(s) => Some(string_literal),
+                Identifier(_i_str) => Some(identifier),
+                NumericLiteral(_num) => Some(constant),
+                StringLiteral(_s) => Some(string_literal),
                 FuncName => None,
                 SIZEOF => Some(sizeof_),
                 PtrOp => Some(ptr_op),
@@ -1020,7 +1023,7 @@ fn bench_parse_c(b: &mut test::Bencher, contents: &str) {
                 TYPEDEF => Some(typedef),
                 EXTERN => Some(extern_),
                 STATIC => Some(static_),
-                // AUTO => Some(auto_),
+                // AUTO => Some(_auto),
                 REGISTER => Some(register),
                 INLINE => Some(inline),
                 CONST => Some(const_),
@@ -1061,40 +1064,37 @@ fn bench_parse_c(b: &mut test::Bencher, contents: &str) {
                 // StaticAssert,
                 // ThreadLocal,
                 _ => None,
-            };
-            // tok.map(|t| (t.usize() as u32, start, end))
-            tok.map(|t| t.usize() as u32)
+            }
         })
         .collect();
     let mut first = true;
     b.iter(|| {
-        let cfg = DefaultGrammar::from_grammar(&external);
-        let bocage = Bocage::new(&cfg);
-        let mut rec: Recognizer<Bocage<&'_ DefaultGrammar>> =
-            Recognizer::new_with_limit(&cfg, 2_00_000);
-        rec.forest = bocage;
+        let default_grammar = DefaultGrammar::from_grammar(external.clone());
+        let bocage = Bocage::new(&default_grammar);
+        let mut rec: Recognizer<DefaultGrammar, Bocage> =
+            Recognizer::with_forest(default_grammar, bocage);
         let finished = rec.parse(&tokens[..]);
-        assert!(finished);
+        assert!(finished.expect("parse failed"));
         if first {
-            println!(
-                "memory use: all:{} forest:{}",
-                rec.memory_use(),
-                rec.forest.memory_use()
-            );
+            // println!(
+            //     "memory use: all:{} forest:{}",
+            //     rec.memory_use(),
+            //     rec.forest.memory_use()
+            // );
             first = false;
         }
-        test::black_box(&rec.forest);
+        test::black_box(rec.into_forest());
     });
 }
 
 #[bench]
 fn bench_part_c(b: &mut Bencher) {
-    let contents = include_str!("part_gcc_test.i");
+    let contents = include_str!("test_case_gcc_part.txt");
     bench_parse_c(b, contents);
 }
 
 #[bench]
 fn bench_test_c(b: &mut Bencher) {
-    let contents = include_str!("test.i");
+    let contents = include_str!("test_case_gcc_big.txt");
     bench_parse_c(b, contents);
 }
