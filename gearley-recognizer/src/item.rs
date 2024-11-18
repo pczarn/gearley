@@ -4,7 +4,7 @@ pub type Dot = u32;
 pub type Origin = u32;
 
 #[derive(Clone, Copy, Debug)]
-pub struct Item<N> {
+pub struct Item<S, N> {
     pub(crate) origin: Origin,
     pub(crate) dot: Dot,
     pub node: N,
@@ -18,21 +18,21 @@ pub struct CompletedItemLinked<N> {
     pub node: Option<N>,
 }
 
-impl<L> PartialEq for Item<L> {
+impl<S, L> PartialEq for Item<S, L> {
     fn eq(&self, other: &Self) -> bool {
         (self.origin, self.dot) == (other.origin, other.dot)
     }
 }
 
-impl<L> Eq for Item<L> {}
+impl<S, L> Eq for Item<S, L> {}
 
-impl<L> PartialOrd for Item<L> {
+impl<S, L> PartialOrd for Item<S, L> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<L> Ord for Item<L> {
+impl<S, L> Ord for Item<S, L> {
     fn cmp(&self, other: &Self) -> Ordering {
         (self.origin, self.dot).cmp(&(other.origin, other.dot))
     }

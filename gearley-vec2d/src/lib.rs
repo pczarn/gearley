@@ -1,9 +1,7 @@
 use std::ops;
 
-#[cfg(feature = "serialize")]
-use serde_derive::{Serialize, Deserialize};
-
-#[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde_derive::Serialize, serde_derive::Deserialize))]
+#[cfg_attr(feature = "miniserde", derive(miniserde::Serialize, miniserde::Deserialize))]
 #[derive(Clone, Debug)]
 pub struct Vec2d<I> {
     chart: Vec<I>,

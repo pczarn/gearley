@@ -1,30 +1,31 @@
 use bit_matrix::row::BitSlice;
-use cfg_symbol::Symbol;
+use cfg_symbol::Symbolic;
 
 use gearley_forest::Forest;
 use gearley_grammar::Grammar;
-use super::{performance_policy::PerformancePolicy, Recognizer};
+
+use crate::local_prelude::*;
 
 pub(super) trait Predict {
-    fn predict(&mut self, sym: Symbol, source: &BitSlice);
+    fn predict<S: Symbolic>(&mut self, sym: S, source: &BitSlice);
 
     fn clear(&mut self);
 }
 
 impl<F, G, P> Recognizer<G, F, P>
-    where F: Forest,
+    where F: Forest<G::Symbol>,
     G: Grammar,
-    P: PerformancePolicy,
+    P: PerfHint,
 {
     /// Makes the current Earley set predict a given symbol.
-    pub fn predict(&mut self, symbol: Symbol) {
+    pub fn predict(&mut self, symbol: G::Symbol) {
         let earleme = self.earleme();
         self.predicted[earleme].predict(symbol, self.grammar.prediction_row(symbol));
     }
 }
 
 impl Predict for BitSlice {
-    fn predict(&mut self, sym: Symbol, source: &BitSlice) {
+    fn predict<S: Symbolic>(&mut self, sym: S, source: &BitSlice) {
         if !self[sym.usize()] {
             // The source in the prediction matrix is the row that corresponds to the predicted
             // symbol.

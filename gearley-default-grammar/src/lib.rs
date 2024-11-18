@@ -1,15 +1,16 @@
-use std::iter;
+use std::{cmp, iter};
 
 use bit_matrix::row::BitSlice;
 use bit_matrix::BitMatrix;
-use cfg::prediction::{FirstSetsCollector, FollowSets};
+use cfg::classify::CfgClassifyExt;
+use cfg::predict_sets::{FirstSets, FollowSets, PredictSets};
+use cfg::symbol_bit_matrix::CfgSymbolBitMatrixExt;
+use cfg_earley_history::HistoryGraphEarleyExt;
 use cfg_symbol::intern::Mapping;
-use cfg::{RuleContainer, GrammarRule};
 use miniserde::{Serialize, Deserialize};
 
-use cfg::earley;
-use cfg::earley::history::{History, Event, ExternalDottedRule, NullingEliminated, ExternalOrigin};
-use cfg::Symbol;
+use cfg::earley_history::{History, Event, ExternalDottedRule, NullingEliminated, ExternalOrigin};
+use cfg::{Cfg, Symbol, Symbolic};
 
 use gearley_grammar::{Grammar, PredictionTransition, MaybePostdot, NullingIntermediateRule};
 use gearley_vec2d::Vec2d;
@@ -31,8 +32,6 @@ pub struct DefaultGrammar {
     // Inverse prediction lookup.
     completions: Vec2d<PredictionTransition>,
 
-    // follow_sets: BitMatrix,
-    // first_sets: BitMatrix,
     lr_sets: BitMatrix,
 
     // array of events
@@ -49,12 +48,13 @@ pub struct DefaultGrammar {
     eval: Vec<ExternalOrigin>,
     // Mapping between external and internal symbols.
     sym_maps: Mapping,
-    nulling_intermediate_rules: Vec<NullingIntermediateRule>,
+    nulling_intermediate_rules: Vec<NullingIntermediateRule<Symbol>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug)]
 pub struct DefaultGrammarSize {
     pub syms: usize,
+    pub gen_syms: usize,
     pub rules: usize,
     pub internal_syms: usize,
     pub external_syms: usize,
@@ -62,53 +62,75 @@ pub struct DefaultGrammarSize {
 
 impl DefaultGrammar {
     fn new() -> Self {
-        Self::default()
+        Default::default()
     }
 
-    pub fn from_grammar(grammar: &earley::Grammar) -> Self {
-        Self::from_binarized_grammar(grammar.binarize())
+    pub fn from_grammar(mut grammar: Cfg) -> Self {
+        let orig_num_syms = grammar.num_syms();
+        grammar.limit_rhs_len(Some(2));
+        let num_gen_syms = grammar.num_syms() - orig_num_syms;
+        Self::from_binarized_grammar(grammar, num_gen_syms)
     }
 
-    pub fn from_binarized_grammar(grammar: earley::BinarizedGrammar) -> Self {
-        let grammar = grammar.make_proper();
-        Self::from_proper_binarized_grammar(grammar)
+    pub fn from_binarized_grammar(mut grammar: Cfg, num_gen_syms: usize) -> Self {
+        grammar.make_proper();
+        Self::from_proper_binarized_grammar(grammar, num_gen_syms)
     }
 
-    pub fn from_proper_binarized_grammar(grammar: earley::BinarizedGrammar) -> Self {
-        let (mut grammar, nulling) = grammar.eliminate_nulling();
-        grammar.wrap_start();
-        Self::from_processed_grammar(grammar, &nulling)
+    pub fn from_proper_binarized_grammar(mut grammar: Cfg, num_gen_syms: usize) -> Self {
+        let nulling = grammar.binarize_and_eliminate_nulling_rules();
+        grammar.wrap_input();
+        Self::from_processed_grammar(grammar, &nulling, num_gen_syms)
     }
 
-    pub fn from_processed_grammar(grammar: earley::BinarizedGrammar, nulling: &earley::BinarizedGrammar) -> Self {
-        let (grammar, maps) = grammar.remap_symbols();
-        Self::from_processed_grammar_with_maps(grammar, maps, nulling)
+    pub fn from_processed_grammar(mut grammar: Cfg, nulling: &Cfg, num_gen_syms: usize) -> Self {
+        // `order` describes relation `A < B`.
+        let mut order = grammar.empty_matrix();
+        for rule in grammar.rules() {
+            if rule.rhs.len() == 1 {
+                let left = rule.lhs.usize();
+                let right = rule.rhs[0].usize();
+                match left.cmp(&right) {
+                    cmp::Ordering::Less => {
+                        order.set(left, right, true);
+                    }
+                    cmp::Ordering::Greater => {
+                        order.set(right, left, true);
+                    }
+                    cmp::Ordering::Equal => {}
+                }
+            }
+        }
+        let maps = grammar.reorder_symbols(order);
+        Self::from_processed_grammar_with_maps(grammar, maps, nulling, num_gen_syms)
     }
 
     pub fn from_processed_grammar_with_maps(
-        mut grammar: earley::BinarizedGrammar,
+        mut grammar: Cfg,
         maps: Mapping,
-        nulling: &earley::BinarizedGrammar,
+        nulling: &Cfg,
+        num_gen_syms: usize
     ) -> Self {
-        grammar.sort_by(|a, b| a.lhs().cmp(&b.lhs()));
+        grammar.sort_by(|a, b| a.lhs.cmp(&b.lhs));
         let mut result = DefaultGrammar::new();
-        result.populate_sizes(&grammar, &maps);
+        result.populate_sizes(&grammar, &maps, num_gen_syms);
         result.populate_maps(maps);
         result.populate_grammar(&grammar);
         result.populate_nulling(nulling);
         result
     }
 
-    fn populate_sizes(&mut self, grammar: &earley::BinarizedGrammar, maps: &Mapping) {
+    fn populate_sizes(&mut self, grammar: &Cfg, maps: &Mapping, gen_syms: usize) {
         self.size = DefaultGrammarSize {
             rules: grammar.rules().count(),
-            syms: grammar.sym_source().num_syms(),
+            syms: grammar.sym_source().num_syms() - gen_syms,
+            gen_syms,
             external_syms: maps.to_internal.len(),
             internal_syms: maps.to_external.len(),
         }
     }
 
-    fn populate_grammar(&mut self, grammar: &earley::BinarizedGrammar) {
+    fn populate_grammar(&mut self, grammar: &Cfg) {
         self.populate_start_sym(grammar);
         self.populate_grammar_with_lhs(grammar);
         self.populate_grammar_with_rhs(grammar);
@@ -116,98 +138,94 @@ impl DefaultGrammar {
         self.populate_predictions(grammar);
     }
 
-    fn populate_start_sym(&mut self, grammar: &earley::BinarizedGrammar) {
-        let start = grammar.start();
-        self.start_sym = start;
-        self.eof_sym = grammar.eof().unwrap();
-        self.dot_before_eof = grammar.dot_before_eof().unwrap();
-        self.original_start_sym = grammar.original_start().unwrap();
+    fn populate_start_sym(&mut self, grammar: &Cfg) {
+        assert_eq!(grammar.roots().len(), 1);
+        let wrapped_root = grammar.wrapped_roots().first().copied().expect("start symbol not found");
+        self.start_sym = wrapped_root.root;
+        self.eof_sym = wrapped_root.end_of_input;
+        self.dot_before_eof = grammar.rules().position(|rule| rule.rhs.get(1) == Some(&wrapped_root.end_of_input)).unwrap() as u32;
+        self.original_start_sym = wrapped_root.inner_root;
     }
 
-    fn populate_grammar_with_lhs(&mut self, grammar: &earley::BinarizedGrammar) {
+    fn populate_grammar_with_lhs(&mut self, grammar: &Cfg) {
         self.lhs
-            .extend(grammar.rules().map(|rule| Some(rule.lhs())));
+            .extend(grammar.rules().map(|rule| Some(rule.lhs)));
     }
 
-    fn populate_grammar_with_rhs(&mut self, grammar: &earley::BinarizedGrammar) {
+    fn populate_grammar_with_rhs(&mut self, grammar: &Cfg) {
         self.rhs0
-            .extend(grammar.rules().map(|rule| rule.rhs().get(0).cloned()));
+            .extend(grammar.rules().map(|rule| rule.rhs.get(0).cloned()));
         self.rhs1
-            .extend(grammar.rules().map(|rule| rule.rhs().get(1).cloned()));
+            .extend(grammar.rules().map(|rule| rule.rhs.get(1).cloned()));
     }
 
-    fn populate_grammar_with_history(&mut self, grammar: &earley::BinarizedGrammar) {
-        let histories = grammar.final_history();
+    fn populate_grammar_with_history(&mut self, grammar: &Cfg) {
+        let histories = grammar.history_graph().final_history();
         self.eval
-            .extend(grammar.rules().map(|rule| histories[rule.history_id().get()].origin()));
+            .extend(grammar.rules().map(|rule| histories[rule.history_id.get()].origin()));
         self.nulling_eliminated
-            .extend(grammar.rules().map(|rule| histories[rule.history_id().get()].nullable()));
+            .extend(grammar.rules().map(|rule| histories[rule.history_id.get()].nullable()));
 
         self.populate_grammar_with_events_rhs(grammar, &histories[..]);
         self.populate_grammar_with_trace_rhs(grammar, &histories[..]);
     }
 
-    fn populate_grammar_with_events_rhs(&mut self, grammar: &earley::BinarizedGrammar, histories: &[History]) {
+    fn populate_grammar_with_events_rhs(&mut self, grammar: &Cfg, histories: &[History]) {
         self.events_rhs[1].extend(
             grammar
                 .rules()
-                .map(|rule| histories[rule.history_id().get()].dot(1).event_without_tracing()),
+                .map(|rule| histories[rule.history_id.get()].dot(1).event_without_tracing()),
         );
         self.events_rhs[2].extend(
             grammar
                 .rules()
-                .map(|rule| histories[rule.history_id().get()].dot(2).event_without_tracing()),
+                .map(|rule| histories[rule.history_id.get()].dot(2).event_without_tracing()),
         );
     }
 
-    fn populate_grammar_with_trace_rhs(&mut self, grammar: &earley::BinarizedGrammar, histories: &[History]) {
-        self.trace_rhs[1].extend(grammar.rules().map(|rule| histories[rule.history_id().get()].dot(1).trace()));
-        self.trace_rhs[2].extend(grammar.rules().map(|rule| histories[rule.history_id().get()].dot(2).trace()));
+    fn populate_grammar_with_trace_rhs(&mut self, grammar: &Cfg, histories: &[History]) {
+        self.trace_rhs[1].extend(grammar.rules().map(|rule| histories[rule.history_id.get()].dot(1).trace()));
+        self.trace_rhs[2].extend(grammar.rules().map(|rule| histories[rule.history_id.get()].dot(2).trace()));
     }
 
     fn populate_maps(&mut self, maps: Mapping) {
         self.sym_maps = maps;
     }
 
-    fn populate_predictions(&mut self, grammar: &earley::BinarizedGrammar) {
+    fn populate_predictions(&mut self, grammar: &Cfg) {
         self.populate_prediction_matrix(grammar);
         self.populate_prediction_events(grammar);
         self.populate_completion_tables(grammar);
         self.populate_lr_sets(grammar);
     }
 
-    fn populate_prediction_matrix(&mut self, grammar: &earley::BinarizedGrammar) {
+    fn populate_prediction_matrix(&mut self, grammar: &Cfg) {
         self.prediction_matrix = BitMatrix::new(self.size.syms, self.size.syms);
         // Precompute DFA.
         for rule in grammar.rules() {
             self.prediction_matrix
-                .set(rule.lhs().usize(), rule.rhs()[0].usize(), true);
+                .set(rule.lhs.usize(), rule.rhs[0].usize(), true);
         }
+        // Prediction relation is transitive.
         self.prediction_matrix.transitive_closure();
         // Prediction relation is reflexive.
-        for i in 0..self.size.syms {
-            self.prediction_matrix.set(i, i, true);
-        }
+        self.prediction_matrix.reflexive_closure();
     }
 
-    fn populate_lr_sets(&mut self, grammar: &earley::BinarizedGrammar) {
+    fn populate_lr_sets(&mut self, grammar: &Cfg) {
         let mut follow_matrix = BitMatrix::new(self.size.syms * 2, self.size.syms);
         let mut first_matrix = BitMatrix::new(self.size.syms, self.size.syms);
-        let collector = FirstSetsCollector::new(grammar);
-        for (outer, inner) in collector.first_sets() {
-            for elem_inner in inner.into_iter() {
-                if let Some(inner_sym) = elem_inner {
-                    first_matrix.set(outer.usize(), inner_sym.usize(), true);
-                }
+        let first_sets = FirstSets::new(grammar);
+        for (outer, inner) in first_sets.predict_sets() {
+            for inner_sym in inner.iter().copied() {
+                first_matrix.set(outer.usize(), inner_sym.usize(), true);
             }
         }
         first_matrix.reflexive_closure();
-        let follow_sets = FollowSets::new(grammar, grammar.start(), collector.first_sets());
-        for (before, after) in follow_sets.follow_sets().into_iter() {
-            for elem_after in after.into_iter() {
-                if let Some(after_sym) = elem_after {
-                    follow_matrix.set(before.usize(), after_sym.usize(), true);
-                }
+        let follow_sets = FollowSets::new(grammar, first_sets.predict_sets());
+        for (before, after) in follow_sets.predict_sets().into_iter() {
+            for after_sym in after.iter().copied() {
+                follow_matrix.set(before.usize(), after_sym.usize(), true);
             }
         }
         self.lr_sets = BitMatrix::new(self.size.syms * 2, self.size.syms);
@@ -221,13 +239,13 @@ impl DefaultGrammar {
         }
     }
 
-    fn populate_completion_tables(&mut self, grammar: &earley::BinarizedGrammar) {
+    fn populate_completion_tables(&mut self, grammar: &Cfg) {
         let table = self.compute_completion_table(grammar);
         let iter_table = table.into_iter().map(|v| v.into_iter());
         self.completions.extend(iter_table);
     }
 
-    fn compute_completion_table(&self, grammar: &earley::BinarizedGrammar) -> CompletionTable {
+    fn compute_completion_table(&self, grammar: &Cfg) -> CompletionTable {
         let mut table = iter::repeat(vec![])
             .take(self.size.syms)
             .collect::<Vec<_>>();
@@ -236,8 +254,8 @@ impl DefaultGrammar {
         let mut binary_rules = vec![];
         // check for ordering same as self.rules
         for (dot, rule) in grammar.rules().enumerate() {
-            let is_unary = rule.rhs().get(1).is_none();
-            let rhs0_sym = rule.rhs()[0];
+            let is_unary = rule.rhs.get(1).is_none();
+            let rhs0_sym = rule.rhs[0];
             if is_unary {
                 unary_rules.push((rhs0_sym.usize(), rule.lhs, dot as u32, true));
             } else {
@@ -255,29 +273,30 @@ impl DefaultGrammar {
         table
     }
 
-    fn populate_prediction_events(&mut self, grammar: &earley::BinarizedGrammar) {
+    fn populate_prediction_events(&mut self, grammar: &Cfg) {
         let iter_events_pred =
             iter::repeat((None, None)).take(self.size.syms);
         self.events_rhs[0].extend(iter_events_pred);
         let iter_trace_pred = iter::repeat(None).take(self.size.syms);
         self.trace_rhs[0].extend(iter_trace_pred);
-        let histories = grammar.final_history();
+        let histories = grammar.history_graph().final_history();
         for rule in grammar.rules() {
-            if let Some(&(pred_event, pred_tracing)) = histories[rule.history_id().get()].dot(0).event().as_ref() {
+            if let Some(&(pred_event, pred_tracing)) = histories[rule.history_id.get()].dot(0).event().as_ref() {
                 // Prediction event and tracing.
-                self.events_rhs[0][rule.lhs().usize()] =
-                    (pred_event, histories[rule.history_id().get()].dot(0).distance());
-                self.trace_rhs[0][rule.lhs().usize()] = Some(pred_tracing);
+                self.events_rhs[0][rule.lhs.usize()] =
+                    (pred_event, histories[rule.history_id.get()].dot(0).distance());
+                self.trace_rhs[0][rule.lhs.usize()] = Some(pred_tracing);
             }
         }
     }
 
-    fn populate_nulling(&mut self, nulling: &earley::BinarizedGrammar) {
+    fn populate_nulling(&mut self, nulling: &Cfg) {
         self.has_trivial_derivation = !nulling.is_empty();
-        let histories = nulling.final_history();
+        let histories = nulling.history_graph().final_history();
+
         let iter_nulling_intermediate = nulling.rules().filter_map(|rule| {
-            if histories[rule.history_id().get()].origin().is_none() && rule.rhs().len() == 2 {
-                Some((rule.lhs(), rule.rhs()[0], rule.rhs()[1]))
+            if histories[rule.history_id.get()].origin().is_none() && rule.rhs.len() == 2 {
+                Some([rule.lhs, rule.rhs[0], rule.rhs[1]])
             } else {
                 None
                 
@@ -289,27 +308,12 @@ impl DefaultGrammar {
 }
 
 impl Grammar for DefaultGrammar {
+    type Symbol = Symbol;
+
     #[inline]
     fn eof(&self) -> Symbol {
         self.eof_sym
     }
-
-    // #[inline]
-    // fn can_follow(&self, before: Symbol, after: Option<Symbol>) -> bool {
-    //     let after = after.unwrap_or(self.eof());
-    //     self.follow_sets[(before.usize(), after.usize())]
-    // }
-
-    // #[inline]
-    // fn is_first(&self, outer: Symbol, maybe_inner: Option<Symbol>) -> bool {
-    //     // TODO: 3D bit matrix for the follow / first sets and access the two bits somehow joining follow and first...
-    //     let inner = if let Some(inner) = maybe_inner {
-    //         inner
-    //     } else {
-    //         return outer == self.eof();
-    //     };
-    //     self.first_sets[(outer.usize(), inner.usize())]
-    // }
 
     fn lr_set(&self, dot: Dot) -> &BitSlice {
         match self.get_rhs1(dot) {
@@ -381,7 +385,7 @@ impl Grammar for DefaultGrammar {
     }
 
     #[inline]
-    fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot {
+    fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot<Symbol> {
         match self.rhs1[dot as usize] {
             None => MaybePostdot::Unary,
             Some(rhs1) => MaybePostdot::Binary(rhs1),
@@ -403,7 +407,7 @@ impl Grammar for DefaultGrammar {
         self.eval.get(dot as usize).cloned().unwrap()
     }
 
-    fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule] {
+    fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule<Symbol>] {
         &*self.nulling_intermediate_rules
     }
 
@@ -436,7 +440,7 @@ impl Grammar for DefaultGrammar {
             .chain(
                 self.eliminated_nulling_intermediate()
                     .iter()
-                    .map(|&(_lhs, rhs0, _rhs1)| rhs0.usize()),
+                    .map(|&[_lhs, rhs0, _rhs1]| rhs0.usize()),
             )
             .max()
     }

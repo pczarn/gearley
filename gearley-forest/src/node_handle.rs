@@ -1,4 +1,4 @@
-use cfg_symbol::Symbol;
+use cfg_symbol::{Symbol, Symbolic};
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub struct NodeHandle(pub u32);

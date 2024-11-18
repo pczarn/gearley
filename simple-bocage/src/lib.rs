@@ -66,7 +66,7 @@ where
             }
             .compact()
         }));
-        for &(lhs, rhs0, rhs1) in self.grammar.eliminated_nulling_intermediate() {
+        for &[lhs, rhs0, rhs1] in self.grammar.eliminated_nulling_intermediate() {
             self.set(
                 NodeHandle::nulling(lhs),
                 Product {
@@ -204,7 +204,7 @@ impl MarkAndSweep {
     }
 }
 
-impl<G> Forest for Bocage<G> {
+impl<G: Grammar> Forest<G::Symbol> for Bocage<G> {
     type NodeRef = NodeHandle;
     type LeafValue = u32;
 

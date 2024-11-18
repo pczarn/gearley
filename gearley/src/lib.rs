@@ -7,5 +7,5 @@ pub use gearley_default_grammar::DefaultGrammar;
 #[cfg(feature = "simple_bocage")]
 pub use simple_bocage::SimpleForest;
 pub use gearley_recognizer::{Recognizer, item::Item, item::Origin};
-pub use gearley_recognizer::performance_policy::PerformancePolicy;
+pub use gearley_recognizer::perf_hint::PerformancePolicy;
 

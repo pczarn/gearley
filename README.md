@@ -8,7 +8,7 @@
 [![crates.io][crates.io shield]][crates.io link]
 [![Documentation][docs.rs badge]][docs.rs link]
 ![Rust CI][github ci badge]
-![MSRV][rustc 1.65+]
+![MSRV][rustc 1.80+]
 <br />
 <br />
 [![Dependency Status][deps.rs status]][deps.rs link]
@@ -22,7 +22,7 @@
 [docs.rs badge]: https://docs.rs/gearley/badge.svg?version=0.0.5
 [docs.rs link]: https://docs.rs/gearley/0.0.5/gearley/
 [github ci badge]: https://github.com/pczarn/gearley/workflows/CI/badge.svg?branch=master
-[rustc 1.65+]: https://img.shields.io/badge/rustc-1.65%2B-blue.svg
+[rustc 1.80+]: https://img.shields.io/badge/rustc-1.80%2B-blue.svg
 [deps.rs status]: https://deps.rs/crate/gearley/0.0.5/status.svg
 [deps.rs link]: https://deps.rs/crate/gearley/0.0.5
 [shields.io download count]: https://img.shields.io/crates/d/gearley.svg

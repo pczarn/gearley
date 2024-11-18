@@ -11,3 +11,11 @@ members = [
 ]
 
 resolver = "2"
+
+# add debug info for profiling
+[profile.release]
+debug = true
+
+[workspace.dependencies]
+cfg-symbol = { path = "../cfg/cfg-symbol/", features = ["miniserde"] }
+bit-matrix = { version = "0.8.1", features = ["miniserde", "memusage"] }

@@ -1,36 +1,36 @@
 use std::cmp;
 
-use cfg_symbol::Symbol;
+use cfg_symbol::Symbolic;
 
 use gearley_forest::Forest;
-use gearley_grammar::Grammar;
 use gearley_forest::completed_item::CompletedItem;
-use super::{item::{CompletedItemLinked, Origin}, performance_policy::PerformancePolicy, Recognizer};
-use super::lookahead::Lookahead;
-use crate::item::Item;
+use gearley_grammar::Grammar;
 
-/// A group of completed items.
-pub struct CompleteSum<'r, F, G, P>
+use crate::local_prelude::*;
+
+/// A set of completed items with all having a common triple **(Symbol; start input location ..
+/// end input location)**, varying only in their rule ID.
+pub struct CompleteGroup<'r, F, G, P>
 where
-    F: Forest,
+    F: Forest<G::Symbol>,
     G: Grammar,
-    P: PerformancePolicy,
+    P: PerfHint,
 {
-    /// The origin location of this completion.
+    /// The **start input location** of this completion.
     origin: Origin,
-    /// The symbol of this completion.
-    lhs_sym: Symbol,
+    /// The **Symbol** of this completion.
+    lhs_sym: G::Symbol,
     /// The recognizer.
     recognizer: &'r mut Recognizer<G, F, P>,
 }
 
 impl<G, F, P> Recognizer<G, F, P>
-    where F: Forest,
+    where F: Forest<G::Symbol>,
     G: Grammar,
-    P: PerformancePolicy,
+    P: PerfHint,
 {
     /// Complete items.
-    pub fn complete(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
+    pub fn complete(&mut self, set_id: Origin, sym: G::Symbol, rhs_link: F::NodeRef) {
         debug_assert!(sym != self.grammar.eof());
         if self.predicted[set_id as usize].get(sym.usize()) {
             // New item, either completed or medial.
@@ -45,7 +45,7 @@ impl<G, F, P> Recognizer<G, F, P>
     }
 
     /// Complete medial items in a given Earley set.
-    fn complete_medial_items(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
+    fn complete_medial_items(&mut self, set_id: Origin, sym: G::Symbol, rhs_link: F::NodeRef) {
         // Iterate through medial items to complete them.
         // Huh, can we reduce complexity here?
         // let outer_start = self.medial.indices()[set_id as usize];
@@ -93,18 +93,17 @@ impl<G, F, P> Recognizer<G, F, P>
     }
 
     /// Complete predicted items that have a common postdot symbol.
-    fn complete_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
+    fn complete_predictions(&mut self, set_id: Origin, sym: G::Symbol, rhs_link: F::NodeRef) {
         let mut unary: u32 = 0;
         for trans in self.grammar.completions(sym) {
             let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
             let will_be_useful = self.grammar.lr_set(trans.dot)[self.lookahead.sym().usize()];
             if was_predicted && will_be_useful {
-                // No checks for uniqueness, because `medial` will be deduplicated.
+                // No checks for uniqueness, because completions are deduplicated.
                 // --- UNARY
                 // from A ::= • B
                 // to   A ::=   B •
                 // --- BINARY
-                // No checks for uniqueness, because `medial` will be deduplicated.
                 // from A ::= • B   C
                 // to   A ::=   B • C
                 // Where C is terminal or nonterminal.
@@ -133,10 +132,10 @@ impl<G, F, P> Recognizer<G, F, P>
     }
 
     /// Allows iteration through groups of completions that have unique symbol and origin.
-    pub fn next_sum<'r>(&'r mut self) -> Option<CompleteSum<'r, F, G, P>> {
+    pub fn next_sum<'r>(&'r mut self) -> Option<CompleteGroup<'r, F, G, P>> {
         if let Some(ei) = self.heap_peek() {
             let lhs_sym = self.grammar.get_lhs(ei.dot);
-            Some(CompleteSum {
+            Some(CompleteGroup {
                 origin: ei.origin,
                 lhs_sym,
                 recognizer: self,
@@ -147,11 +146,11 @@ impl<G, F, P> Recognizer<G, F, P>
     }
 }
 
-impl<'r, F, G, P> CompleteSum<'r, F, G, P>
+impl<'r, F, G, P> CompleteGroup<'r, F, G, P>
 where
-    F: Forest,
+    F: Forest<G::Symbol>,
     G: Grammar,
-    P: PerformancePolicy,
+    P: PerfHint,
 {
     /// Completes all items.
     pub fn complete_entire_sum(&mut self) {
@@ -208,7 +207,7 @@ where
 
     /// Returns the symbol of this completion.
     #[inline]
-    pub fn symbol(&self) -> Symbol {
+    pub fn symbol(&self) -> G::Symbol {
         self.lhs_sym
     }
 }

@@ -1,5 +1,6 @@
 use std::mem;
 
+use cfg_symbol::Symbol;
 use gearley_vec2d::Vec2dCapacity;
 
 use gearley_forest::completed_item::CompletedItem;
@@ -13,19 +14,19 @@ const FOREST_BYTES_PER_RECOGNIZER_BYTE: usize = 2;
 
 // TODO: rename (to PerformanceHint??)
 
-pub trait PerformancePolicy {
+pub trait PerfHint {
+    type Symbol;
     fn completion_capacity(&self) -> usize;
-
     fn medial_capacity(&self) -> Vec2dCapacity;
 }
 
-pub struct DefaultPerformancePolicy {
+pub struct DefaultPerfHint {
     memory_limit: usize,
     token_limit: Option<usize>,
     num_syms: Option<usize>,
 }
 
-impl Default for DefaultPerformancePolicy {
+impl Default for DefaultPerfHint {
     fn default() -> Self {
         Self {
             memory_limit: 1024,
@@ -35,7 +36,7 @@ impl Default for DefaultPerformancePolicy {
     }
 }
 
-impl DefaultPerformancePolicy {
+impl DefaultPerfHint {
     pub fn new(memory_limit: usize) -> Self {
         Self {
             memory_limit,
@@ -77,7 +78,9 @@ impl DefaultPerformancePolicy {
     }
 }
 
-impl PerformancePolicy for DefaultPerformancePolicy {
+impl PerfHint for DefaultPerfHint {
+    type Symbol = Symbol;
+
     fn completion_capacity(&self) -> usize {
         match self.memory_limit {
             0..=999 => 16,

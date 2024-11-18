@@ -1,6 +1,6 @@
 [package]
 name = "gearley"
-version = "0.0.5"
+version = "0.1.0"
 
 authors = [ "Piotr Czarnecki <pioczarn@gmail.com>" ]
 description = "An Earley parser engine."
@@ -10,15 +10,12 @@ repository = "https://github.com/pczarn/gearley"
 license = "MIT/Apache-2.0"
 edition = "2021"
 
-[profile.release]
-debug = true
-
 [lib]
 name = "gearley"
 
 [dependencies]
-cfg-symbol = { version = "0.0", features = ["serialize"], path = "../../cfg/cfg-symbol/" }
-bit-matrix = { version = "0.7.1", features = ["serialize", "memusage"] }
+cfg-symbol = { workspace = true }
+bit-matrix = { workspace = true }
 bit-vec = "0.6"
 serde = "1.0"
 serde_derive = "1.0"
@@ -37,3 +34,4 @@ cfg = { path = "../../cfg/cfg/" }
 
 [features]
 default = ["gearley-default-grammar", "simple-bocage"]
+memusage = ["dep:memusage", "gearley-forest/memusage", "gearley-recognizer/memusage"]

@@ -2,14 +2,11 @@ use std::iter::{Chain, Zip};
 use std::slice;
 
 use bit_matrix;
-use cfg_symbol::Symbol;
+use cfg_symbol::{Symbol, Symbolic};
 
 use gearley_forest::Forest;
 use gearley_grammar::{Grammar, Event, ExternalDottedRule};
-use crate::item::Item;
-use crate::Recognizer;
-
-use super::performance_policy::PerformancePolicy;
+use crate::local_prelude::*;
 
 type IterPredictionBitfield<'a> = bit_matrix::row::Iter<'a>;
 
@@ -47,9 +44,9 @@ pub struct Trace<'a, N: 'a> {
     >,
 }
 
-pub struct ExpectedTerminals<'a, N: 'a> {
+pub struct ExpectedTerminals<'a, N: 'a, S> {
     prev_scan_iter: MedialItems<'a, N>,
-    rhs1: &'a [Option<Symbol>],
+    rhs1: &'a [Option<S>],
 }
 
 impl<'a> Iterator for PredictedSymbols<'a> {
@@ -138,8 +135,8 @@ impl<'a, N> Iterator for Trace<'a, N> {
     }
 }
 
-impl<'a, N> Iterator for ExpectedTerminals<'a, N> {
-    type Item = Symbol;
+impl<'a, N, S: Symbolic> Iterator for ExpectedTerminals<'a, N, S> {
+    type Item = S;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.prev_scan_iter
@@ -150,9 +147,9 @@ impl<'a, N> Iterator for ExpectedTerminals<'a, N> {
 
 impl<F, G, P> Recognizer<G, F, P>
 where
-    F: Forest,
+    F: Forest<G::Symbol>,
     G: Grammar,
-    P: PerformancePolicy,
+    P: PerfHint,
 {
     pub fn trace(&self) -> Trace<F::NodeRef> {
         let trace = self.grammar.trace();
@@ -190,7 +187,7 @@ where
         }
     }
 
-    pub fn expected_terminals(&self) -> ExpectedTerminals<F::NodeRef> {
+    pub fn expected_terminals(&self) -> ExpectedTerminals<F::NodeRef, G::Symbol> {
         ExpectedTerminals {
             prev_scan_iter: self.medial_items(),
             rhs1: self.grammar.rhs1(),

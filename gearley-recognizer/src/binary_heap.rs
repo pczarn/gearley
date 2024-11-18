@@ -12,29 +12,24 @@
 //! A priority queue implemented with a binary heap.
 
 #![allow(missing_docs)]
-#![cfg_attr(feature = "cargo-clippy", allow(nonminimal_bool))]
 
 use std::mem::swap;
 
 use gearley_forest::Forest;
 use gearley_grammar::Grammar;
 use gearley_forest::completed_item::CompletedItem;
-
-use crate::Recognizer;
-use crate::item::Item;
-use crate::item::CompletedItemLinked;
 use gearley_vec2d::Vec2d;
 
-use super::performance_policy::PerformancePolicy;
+use crate::local_prelude::*;
 
 #[derive(Debug)]
 pub(super) struct BinaryHeap<T>(pub(super) Vec<T>);
 
 impl<G, F, P> Recognizer<G, F, P>
 where
-    F: Forest,
+    F: Forest<G::Symbol>,
     G: Grammar,
-    P: PerformancePolicy,
+    P: PerfHint,
 {
     /// Returns the greatest item in the binary heap, or `None` if it is empty.
     #[inline]

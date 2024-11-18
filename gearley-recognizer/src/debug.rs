@@ -2,15 +2,13 @@ use std::fmt;
 
 use gearley_forest::Forest;
 use gearley_grammar::Grammar;
-use crate::Recognizer;
-
-use super::performance_policy::PerformancePolicy;
+use crate::local_prelude::*;
 
 impl<F, G, P> fmt::Debug for Recognizer<G, F, P>
     where
-        F: Forest,
+        F: Forest<G::Symbol>,
         G: Grammar + fmt::Debug,
-        P: PerformancePolicy,
+        P: PerfHint,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(

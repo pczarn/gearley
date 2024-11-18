@@ -131,9 +131,9 @@ where
     }
 }
 
-pub struct TraversalHandle<'f, 't, G> {
+pub struct TraversalHandle<'f, 't, G: Grammar> {
     pub node: &'f CompactNode,
-    pub symbol: Symbol,
+    pub symbol: G::Symbol,
     pub item: HandleVariant<'f, 't, G>,
 }
 
