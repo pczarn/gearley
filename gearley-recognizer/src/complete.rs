@@ -83,7 +83,7 @@ impl<G, F, P> Recognizer<G, F, P>
             // from A ::= B • C
             // to   A ::= B   C •
             let dot = self.medial[set_id as usize][idx].dot;
-            if self.grammar.lr_set(dot)[self.lookahead.sym().usize()] {
+            if self.grammar.lr_set(dot)[self.lookahead.mut_with_grammar(&self.grammar).sym().usize()] {
                 self.complete.heap_push_linked(CompletedItemLinked {
                     idx: start + idx as u32,
                     node: Some(rhs_link),
@@ -97,7 +97,7 @@ impl<G, F, P> Recognizer<G, F, P>
         let mut unary: u32 = 0;
         for trans in self.grammar.completions(sym) {
             let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
-            let will_be_useful = self.grammar.lr_set(trans.dot)[self.lookahead.sym().usize()];
+            let will_be_useful = self.grammar.lr_set(trans.dot)[self.lookahead.mut_with_grammar(&self.grammar).sym().usize()];
             if was_predicted && will_be_useful {
                 // No checks for uniqueness, because completions are deduplicated.
                 // --- UNARY
@@ -128,7 +128,7 @@ impl<G, F, P> Recognizer<G, F, P>
             // Include all items in the completion.
             completion.complete_entire_sum();
         }
-        self.lookahead.clear_hint();
+        self.lookahead.mut_with_grammar(&self.grammar).clear_hint();
     }
 
     /// Allows iteration through groups of completions that have unique symbol and origin.

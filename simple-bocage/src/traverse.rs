@@ -1,196 +1,78 @@
-use std::borrow::Borrow;
-use std::slice;
+use std::mem;
 
-use bit_vec;
-use cfg_symbol::Symbol;
+use bumpalo::Bump;
 
-use super::node::Node::*;
-use super::node::{CompactNode, Node};
-use gearley_forest::node_handle::NodeHandle;
-use super::Bocage;
+use gearley_forest::evaluate::Evaluate;
+use gearley_forest::node_handle::{NodeHandle, NULL_HANDLE};
 use gearley_grammar::Grammar;
 
-pub use self::HandleVariant::*;
+use allocator_api2::vec::Vec as AVec;
 
-impl<G> Bocage<G> {
+use crate::node::Node;
+use crate::bocage::Bocage;
+
+struct WorkNode<'a> {
+    node: NodeHandle,
+    child: u32,
+    parent: usize,
+    results: AVec<u32, &'a Bump>,
+}
+
+impl<G: Grammar> Bocage<G> {
     // Once node liveness is marked, you may traverse the nodes.
-    pub fn traverse(&self) -> Traverse<G> {
-        Traverse {
-            bocage: self,
-            graph_iter: self.graph.iter(),
-            liveness_iter: self.gc.liveness.iter(),
-            factor_stack: vec![],
-            factor_traversal: vec![],
-        }
-    }
-}
+    //
+    // We get a list of linked lists of vecs. For each linked list, run .
+    pub fn evaluate<E: Evaluate<G::Symbol>>(&mut self, eval: E, root_node: NodeHandle) -> Vec<E::Elem> {
+        // let mut all_nodes = vec![];
+        let alloc = Bump::new();
+        let mut results: Vec<E::Elem> = vec![];
+        let mut work_stack = vec![WorkNode { node: NULL_HANDLE, child: 0, parent: 0, results: AVec::new_in(&alloc) }, WorkNode { node: root_node, child: 0, parent: 0, results: AVec::new_in(&alloc) }];
+        while let Some(mut work) = work_stack.pop() {
+            let node = work.node;
+            match (self.postprocess_product_tree_node(&self[work.node]), work.child) {
+                (Node::Sum { count, .. }, n) if n < count => {
+                    work.child += 1;
+                    let parent = work.parent;
+                    work_stack.push(work);
+                    work_stack.push(WorkNode { node: NodeHandle(node.0 + n + 1), child: 0, parent, results: AVec::new_in(&alloc) });
+                }
+                (Node::Product { left_factor, .. }, 0) => {
+                    work.child += 1;
+                    work_stack.push(work);
+                    work_stack.push(WorkNode { node: left_factor, child: 0, parent: work_stack.len() - 1, results: AVec::new_in(&alloc) });
+                }
+                (Node::Product { right_factor: Some(right), .. }, 1) => {
+                    work.child += 1;
+                    work_stack.push(work);
+                    work_stack.push(WorkNode { node: right, child: 0, parent: work_stack.len() - 1, results: AVec::new_in(&alloc) });
+                }
+                (Node::Product { action, .. }, _) if self.is_transparent(action) => {
+                    // nothing to do
+                }
+                (Node::Evaluated { values, .. }, _) => {
+                    work_stack[work.parent].results.push(values);
+                }
+                (Node::Sum { .. }, _) => {
+                    // nothing to do
+                }
+                (Node::Leaf { symbol, values }, _) => {
+                    let result = eval.leaf(symbol, values);
+                    results.push(result);
+                    self[work.node] = Node::Evaluated { symbol, values: results.len() as u32 - 1 }
+                }
+                (Node::Product { action, .. }, _) => {
+                    let result = eval.product(action, work.results.iter().copied().map(|v| &results[v as usize]));
+                    results.push(result);
+                    work_stack[work.parent].results.push(results.len() as u32 - 1);
 
-pub struct Traverse<'f, G> {
-    bocage: &'f Bocage<G>,
-    // main iterators
-    graph_iter: slice::Iter<'f, CompactNode>,
-    liveness_iter: bit_vec::Iter<'f>,
-    // Space for unrolling factors
-    factor_stack: Vec<(Symbol, u32)>,
-    // Scratch space for traversal
-    factor_traversal: Vec<NodeHandle>,
-}
-
-impl<'f, G> Traverse<'f, G>
-where
-    G: Grammar,
-{
-    pub fn next_node<'t>(&'t mut self) -> Option<TraversalHandle<'f, 't, G>> {
-        while let (Some(node), Some(alive)) = (self.graph_iter.next(), self.liveness_iter.next()) {
-            if !alive {
-                continue;
-            }
-            match node.expand() {
-                Product { action, .. } => {
-                    if self.bocage.is_transparent(action) {
-                        continue;
-                    }
-                    return Some(TraversalHandle {
-                        node,
-                        symbol: self.bocage.grammar.borrow().get_lhs(action),
-                        item: SumHandle(Products {
-                            products: slice::from_ref(node).iter(),
-                            traverse: self,
-                        }),
-                    });
                 }
-                Sum {
-                    nonterminal: symbol,
-                    count,
-                } => {
-                    let products = self.graph_iter.as_slice()[..count as usize].iter();
-                    for _ in 0..count {
-                        self.graph_iter.next();
-                        self.liveness_iter.next();
-                    }
-                    return Some(TraversalHandle {
-                        node,
-                        symbol,
-                        item: SumHandle(Products {
-                            products,
-                            traverse: self,
-                        }),
-                    });
-                }
-                NullingLeaf { symbol } => {
-                    return Some(TraversalHandle {
-                        node,
-                        symbol,
-                        item: NullingHandle,
-                    });
-                }
-                Evaluated { symbol, values } => {
-                    return Some(TraversalHandle {
-                        node,
-                        symbol,
-                        item: LeafHandle(values),
-                    });
+                (Node::NullingLeaf { symbol }, _) => {
+                    let values = results.len() as u32;
+                    eval.nulling(symbol, &mut results);
+                    self[work.node] = Node::Evaluated { symbol, values }
                 }
             }
         }
-        None
-    }
-
-    fn unfold_factors(&mut self, left: NodeHandle, right: Option<NodeHandle>) {
-        self.factor_stack.clear();
-        self.enqueue_for_unfold(left, right);
-        while let Some(node) = self.pop_for_unfold() {
-            match node {
-                Product {
-                    left_factor,
-                    right_factor,
-                    ..
-                } => {
-                    self.enqueue_for_unfold(left_factor, right_factor);
-                }
-                Evaluated { symbol, values } => {
-                    self.factor_stack.push((symbol, values));
-                }
-                _ => unreachable!(),
-            }
-        }
-    }
-
-    fn enqueue_for_unfold(&mut self, left: NodeHandle, right: Option<NodeHandle>) {
-        if let Some(right) = right {
-            self.factor_traversal.push(right);
-        }
-        self.factor_traversal.push(left);
-    }
-
-    fn pop_for_unfold(&mut self) -> Option<Node> {
-        self.factor_traversal.pop().map(|handle| {
-            let node = self.bocage.graph[handle.usize()].clone();
-            node.expand()
-        })
-    }
-}
-
-pub struct TraversalHandle<'f, 't, G: Grammar> {
-    pub node: &'f CompactNode,
-    pub symbol: G::Symbol,
-    pub item: HandleVariant<'f, 't, G>,
-}
-
-pub enum HandleVariant<'f, 't, G> {
-    SumHandle(Products<'f, 't, G>),
-    NullingHandle,
-    LeafHandle(u32),
-}
-
-pub struct Products<'f, 't, G> {
-    products: slice::Iter<'f, CompactNode>,
-    traverse: &'t mut Traverse<'f, G>,
-}
-
-pub struct ProductHandle<'t> {
-    pub action: u32,
-    pub factors: &'t [(Symbol, u32)],
-}
-
-impl<'f, 't, G> Products<'f, 't, G>
-where
-    G: Grammar,
-{
-    pub fn next_product<'p>(&'p mut self) -> Option<ProductHandle> {
-        while let Some(node) = self.products.next() {
-            match node.expand() {
-                Product {
-                    left_factor,
-                    right_factor,
-                    action,
-                } => {
-                    let origin = self
-                        .traverse
-                        .bocage
-                        .grammar
-                        .borrow()
-                        .external_origin(action);
-                    if let Some(action) = origin {
-                        self.traverse.unfold_factors(left_factor, right_factor);
-                        return Some(ProductHandle {
-                            action: action.into(),
-                            factors: &self.traverse.factor_stack[..],
-                        });
-                    }
-                }
-                _ => unreachable!(),
-            }
-        }
-        None
-    }
-}
-
-impl<'f, 't, G> TraversalHandle<'f, 't, G> {
-    pub fn set_evaluation_result(&self, values: u32) {
-        self.node.set(Evaluated {
-            symbol: self.symbol,
-            values,
-        });
+        work_stack[0].results.iter().copied().map(|v| mem::replace(&mut results[v as usize], Default::default())).collect()
     }
 }

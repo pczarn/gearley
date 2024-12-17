@@ -3,7 +3,7 @@ use gearley_grammar::Grammar;
 pub trait Lookahead<S> {
     fn sym(&self) -> S;
 
-    fn set_hint<G: Grammar<Symbol = S>>(&mut self, hint: S, grammar: &G);
+    fn set_hint(&mut self, hint: S);
 
     fn clear_hint(&mut self);
 }
@@ -13,17 +13,22 @@ pub(crate) struct DefaultLookahead<S> {
     useless_symbol: S,
 }
 
-impl<S: Copy> Lookahead<S> for DefaultLookahead<S> {
-    fn sym(&self) -> S {
-        self.next_symbol
+pub(crate) struct LookaheadWithGrammar<'a, 'b, G: Grammar, L> {
+    lookahead: &'b mut L,
+    grammar: &'a G,
+}
+
+impl<'a, 'b, G: Grammar> Lookahead<G::Symbol> for LookaheadWithGrammar<'a, 'b, G, DefaultLookahead<G::Symbol>> {
+    fn sym(&self) -> G::Symbol {
+        self.lookahead.next_symbol
     }
 
-    fn set_hint<G: Grammar<Symbol = S>>(&mut self, hint: S, grammar: &G) {
-        self.next_symbol = grammar.to_internal(hint).unwrap();
+    fn set_hint(&mut self, hint: G::Symbol) {
+        self.lookahead.next_symbol = self.grammar.to_internal(hint).unwrap();
     }
 
     fn clear_hint(&mut self) {
-        self.next_symbol = self.useless_symbol;
+        self.lookahead.next_symbol = self.lookahead.useless_symbol;
     }
 }
 
@@ -35,6 +40,13 @@ impl<S: Copy> DefaultLookahead<S> {
             useless_symbol,
         }
     }
+
+    pub(crate) fn mut_with_grammar<'a, 'b, G: Grammar<Symbol = S>>(&'b mut self, grammar: &'a G) -> LookaheadWithGrammar<'a, 'b, G, Self> {
+        LookaheadWithGrammar {
+            lookahead: self,
+            grammar,
+        }
+    }
 }
 
 impl<'a, S, L: Lookahead<S>> Lookahead<S> for &'a mut L {
@@ -42,8 +54,8 @@ impl<'a, S, L: Lookahead<S>> Lookahead<S> for &'a mut L {
         (**self).clear_hint()
     }
 
-    fn set_hint<G: Grammar<Symbol = S>>(&mut self, hint: S, grammar: &G) {
-        (**self).set_hint(hint, grammar)
+    fn set_hint(&mut self, hint: S) {
+        (**self).set_hint(hint)
     }
 
     fn sym(&self) -> S {

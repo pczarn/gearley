@@ -1,9 +1,10 @@
-use cfg::earley::Grammar;
+use cfg::Cfg;
 use cfg::Symbol;
+use cfg::Symbolic;
 
-pub fn grammar() -> Grammar {
-    let mut bnf = Grammar::new();
-    let (sum, product, factor, number, plus, minus, mul, div, lparen, rparen) = bnf.sym();
+pub fn grammar() -> Cfg {
+    let mut bnf = Cfg::new();
+    let [sum, product, factor, number, plus, minus, mul, div, lparen, rparen] = bnf.sym();
     bnf.rule(sum)
         .rhs([sum, plus, product])
         .rhs([sum, minus, product])
@@ -16,10 +17,10 @@ pub fn grammar() -> Grammar {
         .rhs([lparen, sum, rparen])
         .rhs([number]);
     for _ in 0..10 {
-        let sym = bnf.sym();
-        bnf.rule(number).rhs(&[sym, number]).rhs(&[sym]);
+        let [sym] = bnf.sym();
+        bnf.rule(number).rhs([sym, number]).rhs(&[sym]);
     }
-    bnf.set_start(sum);
+    bnf.set_roots([sum]);
     bnf
 }
 

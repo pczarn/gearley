@@ -6,8 +6,8 @@ macro_rules! trace(($($tt:tt)*) => ());
 
 mod helpers;
 
-use cfg::earley::Grammar;
-use gearley::{prelude::*, recognizer::performance_policy::DefaultPerformancePolicy};
+use cfg::{Cfg, Symbolic};
+use gearley::{Bocage, DefaultGrammar, DefaultPerfHint, Recognizer};
 
 use helpers::Parse;
 
@@ -191,9 +191,9 @@ const _SYM_NAMES: &'static [&'static str] = &[
 ];
 
 #[allow(non_snake_case)]
-fn grammar() -> Grammar {
-    let mut grammar = Grammar::new();
-    let (
+fn grammar() -> Cfg {
+    let mut grammar = Cfg::new();
+    let [
         _term,
         identifier,
         signed,
@@ -281,9 +281,9 @@ fn grammar() -> Grammar {
         pipe,
         question,
         equal,
-    ) = grammar.sym();
+    ] = grammar.sym();
 
-    let (
+    let [
         start,
         primary_expression,
         postfix_expression,
@@ -373,7 +373,7 @@ fn grammar() -> Grammar {
         enumeration_constant,
         type_name,
         error,
-    ) = grammar.sym();
+    ] = grammar.sym();
 
     grammar.rule(start).rhs([translation_unit]);
     grammar
@@ -859,7 +859,7 @@ fn grammar() -> Grammar {
         .rhs([declaration_list, declaration]);
     grammar.rule(enumeration_constant).rhs([identifier]);
 
-    grammar.set_start(start);
+    grammar.set_roots([start]);
     grammar
 }
 
@@ -868,8 +868,8 @@ fn test_parse_c() {
     use c_lexer_logos::token::Token::*;
     use c_lexer_logos::Lexer;
     let external = grammar();
-    let mut grammar = Grammar::new();
-    let (
+    let mut grammar = Cfg::new();
+    let [
         _term,
         identifier,
         signed,
@@ -957,7 +957,7 @@ fn test_parse_c() {
         pipe,
         question,
         equal,
-    ) = grammar.sym();
+    ] = grammar.sym();
 
     let contents = include_str!("../benches/part_gcc_test.i");
     let tokens: Vec<_> = Lexer::lex(&contents[..])
@@ -1073,14 +1073,14 @@ fn test_parse_c() {
             tok.map(|t| t.usize() as u32)
         })
         .collect();
-    let cfg = DefaultGrammar::from_grammar(&external);
-    let mut rec: Recognizer<Bocage<&'_ DefaultGrammar>> =
-        Recognizer::new(Bocage::new(&cfg), &cfg);
+    let cfg = DefaultGrammar::from_grammar(external);
+    let mut rec: Recognizer<&'_ DefaultGrammar, Bocage<&'_ DefaultGrammar>> =
+        Recognizer::with_forest(&cfg, Bocage::new(&cfg));
     let finished = rec.parse(&tokens[..]);
     assert!(finished);
-    println!(
-        "memory use: all:{} forest:{}",
-        rec.memory_use(),
-        rec.forest.memory_use()
-    );
+    // println!(
+    //     "memory use: all:{} forest:{}",
+    //     rec.memory_use(),
+    //     rec.forest.memory_use()
+    // );
 }

@@ -16,6 +16,14 @@ pub struct Vec2dCapacity {
 }
 
 impl<I> Vec2d<I> {
+    pub fn new() -> Self {
+        Self {
+            chart: Vec::new(),
+            indices: vec![0],
+            current_start: 0,
+        }
+    }
+
     pub fn with_capacity(capacity: Vec2dCapacity) -> Self {
         // The first Earley set begins at 0 and ends at 0. The second Earley set begins at 0.
         let mut indices = Vec::with_capacity(capacity.indices_capacity);

@@ -1,13 +1,13 @@
-use cfg_symbol::{Symbol, Symbolic};
+use cfg_symbol::Symbolic;
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
+#[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub struct NodeHandle(pub u32);
 
 pub const NULL_HANDLE: NodeHandle = NodeHandle(0xFFFF_FFFF);
 
 impl NodeHandle {
     #[inline]
-    pub fn nulling(symbol: Symbol) -> Self {
+    pub fn nulling(symbol: impl Symbolic) -> Self {
         NodeHandle(symbol.usize() as u32)
     }
 

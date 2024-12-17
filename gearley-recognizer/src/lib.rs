@@ -7,7 +7,7 @@ mod predict;
 mod complete;
 #[cfg(feature = "memusage")]
 mod memory_usage;
-mod lookahead;
+pub mod lookahead;
 mod recognizer;
 
 pub use crate::recognizer::Recognizer;

@@ -55,6 +55,7 @@ where
     // Gearley's secret sauce: we have a binary heap for online sorting.
     //
     // Completed items are stored for the latest Earley set.
+    
     // They are ordered by (origin, dot), starting with highest
     // origin and dot. The creation of a completed item can only be caused
     // by a scan or a completion of an item that has a higher (origin, dot)
@@ -85,8 +86,8 @@ where
             predicted: BitMatrix::new(8, grammar.num_syms()),
             complete: BinaryHeap(Vec::with_capacity(policy.completion_capacity())),
             lookahead: DefaultLookahead::new(&grammar),
-            forest,
             grammar,
+            forest,
             policy: PhantomData,
         };
         recognizer.medial.next_set();
@@ -103,17 +104,15 @@ where
     /// tokens, the parse can be advanced.
     pub fn scan(&mut self, symbol: G::Symbol, value: F::LeafValue) {
         // This method is a part of the scan pass.
-        if let Some(internal) = self.grammar.to_internal(symbol) {
-            let earleme = self.earleme() as Origin;
-            // Add a leaf node to the forest with the given value.
-            let node = self.forest.leaf(symbol, earleme + 1, value);
-            self.complete(earleme, internal, node);
-        }
+        let earleme = self.earleme() as Origin;
+        // Add a leaf node to the forest with the given value.
+        let node = self.forest.leaf(symbol, earleme + 1, value);
+        self.complete(earleme, symbol, node);
     }
 
     #[inline]
     pub fn lookahead(&mut self) -> impl Lookahead<G::Symbol> + '_ {
-        &mut self.lookahead
+        self.lookahead.mut_with_grammar(&self.grammar)
     }
 
     /// Advances the parse. Calling this method may set the finished node, which can be accessed
@@ -267,5 +266,9 @@ where
     /// Returns the current location number.
     pub fn earleme(&self) -> usize {
         self.medial.len() - 1
+    }
+
+    pub fn into_forest(self) -> F {
+        self.forest
     }
 }
