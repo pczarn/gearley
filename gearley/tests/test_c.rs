@@ -11,7 +11,7 @@ use gearley::{Bocage, DefaultGrammar, DefaultPerfHint, Recognizer};
 
 use helpers::Parse;
 
-const _SYM_NAMES: &'static [&'static str] = &[
+const SYM_NAMES: [&'static str; 176] = [
     "term",
     "identifier",
     "signed",
@@ -281,9 +281,6 @@ fn grammar() -> Cfg {
         pipe,
         question,
         equal,
-    ] = grammar.sym();
-
-    let [
         start,
         primary_expression,
         postfix_expression,
@@ -373,7 +370,7 @@ fn grammar() -> Cfg {
         enumeration_constant,
         type_name,
         error,
-    ] = grammar.sym();
+    ] = grammar.sym_source_mut().sym_with_names(SYM_NAMES);
 
     grammar.rule(start).rhs([translation_unit]);
     grammar

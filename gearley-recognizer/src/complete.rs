@@ -32,7 +32,12 @@ impl<G, F, P> Recognizer<G, F, P>
     /// Complete items.
     pub fn complete(&mut self, set_id: Origin, sym: G::Symbol, rhs_link: F::NodeRef) {
         debug_assert!(sym != self.grammar.eof());
-        if self.predicted[set_id as usize].get(sym.usize()) {
+        if sym.usize() >= self.grammar.num_syms() {
+            // New item after a generated symbol, either completed or medial.
+            // from A ::= • g42   c
+            // to   A ::=   g42 • c
+            self.complete_genenrated_binary_predictions(set_id, sym, rhs_link);
+        } else if self.predicted[set_id as usize].get(sym.usize()) {
             // New item, either completed or medial.
             // from A ::=   B • C
             // to   A ::=   B   C •
@@ -52,23 +57,14 @@ impl<G, F, P> Recognizer<G, F, P>
         // let outer_end: usize = self.medial.indices()[set_id as usize + 1];
         let specific_set = &self.medial[set_id as usize];
 
-        // TODO: try to simplify this
-        let inner_start = if specific_set.len() >= 16 {
-            // When the set has 16 or more items, we use binary search to narrow down the range of
-            // items.
-            // todo branchless binary search
-            let set_idx = specific_set.binary_search_by(|ei| {
-                (self.grammar.get_rhs1(ei.dot), cmp::Ordering::Greater).cmp(&(Some(sym), cmp::Ordering::Less))
-            });
-            match set_idx {
-                Ok(idx) | Err(idx) => idx,
-            }
-        } else {
-            // TODO: simplify by removing this branch
-            specific_set
-                .iter()
-                .take_while(|ei| self.grammar.get_rhs1(ei.dot).unwrap() < sym)
-                .count()
+        // When the set has 16 or more items, we use binary search to narrow down the range of
+        // items.
+        // todo branchless binary search
+        let set_idx = specific_set.binary_search_by(|ei| {
+            (self.grammar.get_rhs1(ei.dot), cmp::Ordering::Greater).cmp(&(Some(sym), cmp::Ordering::Less))
+        });
+        let inner_start = match set_idx {
+            Ok(idx) | Err(idx) => idx,
         };
 
         // The range contains items that have the same RHS1 symbol.
@@ -76,9 +72,8 @@ impl<G, F, P> Recognizer<G, F, P>
             .iter()
             .take_while(|ei| self.grammar.get_rhs1(ei.dot) == Some(sym))
             .count();
-        let set_range = inner_start..inner_start + inner_end;
-        let start = self.medial.index_at(set_id as usize) as u32;
-        for idx in set_range {
+        let start: u32 = self.medial.index_at(set_id as usize) as u32;
+        for idx in inner_start .. inner_start + inner_end {
             // New completed item.
             // from A ::= B • C
             // to   A ::= B   C •
@@ -117,6 +112,31 @@ impl<G, F, P> Recognizer<G, F, P>
         }
         for idx in self.medial.len() as u32 - unary .. self.medial.len() as u32 {
             self.complete.heap_push_linked(CompletedItemLinked { idx, node: None }, &self.medial)
+        }
+    }
+
+    /// Attempt to complete a predicted item with a postdot gensym.
+    fn complete_genenrated_binary_predictions(&mut self, set_id: Origin, sym: G::Symbol, rhs_link: F::NodeRef) {
+        let trans = self.grammar.gen_completion(sym);
+        let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
+        let will_be_useful = self.grammar.lr_set(trans.dot)[self.lookahead.mut_with_grammar(&self.grammar).sym().usize()];
+        if was_predicted && will_be_useful {
+            // No checks for uniqueness, because completions are deduplicated.
+            // --- UNARY
+            // from A ::= • g42
+            // to   A ::=   g42 •
+            // --- BINARY
+            // from A ::= • g42   C
+            // to   A ::=   g42 • C
+            // Where g42 is a gensym, and C is terminal or nonterminal.
+            self.medial.push_item(Item {
+                origin: set_id,
+                dot: trans.dot,
+                node: rhs_link,
+            });
+            if trans.is_unary {
+                self.complete.heap_push_linked(CompletedItemLinked { idx: self.medial.len() as u32 - 1, node: None }, &self.medial);
+            }
         }
     }
 

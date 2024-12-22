@@ -1,4 +1,4 @@
-use std::mem;
+use std::{cmp, mem};
 
 use cfg_symbol::Symbol;
 use gearley_vec2d::Vec2dCapacity;
@@ -66,15 +66,15 @@ impl DefaultPerfHint {
         self.memory_limit * FOREST_BYTES_PER_RECOGNIZER_BYTE / (FOREST_BYTES_PER_RECOGNIZER_BYTE + 1)
     }
 
-    fn chart_use(&self) -> usize {
-        self.memory_limit
-            - self.forest_use()
-            - self.indices_capacity() * mem::size_of::<usize>()
-            - self.completion_capacity() * mem::size_of::<CompletedItem<usize>>()
+    fn chart_use(&self) -> isize {
+        self.memory_limit as isize
+            - self.forest_use() as isize
+            - (self.indices_capacity() * mem::size_of::<usize>()) as isize
+            - (self.completion_capacity() * mem::size_of::<CompletedItem<usize>>()) as isize
     }
 
     fn set_use(&self) -> usize {
-        self.chart_use() / self.bytes_per_set()
+        cmp::max(self.chart_use() / self.bytes_per_set() as isize, 32) as usize
     }
 }
 

@@ -6,7 +6,6 @@ use gearley_grammar::Grammar;
 use gearley_forest::completed_item::CompletedItem;
 
 use crate::node::{Node, NULL_ACTION};
-use crate::order::Order;
 
 pub struct Bocage<G: Grammar> {
     pub(crate) graph: Vec<Node<G::Symbol>>,

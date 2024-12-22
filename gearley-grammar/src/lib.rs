@@ -39,6 +39,8 @@ pub trait Grammar {
 
     fn num_syms(&self) -> usize;
 
+    fn num_gensyms(&self) -> usize;
+
     fn num_rules(&self) -> usize;
 
     fn start_sym(&self) -> Self::Symbol;
@@ -66,6 +68,8 @@ pub trait Grammar {
     fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule<Self::Symbol>];
 
     fn completions(&self, sym: Self::Symbol) -> &[PredictionTransition];
+
+    fn gen_completion(&self, sym: Self::Symbol) -> PredictionTransition;
 
     fn to_internal(&self, symbol: Self::Symbol) -> Option<Self::Symbol>;
 
@@ -95,6 +99,10 @@ impl<'a, G> Grammar for &'a G where G: Grammar {
 
     fn num_syms(&self) -> usize {
         (**self).num_syms()
+    }
+
+    fn num_gensyms(&self) -> usize {
+        (**self).num_gensyms()
     }
 
     fn num_rules(&self) -> usize {
@@ -151,6 +159,10 @@ impl<'a, G> Grammar for &'a G where G: Grammar {
 
     fn completions(&self, sym: Self::Symbol) -> &[PredictionTransition] {
         (**self).completions(sym)
+    }
+
+    fn gen_completion(&self, sym: Self::Symbol) -> PredictionTransition {
+        (**self).gen_completion(sym)
     }
 
     fn to_internal(&self, symbol: Self::Symbol) -> Option<Self::Symbol> {
