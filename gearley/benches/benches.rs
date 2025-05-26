@@ -12,13 +12,14 @@ mod grammars;
 #[path = "../tests/helpers/mod.rs"]
 mod helpers;
 
-use gearley::prelude::*;
-use gearley::memory_usage::MemoryUse;
+use cfg::Symbol;
+use gearley::*;
+use gearley::mem::MemoryUse;
 
 use grammars::*;
-use helpers::{Parse, SimpleEvaluator};
+use helpers::SimpleEvaluator;
 
-const SUM_TOKENS: &'static [u32] = precedenced_arith!(
+const SUM_TOKENS: &'static [Symbol] = precedenced_arith!(
     '1' '+' '(' '2' '*' '3' '-' '4' ')' '/'
     '(' '5' '5' ')' '-' '(' '5' '4' ')' '*'
     '5' '5' '+' '6' '2' '-' '1' '3' '-' '('

@@ -27,7 +27,7 @@ pub(super) struct BinaryHeap<T>(pub(super) Vec<T>);
 
 impl<G, F, P> Recognizer<G, F, P>
 where
-    F: Forest<G::Symbol>,
+    F: Forest,
     G: Grammar,
     P: PerfHint,
 {

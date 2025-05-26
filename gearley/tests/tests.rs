@@ -9,12 +9,12 @@ mod helpers;
 
 // use gearley::{}
 
+use cfg::Symbol;
 use ambiguous_arith::AmbiguousArithEvaluator;
-use gearley::{Bocage, DefaultGrammar, Recognizer};
+use gearley::{Bocage, DefaultGrammar, Recognizer, RecognizerParseExt};
 use grammars::*;
-use helpers::Parse;
 
-const SUM_TOKENS: &'static [u32] = precedenced_arith!(
+const SUM_TOKENS: &'static [Symbol] = precedenced_arith!(
     '1' '+' '(' '2' '*' '3' '-' '4' ')' '/'
     '(' '5' '5' ')' '-' '(' '5' '4' ')' '*'
     '5' '5' '+' '6' '2' '-' '1' '3' '-' '('

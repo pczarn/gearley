@@ -5,9 +5,9 @@ pub type Origin = u32;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Item<N> {
-    pub(crate) origin: Origin,
-    pub(crate) dot: Dot,
-    pub node: N,
+    pub(crate) origin: Origin, // u32
+    pub(crate) dot: Dot, // u32
+    pub node: N, // u32
 }
 
 #[derive(Clone, Copy, Debug)]

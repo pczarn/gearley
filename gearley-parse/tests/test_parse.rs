@@ -1,14 +1,9 @@
-#[macro_use]
-extern crate log;
-extern crate cfg;
-extern crate env_logger;
-extern crate gearley;
+use cfg::Cfg;
 
-mod helpers;
-
-use cfg::{Cfg, Symbolic};
-
-use gearley::{DefaultGrammar, NullForest, Recognizer, RecognizerParseExt};
+use gearley_default_grammar::DefaultGrammar;
+use gearley_forest::NullForest;
+use gearley_recognizer::Recognizer;
+use gearley_parse::RecognizerParseExt;
 
 #[test]
 fn test_recognize_nested() {

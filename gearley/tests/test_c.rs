@@ -7,9 +7,7 @@ macro_rules! trace(($($tt:tt)*) => ());
 mod helpers;
 
 use cfg::{Cfg, Symbolic};
-use gearley::{Bocage, DefaultGrammar, DefaultPerfHint, Recognizer};
-
-use helpers::Parse;
+use gearley::{Bocage, DefaultGrammar, DefaultPerfHint, Recognizer, RecognizerParseExt};
 
 const SYM_NAMES: [&'static str; 176] = [
     "term",
@@ -962,7 +960,7 @@ fn test_parse_c() {
         .into_iter()
         .filter_map(|token| {
             // println!("{:?}", token);
-            let tok = match token {
+            match token {
                 LBrace => Some(lbrace),
                 RBrace => Some(rbrace),
                 LParen => Some(lparen),
@@ -1065,9 +1063,7 @@ fn test_parse_c() {
                 // StaticAssert,
                 // ThreadLocal,
                 _ => None,
-            };
-            // tok.map(|t| (t.usize() as u32, start, end))
-            tok.map(|t| t.usize() as u32)
+            }
         })
         .collect();
     let cfg = DefaultGrammar::from_grammar(external);

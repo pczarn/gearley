@@ -108,6 +108,6 @@ macro_rules! precedenced_arith_rhs_elem {
 #[macro_export]
 macro_rules! precedenced_arith {
     ($($e:tt)+) => (
-        &[$(precedenced_arith_rhs_elem!($e) + 4,)+]
+        &[$(Symbol::new(precedenced_arith_rhs_elem!($e) as u32 + 4),)+]
     )
 }

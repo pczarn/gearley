@@ -24,11 +24,12 @@ gearley-grammar = { path = "../gearley-grammar/" }
 gearley-recognizer = { path = "../gearley-recognizer/" }
 gearley-default-grammar = { path = "../gearley-default-grammar/", optional = true }
 simple-bocage = { path = "../simple-bocage/", optional = true }
+gearley-parse = { path = "../gearley-parse/" }
 
 [dev-dependencies]
 c_lexer_logos = "0.1.1"
 log = "0.4"
-env_logger = "0.7"
+env_logger = "0.11"
 cfg = { path = "../../cfg/cfg/" }
 
 [features]

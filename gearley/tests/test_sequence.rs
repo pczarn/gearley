@@ -11,9 +11,8 @@ use cfg::sequence::CfgSequenceExt;
 use cfg::{sequence::Separator::Trailing, Cfg};
 use cfg::{Symbol, Symbolic};
 
-use gearley::{Bocage, DefaultGrammar, Recognizer};
+use gearley::{Bocage, DefaultGrammar, Grammar, Recognizer, RecognizerParseExt};
 use gearley_forest::Evaluate;
-use helpers::Parse;
 
 struct Eval;
 
@@ -44,8 +43,6 @@ impl Evaluate<Symbol> for Eval {
 #[test]
 fn test_sequence() {
     let _ = env_logger::try_init();
-    let (plus, minus) = (1, 2);
-    let tokens = &[plus, minus, plus, minus, plus, minus];
     let mut external = Cfg::new();
     let [start, plus, minus] = external.sym();
     external.sequence(start)
@@ -55,6 +52,9 @@ fn test_sequence() {
     external.set_roots([start]);
 
     let cfg = DefaultGrammar::from_grammar(external);
+    let plus = cfg.to_internal(plus).unwrap();
+    let minus = cfg.to_internal(minus).unwrap();
+    let tokens = &[plus, minus, plus, minus, plus, minus];
     let bocage = Bocage::new(&cfg);
     let mut recognizer = Recognizer::with_forest(&cfg, bocage);
     assert!(recognizer.parse(tokens));

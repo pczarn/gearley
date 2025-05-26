@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>
+            A visualization for gearley
+        </title>
+
+        <style type="text/css" media="screen">
+            html, body {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+            }
+
+            .container {
+                display: flex;
+                flex-direction: column;
+                height: 100vh;
+            }
+
+            .top-box {
+                position: relative;
+                background-color: #4CAF50;
+                padding: 20px;
+                text-align: center;
+                color: white;
+                flex: 0 0 100px;
+                border-bottom: gray solid 4px;
+            }
+
+            #input_editor {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+            }
+
+            .bottom-row {
+                display: flex;
+                flex: 1;
+            }
+
+            .left-box, .right-box {
+                flex: 1;
+                padding: 20px;
+            }
+
+            .left-box {
+                background-color: #f1f1f1;
+                border-right: gray solid 2px;
+                position: relative;
+            }
+
+            #grammar_editor {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+            }
+
+            .right-box {
+                background-color: #ddd;
+                border-left: gray solid 2px;
+                font-family: 'Courier New', Courier, monospace;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="top-box">
+                <div id="input_editor">abcd</div>
+            </div>
+            <div class="bottom-row">
+                <div class="left-box">
+                    <div id="grammar_editor">test ::= a b c d;</div>
+                </div>
+                <div class="right-box" id="result">
+                </div>
+            </div>
+        </div>
+        <script src="ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+        <script type="module">
+            import init, { parse } from "/pkg/gearley_wasm.js";
+            await init().catch(console.error);
+
+            var input_editor = ace.edit("input_editor");
+            input_editor.setTheme("ace/theme/monokai");
+            input_editor.session.setMode("ace/mode/javascript");
+            input_editor.getSession().on('change', function() {
+                update()
+            });
+            var grammar_editor = ace.edit("grammar_editor");
+            grammar_editor.setTheme("ace/theme/monokai");
+            grammar_editor.session.setMode("ace/mode/javascript");
+            grammar_editor.getSession().on('change', function() {
+                update()
+            });
+            function update() {
+                const input = input_editor.getSession().getValue();
+                const grammar = grammar_editor.getSession().getValue();
+                var result = document.getElementById("result");
+
+                if (typeof window.log_error === 'undefined') {
+                    window.log_error = function(text) {
+                        result.innerText = text;
+                    }
+                }
+
+                try {
+                    result.innerText = parse(input, grammar);
+                } catch (e) {
+                    result.innerText += e.message;
+                }
+            }
+        </script>
+    </body>
+</html>

@@ -1,38 +1,40 @@
 use std::fmt::Debug;
 
-use gearley::{Bocage, Grammar, NullForest, Recognizer};
-use gearley_recognizer::lookahead::Lookahead;
+use log::trace;
 
-pub trait Parse {
-    fn parse(&mut self, tokens: &[u32]) -> bool;
+#[cfg(feature = "simple-bocage")]
+use simple_bocage::Bocage;
+use gearley_forest::NullForest;
+use gearley_grammar::Grammar;
+use gearley_recognizer::{Recognizer, lookahead::Lookahead};
+
+pub trait RecognizerParseExt<S> {
+    fn parse(&mut self, tokens: &[S]) -> bool;
 }
 
-impl<G> Parse for Recognizer<G, Bocage<G>>
+#[cfg(feature = "simple-bocage")]
+impl<G> RecognizerParseExt<G::Symbol> for Recognizer<G, Bocage<G>>
 where
     Self: Debug,
     G: Grammar,
 {
     #[inline]
-    fn parse(&mut self, tokens: &[u32]) -> bool {
+    fn parse(&mut self, tokens: &[G::Symbol]) -> bool {
         let mut iter = tokens.iter().enumerate().peekable();
         while let Some((i, &token)) = iter.next() {
             self.begin_earleme();
             trace!("before pass 1 {:?}", &*self);
-            self.scan(G::Symbol::from(token as usize), i as u32);
+            self.scan(token, i as u32);
             trace!("before pass 2 {:?}", &*self);
-            if let Some((_i, &t)) = iter.peek() {
-                self.lookahead().set_hint(G::Symbol::from(t as usize));
+            if let Some((_i, t)) = iter.peek() {
+                self.lookahead().set_hint(**t);
             } else {
                 self.lookahead().clear_hint();
             }
-            assert!(self.end_earleme(), "failed to parse after {}@{}", token, i);
+            assert!(self.end_earleme(), "failed to parse after {:?}@{}", token, i);
         }
         trace!("finished {:?}", &*self);
 
-        // if self.is_finished() {
-        //     self.forest
-        //         .mark_alive(self.finished_node().unwrap(), NullOrder::new());
-        // }
         self.is_finished()
     }
 }
@@ -63,17 +65,17 @@ where
 //     }
 // }
 
-impl<G> Parse for Recognizer<G, NullForest>
+impl<G> RecognizerParseExt<G::Symbol> for Recognizer<G, NullForest>
 where
     Self: Debug,
     G: Grammar,
 {
     #[inline]
-    fn parse(&mut self, tokens: &[u32]) -> bool {
+    fn parse(&mut self, tokens: &[G::Symbol]) -> bool {
         for &token in tokens.iter() {
             self.begin_earleme();
             trace!("before pass 1 {:?}", &*self);
-            self.scan(G::Symbol::from(token as usize), ());
+            self.scan(token, ());
             trace!("before pass 2 {:?}", &*self);
             assert!(self.end_earleme());
         }

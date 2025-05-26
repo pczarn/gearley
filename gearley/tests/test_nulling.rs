@@ -12,8 +12,7 @@ use cfg::{Symbol, Symbolic};
 use gearley_forest::Evaluate;
 use simple_bocage::Bocage;
 
-use gearley::{DefaultGrammar, Recognizer};
-use helpers::Parse;
+use gearley::{DefaultGrammar, Recognizer, RecognizerParseExt};
 
 struct NullingEval(Symbol);
 
@@ -109,7 +108,7 @@ macro_rules! test_grammar_with_nulling_intermediate {
         let cfg = DefaultGrammar::from_grammar(external);
         let bocage = $Bocage::new(&cfg);
         let mut rec = Recognizer::with_forest(&cfg, bocage);
-        assert!(rec.parse(&[foo.usize() as u32]));
+        assert!(rec.parse(&[foo]));
         let finished_node = rec.finished_node().expect("exhausted");
         let results = rec.into_forest().evaluate(NullingIntermediateEval { a, foo }, finished_node);
         assert_eq!(results, &[10]);

@@ -60,7 +60,7 @@ where
                     let products = iter.take(1);
                     return Some(TraversalHandle {
                         iter,
-                        symbol: self.bocage.grammar.borrow().get_lhs(action),
+                        action,
                         item: SumHandle(Products {
                             products,
                             traverse: self,

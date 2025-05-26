@@ -1,4 +1,5 @@
 #![feature(test)]
+#![cfg(feature = "nightly")]
 
 extern crate cfg;
 extern crate gearley;

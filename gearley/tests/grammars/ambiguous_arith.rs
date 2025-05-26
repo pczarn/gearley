@@ -109,6 +109,6 @@ macro_rules! ambiguous_arith_rhs_elem {
 #[macro_export]
 macro_rules! ambiguous_arith {
     ($($e:tt)+) => (
-        &[$(ambiguous_arith_rhs_elem!($e) + 3,)+]
+        &[$(Symbol::new(ambiguous_arith_rhs_elem!($e) as u32 + 3),)+]
     )
 }

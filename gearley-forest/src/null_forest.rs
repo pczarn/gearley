@@ -29,7 +29,7 @@ impl<S: Copy> Forest<S> for NullForest {
 
 #[cfg(feature = "memusage")]
 impl MemoryReport for NullForest {
-    fn memory_use(&self) -> usize {
+    fn indirect(&self) -> usize {
         0
     }
 }

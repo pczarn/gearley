@@ -1,5 +1,4 @@
 use crate::local_prelude::*;
-use crate::memory_usage::MemoryUse;
 use bit_vec::BitVec;
 
 use super::vec2d::Vec2d;

@@ -1,4 +1,4 @@
-use cfg_symbol::Symbolic;
+use cfg_symbol::{Symbol, SymbolPrimitive};
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub struct NodeHandle(pub u32);
@@ -7,7 +7,7 @@ pub const NULL_HANDLE: NodeHandle = NodeHandle(0xFFFF_FFFF);
 
 impl NodeHandle {
     #[inline]
-    pub fn nulling(symbol: impl Symbolic) -> Self {
+    pub fn nulling<T: SymbolPrimitive>(symbol: Symbol<T>) -> Self {
         NodeHandle(symbol.usize() as u32)
     }
 

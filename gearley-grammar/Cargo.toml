@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 bit-matrix = { workspace = true }
 cfg-symbol = { workspace = true }
+cfg-history = { path = "../../cfg/cfg-history/", version = "0.0.1" }
 miniserde = "0.1"

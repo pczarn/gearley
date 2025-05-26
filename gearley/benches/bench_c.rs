@@ -8,12 +8,9 @@ extern crate test;
 
 macro_rules! trace(($($tt:tt)*) => ());
 
-#[path = "../tests/helpers/mod.rs"]
-mod helpers;
-
 use cfg::earley::Grammar;
 use cfg::sequence::Separator::Proper;
-use gearley::prelude::*;
+use gearley::*;
 use gearley::memory_usage::MemoryUse;
 
 use helpers::Parse;
