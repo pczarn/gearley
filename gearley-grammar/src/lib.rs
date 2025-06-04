@@ -1,7 +1,8 @@
 use bit_matrix::row::BitSlice;
-use cfg_symbol::{Symbol, SymbolPrimitive};
-use cfg_history::earley::{Event, ExternalDottedRule, NullingEliminated, ExternalOrigin, MinimalDistance};
+use cfg_symbol::Symbol;
 use miniserde::{Serialize, Deserialize};
+
+pub use cfg_history::earley::{EventAndDistance, ExternalDottedRule, NullingEliminated, ExternalOrigin};
 
 type Dot = u32;
 
@@ -13,12 +14,19 @@ pub struct PredictionTransition {
 }
 
 #[derive(Eq, PartialEq, Ord, PartialOrd)]
-pub enum MaybePostdot<S> {
-    Binary(S),
+pub enum MaybePostdot {
+    Binary(Symbol),
     Unary,
 }
 
-pub type NullingIntermediateRule<S> = [S; 3];
+pub type NullingIntermediateRule = [Symbol; 3];
+
+
+#[derive(Serialize, Deserialize, Clone, Default, Debug)]
+pub struct ForestInfo {
+    pub eval: Vec<ExternalOrigin>,
+    pub nulling_intermediate_rules: Vec<NullingIntermediateRule>,
+}
 
 pub trait Grammar {
     fn eof(&self) -> Symbol;
@@ -39,15 +47,15 @@ pub trait Grammar {
 
     fn has_trivial_derivation(&self) -> bool;
 
-    fn nulling(&self, pos: u32) -> NullingEliminated<Symbol>;
+    fn nulling(&self, pos: u32) -> NullingEliminated;
 
-    fn events(&self) -> (&[Event], &[Event]);
+    fn events(&self) -> (&[EventAndDistance], &[EventAndDistance]);
 
-    fn trace(&self) -> [&[Option<ExternalDottedRule>]; 3];
+    fn trace(&self) -> [&[ExternalDottedRule]; 3];
 
     fn get_rhs1(&self, dot: Dot) -> Option<Symbol>;
 
-    fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot<Symbol>;
+    fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot;
 
     fn rhs1(&self) -> &[Option<Symbol>];
 
@@ -55,7 +63,7 @@ pub trait Grammar {
 
     fn external_origin(&self, dot: Dot) -> ExternalOrigin;
 
-    fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule<Symbol>];
+    fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule];
 
     fn completions(&self, sym: Symbol) -> &[PredictionTransition];
 
@@ -70,6 +78,8 @@ pub trait Grammar {
     fn dot_before_eof(&self) -> Dot;
 
     fn useless_symbol(&self) -> Symbol;
+
+    fn forest_info(&self) -> ForestInfo;
 }
 
 impl<'a, G> Grammar for &'a G where G: Grammar {
@@ -109,15 +119,15 @@ impl<'a, G> Grammar for &'a G where G: Grammar {
         (**self).has_trivial_derivation()
     }
 
-    fn nulling(&self, pos: u32) -> NullingEliminated<Symbol> {
+    fn nulling(&self, pos: u32) -> NullingEliminated {
         (**self).nulling(pos)
     }
 
-    fn events(&self) -> (&[Event], &[Event]) {
+    fn events(&self) -> (&[EventAndDistance], &[EventAndDistance]) {
         (**self).events()
     }
 
-    fn trace(&self) -> [&[Option<ExternalDottedRule>]; 3] {
+    fn trace(&self) -> [&[ExternalDottedRule]; 3] {
         (**self).trace()
     }
 
@@ -125,7 +135,7 @@ impl<'a, G> Grammar for &'a G where G: Grammar {
         (**self).get_rhs1(dot)
     }
 
-    fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot<Symbol> {
+    fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot {
         (**self).get_rhs1_cmp(dot)
     }
 
@@ -141,7 +151,7 @@ impl<'a, G> Grammar for &'a G where G: Grammar {
         (**self).external_origin(dot)
     }
 
-    fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule<Symbol>] {
+    fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule] {
         (**self).eliminated_nulling_intermediate()
     }
 
@@ -171,5 +181,9 @@ impl<'a, G> Grammar for &'a G where G: Grammar {
 
     fn useless_symbol(&self) -> Symbol {
         (**self).useless_symbol()
+    }
+
+    fn forest_info(&self) -> ForestInfo {
+        (**self).forest_info()
     }
 }

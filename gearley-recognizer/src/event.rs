@@ -1,27 +1,12 @@
 use std::iter::{Chain, Zip};
 use std::slice;
 
-use bit_matrix;
-use cfg_symbol::{Symbol, Symbolic};
-
 use gearley_forest::Forest;
-use gearley_grammar::{Grammar, Event, ExternalDottedRule};
+use gearley_grammar::{Grammar, EventAndDistance, ExternalDottedRule};
 use crate::local_prelude::*;
-
-type IterPredictionBitfield<'a> = bit_matrix::row::Iter<'a>;
-
-pub struct PredictedSymbols<'a> {
-    pub(super) iter: IterPredictionBitfield<'a>,
-    pub(super) idx: usize,
-}
 
 pub struct MedialItems<'a, N: 'a> {
     pub(super) iter: slice::Iter<'a, Item<N>>,
-}
-
-pub struct Prediction<'a, T: 'a> {
-    iter: Zip<IterPredictionBitfield<'a>, slice::Iter<'a, T>>,
-    origin: usize,
 }
 
 pub struct Medial<'a, T: 'a, N: 'a> {
@@ -30,11 +15,11 @@ pub struct Medial<'a, T: 'a, N: 'a> {
 }
 
 pub struct Events<'a, N: 'a> {
-    iter: Chain<Prediction<'a, Event>, Medial<'a, Event, N>>,
+    iter: Chain<Prediction<'a, EventAndDistance>, Medial<'a, EventAndDistance, N>>,
 }
 
 pub struct Distances<'a, N: 'a> {
-    iter: Chain<Prediction<'a, Event>, Medial<'a, Event, N>>,
+    iter: Chain<Prediction<'a, EventAndDistance>, Medial<'a, EventAndDistance, N>>,
 }
 
 pub struct Trace<'a, N: 'a> {
@@ -47,21 +32,6 @@ pub struct Trace<'a, N: 'a> {
 pub struct ExpectedTerminals<'a, N: 'a, S> {
     prev_scan_iter: MedialItems<'a, N>,
     rhs1: &'a [Option<S>],
-}
-
-impl<'a> Iterator for PredictedSymbols<'a> {
-    type Item = Symbol;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        for is_present in &mut self.iter {
-            let symbol = Symbol::from(self.idx);
-            self.idx += 1;
-            if is_present {
-                return Some(symbol);
-            }
-        }
-        None
-    }
 }
 
 impl<'a, N> Iterator for MedialItems<'a, N> {
@@ -135,7 +105,7 @@ impl<'a, N> Iterator for Trace<'a, N> {
     }
 }
 
-impl<'a, N, S: Symbolic> Iterator for ExpectedTerminals<'a, N, S> {
+impl<'a, N, S> Iterator for ExpectedTerminals<'a, N, S> {
     type Item = S;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -147,11 +117,11 @@ impl<'a, N, S: Symbolic> Iterator for ExpectedTerminals<'a, N, S> {
 
 impl<F, G, P> Recognizer<G, F, P>
 where
-    F: Forest<G::Symbol>,
+    F: Forest,
     G: Grammar,
     P: PerfHint,
 {
-    pub fn trace(&self) -> Trace<F::NodeRef> {
+    pub fn trace(&self) -> impl Iterator<Item = (ExternalDottedRule, usize)> {
         let trace = self.grammar.trace();
         let prediction = Prediction {
             iter: self.predicted_symbols().iter.zip(trace[0].iter()),
@@ -164,27 +134,16 @@ where
         Trace {
             iter: prediction.chain(medial),
         }
+
     }
 
-    pub fn events(&self) -> Events<F::NodeRef> {
+    pub fn events(&self) -> impl Iterator<Item = EventAndDistance> + use<'_, F, G, P> {
         let (events_predict, events_flat) = self.grammar.events();
-        let prediction = Prediction {
-            iter: self.predicted_symbols().iter.zip(events_predict.iter()),
-            origin: self.earleme(),
-        };
-        let medial = Medial {
-            events: events_flat,
-            items: self.medial_items(),
-        };
-        Events {
-            iter: prediction.chain(medial),
-        }
+        self.predicted_symbols().map(|sym| events_predict[sym.usize()]).chain(self.medial_items().map(|item| events_flat[item.dot as usize]))
     }
 
-    pub fn minimal_distances(&self) -> Distances<F::NodeRef> {
-        Distances {
-            iter: self.events().iter,
-        }
+    pub fn minimal_distances(&self) -> impl Iterator<Item = u32> {
+        self.events().map(|(id, distance)| distance.distance)
     }
 
     pub fn expected_terminals(&self) -> ExpectedTerminals<F::NodeRef, G::Symbol> {

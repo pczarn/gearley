@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 gearley-grammar = { path = "../gearley-grammar/" }
 gearley-vec2d = { path = "../gearley-vec2d/" }
-cfg = { path = "../../cfg/cfg/" }
+cfg = { path = "../../cfg/cfg/", features = ["miniserde"] }
 bit-matrix = { workspace = true }
 cfg-symbol = { workspace = true }
 miniserde = "0.1"

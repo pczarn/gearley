@@ -3,12 +3,12 @@ use gearley_forest::node_handle::NodeHandle;
 
 // Node variants `Sum`/`Product` are better known in literature as `OR`/`AND`.
 #[derive(Copy, Clone, Debug)]
-pub enum Node<S> {
+pub enum Node {
     Sum {
         /// 8 bytes.
         /// Invariant: count > 1.
         /// Invariant: This node can only be directly followed by `Product`.
-        nonterminal: S,
+        nonterminal: Symbol,
         count: u32,
     },
     Product {
@@ -18,17 +18,17 @@ pub enum Node<S> {
         right_factor: Option<NodeHandle>,
     },
     Leaf {
-        /// 4 bytes.
-        symbol: S,
+        /// 8 bytes.
+        symbol: Symbol,
         values: u32,
     },
     NullingLeaf {
         /// 4 bytes.
-        symbol: S,
+        symbol: Symbol,
     },
     Evaluated {
         /// 8 bytes.
-        symbol: S,
+        symbol: Symbol,
         values: u32,
     },
 }

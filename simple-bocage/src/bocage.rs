@@ -2,29 +2,26 @@ use std::ops::{Index, IndexMut};
 
 use gearley_forest::node_handle::NodeHandle;
 use gearley_forest::Forest;
-use gearley_grammar::Grammar;
+use gearley_grammar::{ForestInfo, Grammar};
 use gearley_forest::completed_item::CompletedItem;
 
 use crate::node::{Node, NULL_ACTION};
 
-pub struct Bocage<G: Grammar> {
-    pub(crate) graph: Vec<Node<G::Symbol>>,
-    pub(crate) grammar: G,
+pub struct Bocage {
+    pub(crate) graph: Vec<Node>,
+    pub(crate) forest_info: ForestInfo,
     pub(crate) summand_count: u32,
 }
 
-impl<G> Bocage<G>
-where
-    G: Grammar,
-{
-    pub fn new(grammar: G) -> Self {
+impl Bocage {
+    pub fn new<G: Grammar>(grammar: G) -> Self {
         Self::with_capacity(grammar, 1024)
     }
 
-    pub fn with_capacity(grammar: G, graph_cap: usize) -> Self {
+    pub fn with_capacity<G: Grammar>(grammar: G, graph_cap: usize) -> Self {
         let mut result = Bocage {
             graph: Vec::with_capacity(graph_cap),
-            grammar,
+            forest_info: grammar.forest_info(),
             summand_count: 0,
         };
         result.initialize_nulling();
@@ -42,7 +39,7 @@ where
                 symbol: i.into(),
             }
         }));
-        for &[lhs, rhs0, rhs1] in self.grammar.eliminated_nulling_intermediate() {
+        for &[lhs, rhs0, rhs1] in self.forest_info.nulling_intermediate_rules {
             self.graph[NodeHandle::nulling(lhs).usize()] = Node::Product {
                     left_factor: NodeHandle::nulling(rhs0),
                     right_factor: Some(NodeHandle::nulling(rhs1)),
@@ -106,7 +103,7 @@ where
     }
 }
 
-impl<G: Grammar> Forest<G::Symbol> for Bocage<G> {
+impl Forest for Bocage {
     type NodeRef = NodeHandle;
     type LeafValue = u32;
 
@@ -130,7 +127,7 @@ impl<G: Grammar> Forest<G::Symbol> for Bocage<G> {
     }
 
     #[inline]
-    fn sum(&mut self, lhs_sym: G::Symbol, _origin: u32) -> Self::NodeRef {
+    fn sum(&mut self, lhs_sym: Symbol, _origin: u32) -> Self::NodeRef {
         let result = {
             match self.summand_count {
                 0 => unreachable!(),
@@ -153,7 +150,7 @@ impl<G: Grammar> Forest<G::Symbol> for Bocage<G> {
     }
 
     #[inline]
-    fn leaf(&mut self, token: G::Symbol, _pos: u32, value: Self::LeafValue) -> Self::NodeRef {
+    fn leaf(&mut self, token: Symbol, _pos: u32, value: Self::LeafValue) -> Self::NodeRef {
         let result = NodeHandle(self.graph.len() as u32);
         self.graph.push(
             Node::Leaf {
@@ -165,20 +162,20 @@ impl<G: Grammar> Forest<G::Symbol> for Bocage<G> {
     }
 
     #[inline]
-    fn nulling(&self, token: G::Symbol) -> Self::NodeRef {
+    fn nulling(&self, token: Symbol) -> Self::NodeRef {
         NodeHandle::nulling(token)
     }
 }
 
-impl<G: Grammar> Index<NodeHandle> for Bocage<G> {
-    type Output = Node<G::Symbol>;
+impl Index<NodeHandle> for Bocage {
+    type Output = Node;
 
     fn index(&self, index: NodeHandle) -> &Self::Output {
         &self.graph[index.usize()]
     }
 }
 
-impl<G: Grammar> IndexMut<NodeHandle> for Bocage<G> {
+impl IndexMut<NodeHandle> for Bocage {
     fn index_mut(&mut self, index: NodeHandle) -> &mut Self::Output {
         &mut self.graph[index.usize()]
     }

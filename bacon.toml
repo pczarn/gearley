@@ -6,17 +6,20 @@
 #   https://github.com/Canop/bacon/blob/main/defaults/default-bacon.toml
 
 default_job = "check"
-env.CARGO_TERM_COLOR = "always"
+
+[env]
+CARGO_TERM_COLOR = "always"
 
 [jobs.check]
 command = ["cargo", "check"]
 need_stdout = false
 
-[jobs.check-all]
-command = ["cargo", "check", "--all-targets"]
-need_stdout = false
-
 # Run clippy on the default target
 [jobs.wasm]
-command = ["wasm-pack", "build", "--target", "web", "-d", "public/pkg"]
+command = ["bash", "wasm.sh"]
+on_success = "job:wasm-server"
+need_stdout = true
+
+[jobs.wasm-server]
+command = ["python", "wasm-server.py"]
 need_stdout = true

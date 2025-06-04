@@ -7,28 +7,28 @@ use bit_matrix::BitMatrix;
 use cfg::classify::CfgClassifyExt;
 use cfg::predict_sets::{FirstSets, FollowSets, PredictSets};
 use cfg::symbol_bit_matrix::{CfgSymbolBitMatrixExt, Remap};
-use cfg_earley_history::HistoryGraphEarleyExt;
 use cfg_symbol::intern::Mapping;
 use miniserde::{Serialize, Deserialize};
 
-use cfg::earley_history::History;
-pub use cfg::earley_history::{Event, ExternalDottedRule, NullingEliminated, ExternalOrigin};
-use cfg::{Cfg, CfgRule, Symbol, SymbolBitSet, SymbolPrimitive, Symbolic};
+use cfg::history::earley::{EventAndDistance, EventId, ExternalDottedRule, ExternalOrigin, MinimalDistance, NullingEliminated};
+use cfg::{Cfg, CfgRule, Symbol, SymbolBitSet};
 
-use gearley_grammar::{Grammar, PredictionTransition, MaybePostdot, NullingIntermediateRule};
+use gearley_grammar::{ForestInfo, Grammar, MaybePostdot, NullingIntermediateRule, PredictionTransition};
 use gearley_vec2d::Vec2d;
 
 use log::trace;
 
-type Dot = u32;
-
+#[derive(Serialize, Deserialize, Clone, Default, Debug)]
 struct Column {
     syms: Vec<Option<Symbol>>,
-    events: Vec<()>,
-    tracing: Vec<Option<ExternalDottedRule>>,
+    events: Vec<EventAndDistance>,
+    tracing: Vec<ExternalDottedRule>,
 }
 
-struct Dot {
+type Dot = u32;
+
+#[derive(Serialize, Deserialize, Clone, Default, Debug)]
+struct DotInfo {
     // For column 0: lhs.
     // For column 1 and 2: rhs.
     predot: Option<Symbol>,
@@ -62,13 +62,7 @@ pub struct DefaultGrammar {
     sym_maps: Mapping,
 
     // For the forest
-    forest: DefaultForestInfo,
-}
-
-#[derive(Serialize, Deserialize, Clone, Default, Debug)]
-pub struct ForForestFragment {
-    eval: Rc<[ExternalOrigin]>,
-    nulling_intermediate_rules: Rc<[NullingIntermediateRule<Symbol>]>,
+    forest_info: ForestInfo,
 }
 
 struct CompletionTable {
@@ -183,7 +177,7 @@ impl DefaultGrammar {
             }
         }
         for rule in grammar.rules() {
-            if occurrences[rule.lhs.usize()] == (1, 1, 0) && grammar.history_graph().earley.origin().is_none() {
+            if occurrences[rule.lhs.usize()] == (1, 1, 0) && grammar.history_graph().earley()[rule.history_id.get()].origin().is_null() {
                 gensyms.set(rule.lhs, true);
             }
         }
@@ -233,33 +227,33 @@ impl DefaultGrammar {
     }
 
     fn populate_grammar_with_lhs(&mut self, grammar: &Cfg) {
-        self.lhs
+        self.columns[0].syms
             .extend(grammar.rules().map(|rule| Some(rule.lhs)));
     }
 
     fn populate_grammar_with_rhs(&mut self, grammar: &Cfg) {
-        self.columns[1].predot = grammar.transpose()[1].map(|dot| dot.predot).collect();
-        self.columns[2].predot = grammar.transpose()[1].map(|dot| dot.predot).collect();
+        self.columns[1].syms = grammar.column(1).map(|dot| dot.postdot).collect();
+        self.columns[2].syms = grammar.column(1).map(|dot| dot.postdot).collect();
     }
 
     fn populate_grammar_with_history(&mut self, grammar: &Cfg) {
-        self.eval
-            .extend(grammar.rules().map(|rule| histories[rule.history_id.get()].origin()));
+        self.forest_info.eval
+            .extend(grammar.rules().map(|rule| grammar.history_graph().earley()[rule.history_id.get()].origin()));
         self.nulling_eliminated
-            .extend(grammar.rules().map(|rule| histories[rule.history_id.get()].nullable()));
+            .extend(grammar.rules().map(|rule| grammar.history_graph().earley()[rule.history_id.get()].nullable()));
 
         self.populate_grammar_with_events_rhs(grammar);
         self.populate_grammar_with_trace_rhs(grammar);
     }
 
-    fn populate_grammar_with_events_rhs(&mut self, grammar: &Cfg, histories: &[History]) {
-        self.columns[1].events = grammar.transpose()[1].map(|dot| dot.event).collect();
-        self.columns[2].events = grammar.transpose()[2].map(|dot| dot.event).collect();
+    fn populate_grammar_with_events_rhs(&mut self, grammar: &Cfg) {  
+        self.columns[1].events = grammar.column(1).map(|dot| dot.earley.unwrap().event_and_distance()).collect();
+        self.columns[2].events = grammar.column(2).map(|dot| dot.earley.unwrap().event_and_distance()).collect();
     }
 
-    fn populate_grammar_with_trace_rhs(&mut self, grammar: &Cfg, histories: &[History]) {
-        self.columns[1].tracing = grammar.transpose()[1].map(|dot| dot.tracing).collect();
-        self.columns[2].tracing = grammar.transpose()[2].map(|dot| dot.tracing).collect();
+    fn populate_grammar_with_trace_rhs(&mut self, grammar: &Cfg) {
+        self.columns[1].tracing = grammar.column(1).map(|dot| dot.earley.unwrap().trace()).collect();
+        self.columns[2].tracing = grammar.column(2).map(|dot| dot.earley.unwrap().trace()).collect();
     }
 
     fn populate_maps(&mut self, maps: Mapping) {
@@ -358,24 +352,24 @@ impl DefaultGrammar {
         let mut unary_rules = vec![];
         let mut binary_rules = vec![];
         // check for ordering same as self.rules
-        for (dot, rule) in grammar.rules().enumerate() {
+        for (rule, dot) in grammar.rules().zip(0..) {
             let is_unary = rule.rhs.get(1).is_none();
             let rhs0_sym = rule.rhs[0];
-            let mut lhs = rule.lhs.usize();
-            while lhs >= self.size.syms {
-                let idx = rules_by_rhs0.binary_search_by_key(&lhs, |elem| elem.rhs[0].usize()).expect("lhs not found at rhs0 of any rule");
-                lhs = rules_by_rhs0[idx].lhs.usize();
+            let mut lhs = rule.lhs;
+            while lhs.usize() >= self.size.syms + 1 {
+                let idx = rules_by_rhs0.binary_search_by_key(&lhs.usize(), |elem| elem.rhs[0].usize()).expect("lhs not found at rhs0 of any rule");
+                lhs = rules_by_rhs0[idx].lhs;
             }
             if is_unary {
                 unary_rules.push((rhs0_sym.usize(), PredictionTransition {
-                    symbol: lhs.into(),
-                    dot: dot as u32,
+                    symbol: lhs,
+                    dot,
                     is_unary,
                 }));
             } else {
                 binary_rules.push((rhs0_sym.usize(), PredictionTransition {
-                    symbol: lhs.into(),
-                    dot: dot as u32,
+                    symbol: lhs,
+                    dot,
                     is_unary,
                 }));
             }
@@ -393,31 +387,30 @@ impl DefaultGrammar {
 
     fn populate_prediction_events(&mut self, grammar: &Cfg) {
         let iter_events_pred =
-            iter::repeat((None, None)).take(self.size.syms);
-        self.events_rhs[0].extend(iter_events_pred);
-        let iter_trace_pred = iter::repeat(None).take(self.size.syms);
-        self.trace_rhs[0].extend(iter_trace_pred);
-        let histories = grammar.history_graph().final_history();
+            iter::repeat((EventId::null(), MinimalDistance::null())).take(self.size.syms + 1);
+        self.columns[0].events.extend(iter_events_pred);
+        let iter_trace_pred = iter::repeat(ExternalDottedRule::null()).take(self.size.syms + 1);
+        self.columns[0].tracing.extend(iter_trace_pred);
         // Prediction event and tracing.
-        for dot in grammar.transpose()[0] {
-            if let Some(event) = dot.event {
-                self.events_rhs[0][dot.rule.lhs.usize()] = (event.id, event.distance);
-                self.trace_rhs[0][dot.rule.lhs.usize()] = event.trace;
+        for (dot, rule) in grammar.column(0).zip(grammar.rules()) {
+            if let Some(rule_dot) = dot.earley {
+                self.columns[0].events[rule.lhs.usize()] = (rule_dot.event, rule_dot.distance);
+                self.columns[0].tracing[rule.lhs.usize()] = rule_dot.trace;
             }
         }
     }
 
     fn populate_nulling(&mut self, nulling: &Cfg) {
         self.has_trivial_derivation = !nulling.is_empty();
-        let histories = nulling.history_graph().final_history();
+        let histories = nulling.history_graph().earley();
         let iter_nulling_intermediate = nulling.rules().filter_map(|rule| {
-            if histories[rule.history_id.get()].origin().is_none() && rule.rhs.len() == 2 {
+            if histories[rule.history_id.get()].origin().is_null() && rule.rhs.len() == 2 {
                 Some([rule.lhs, rule.rhs[0], rule.rhs[1]])
             } else {
                 None
             }
         });
-        self.nulling_intermediate_rules
+        self.forest_info.nulling_intermediate_rules
             .extend(iter_nulling_intermediate);
     }
 }
@@ -484,27 +477,27 @@ impl Grammar for DefaultGrammar {
     }
 
     #[inline]
-    fn events(&self) -> (&[Event], &[Event]) {
-        (&self.events_rhs[1][..], &self.events_rhs[2][..])
+    fn events(&self) -> (&[EventAndDistance], &[EventAndDistance]) {
+        (&self.columns[1].events[..], &self.columns[2].events[..])
     }
 
     #[inline]
-    fn trace(&self) -> [&[Option<ExternalDottedRule>]; 3] {
+    fn trace(&self) -> [&[ExternalDottedRule]; 3] {
         [
-            &self.trace_rhs[0][..],
-            &self.trace_rhs[1][..],
-            &self.trace_rhs[2][..],
+            &self.columns[0].tracing[..],
+            &self.columns[1].tracing[..],
+            &self.columns[2].tracing[..],
         ]
     }
 
     #[inline]
     fn get_rhs1(&self, dot: Dot) -> Option<Symbol> {
-        self.rhs1[dot as usize]
+        self.columns[1].syms[dot as usize]
     }
 
     #[inline]
-    fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot<Symbol> {
-        match self.rhs1[dot as usize] {
+    fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot {
+        match self.get_rhs1(dot) {
             None => MaybePostdot::Unary,
             Some(rhs1) => MaybePostdot::Binary(rhs1),
         }
@@ -512,21 +505,21 @@ impl Grammar for DefaultGrammar {
 
     #[inline]
     fn rhs1(&self) -> &[Option<Symbol>] {
-        &self.rhs1[..]
+        &self.columns[1].syms[..]
     }
 
     #[inline]
     fn get_lhs(&self, dot: Dot) -> Symbol {
-        self.lhs[dot as usize].unwrap()
+        self.columns[0].syms[dot as usize].unwrap()
     }
 
     #[inline]
     fn external_origin(&self, dot: Dot) -> ExternalOrigin {
-        self.eval.get(dot as usize).cloned().unwrap()
+        self.forest_info.eval.get(dot as usize).cloned().unwrap()
     }
 
-    fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule<Symbol>] {
-        &*self.nulling_intermediate_rules
+    fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule] {
+        &*self.forest_info.nulling_intermediate_rules
     }
 
     #[inline(always)]
@@ -569,5 +562,9 @@ impl Grammar for DefaultGrammar {
 
     fn dot_before_eof(&self) -> Dot {
         self.dot_before_eof
+    }
+
+    fn forest_info(&self) -> ForestInfo {
+        self.forest_info.clone()
     }
 }

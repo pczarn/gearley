@@ -1,8 +1,9 @@
+use std::cmp;
 use std::marker::PhantomData;
 
 use bit_matrix::BitMatrix;
 
-use cfg_symbol::Symbol;
+use cfg_symbol::{Symbol, SymbolSource};
 use gearley_forest::{Forest, NullForest};
 use gearley_grammar::Grammar;
 use crate::item::{Item, CompletedItemLinked, Origin};
@@ -21,7 +22,7 @@ use crate::{binary_heap::BinaryHeap, lookahead::{DefaultLookahead, Lookahead}};
 /// in the future.
 pub struct Recognizer<G, F = NullForest, P = DefaultPerfHint>
 where
-    F: Forest<G::SP>,
+    F: Forest,
     G: Grammar,
 {
     // The grammar.
@@ -29,7 +30,7 @@ where
     // The forest.
     pub(crate) forest: F,
     // Lookahead.
-    pub(crate) lookahead: DefaultLookahead<G::SP>,
+    pub(crate) lookahead: DefaultLookahead,
     // The policy.
     policy: PhantomData<P>,
 
@@ -66,7 +67,7 @@ where
 
 impl<F, G, P> Recognizer<G, F, P>
 where
-    F: Forest<G::SP>,
+    F: Forest,
     G: Grammar,
     P: PerfHint,
 {
@@ -99,7 +100,7 @@ where
 
     /// Reads a token. Creates a leaf bocage node with the given value. After reading one or more
     /// tokens, the parse can be advanced.
-    pub fn scan(&mut self, symbol: Symbol<G::SP>, value: F::LeafValue) {
+    pub fn scan(&mut self, symbol: Symbol, value: F::LeafValue) {
         // This method is a part of the scan pass.
         let earleme = self.earleme() as Origin;
         // Add a leaf node to the forest with the given value.
@@ -108,7 +109,7 @@ where
     }
 
     #[inline]
-    pub fn lookahead(&mut self) -> impl Lookahead<G::Symbol> + '_ {
+    pub fn lookahead(&mut self) -> impl Lookahead + '_ {
         self.lookahead.mut_with_grammar(&self.grammar)
     }
 
@@ -243,19 +244,14 @@ where
     // Event access.
 
     /// Accesses predicted symbols.
-    pub fn predicted_symbols(&self) -> PredictedSymbols {
+    pub fn predicted_symbols(&self) -> impl Iterator<Item = Symbol> {
         let earleme = self.earleme();
-        PredictedSymbols {
-            iter: self.predicted.iter_row(earleme),
-            idx: 0,
-        }
+        self.predicted.iter_row(earleme).zip(SymbolSource::generate_fresh()).filter_map(|(is_present, sym)| if is_present { Some(sym) } else { None })
     }
 
     /// Accesses medial items.
-    pub fn medial_items(&self) -> MedialItems<F::NodeRef> {
-        MedialItems {
-            iter: self.medial[self.earleme()].iter(),
-        }
+    pub fn medial_items(&self) -> impl Iterator<Item = Item<F::NodeRef>> {
+        self.medial[self.earleme()].iter()
     }
 
     // Accessors.
@@ -274,25 +270,25 @@ where
 /// end input location)**, varying only in their rule ID.
 pub struct CompleteGroup<'r, F, G, P>
 where
-    F: Forest<G::SP>,
+    F: Forest,
     G: Grammar,
     P: PerfHint,
 {
     /// The **start input location** of this completion.
     origin: Origin,
     /// The **Symbol** of this completion.
-    lhs_sym: Symbol<G::SP>,
+    lhs_sym: Symbol,
     /// The recognizer.
     recognizer: &'r mut Recognizer<G, F, P>,
 }
 
 impl<G, F, P> Recognizer<G, F, P>
-    where F: Forest<G::SP>,
+    where F: Forest,
     G: Grammar,
     P: PerfHint,
 {
     /// Complete items.
-    pub fn complete(&mut self, set_id: Origin, sym: G::Symbol, rhs_link: F::NodeRef) {
+    pub fn complete(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
         debug_assert!(sym != self.grammar.eof());
         if sym.usize() >= self.grammar.num_syms() {
             // New item after a generated symbol, either completed or medial.
@@ -312,7 +308,7 @@ impl<G, F, P> Recognizer<G, F, P>
     }
 
     /// Complete medial items in a given Earley set.
-    fn complete_medial_items(&mut self, set_id: Origin, sym: G::Symbol, rhs_link: F::NodeRef) {
+    fn complete_medial_items(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
         // Iterate through medial items to complete them.
         // Huh, can we reduce complexity here?
         // let outer_start = self.medial.indices()[set_id as usize];

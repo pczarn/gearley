@@ -6,7 +6,7 @@ use crate::local_prelude::*;
 
 impl<F, G, P> fmt::Debug for Recognizer<G, F, P>
     where
-        F: Forest<G::Symbol>,
+        F: Forest,
         G: Grammar + fmt::Debug,
         P: PerfHint,
 {

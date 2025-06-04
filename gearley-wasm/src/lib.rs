@@ -77,6 +77,7 @@ fn load(grammar: &str) -> Result<String, LoadError> {
     let grammar = DefaultGrammar::from_grammar(cfg);
     let mut recognizer = Recognizer::new(&grammar, Bocage::new(&grammar));
     recognizer.parse();
+    println!("");
     Ok(format!("test {}", get_logs()))
 }
 
