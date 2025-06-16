@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use cfg_symbol::Symbol;
 use log::trace;
 
 #[cfg(feature = "simple-bocage")]
@@ -8,18 +9,18 @@ use gearley_forest::NullForest;
 use gearley_grammar::Grammar;
 use gearley_recognizer::{Recognizer, lookahead::Lookahead};
 
-pub trait RecognizerParseExt<S> {
-    fn parse(&mut self, tokens: &[S]) -> bool;
+pub trait RecognizerParseExt {
+    fn parse(&mut self, tokens: &[Symbol]) -> bool;
 }
 
 #[cfg(feature = "simple-bocage")]
-impl<G> RecognizerParseExt<G::Symbol> for Recognizer<G, Bocage<G>>
+impl<G> RecognizerParseExt for Recognizer<G, Bocage>
 where
     Self: Debug,
     G: Grammar,
 {
     #[inline]
-    fn parse(&mut self, tokens: &[G::Symbol]) -> bool {
+    fn parse(&mut self, tokens: &[Symbol]) -> bool {
         let mut iter = tokens.iter().enumerate().peekable();
         while let Some((i, &token)) = iter.next() {
             self.begin_earleme();
@@ -65,13 +66,12 @@ where
 //     }
 // }
 
-impl<G> RecognizerParseExt<G::Symbol> for Recognizer<G, NullForest>
-where
+impl<G> RecognizerParseExt for Recognizer<G, NullForest> where
     Self: Debug,
     G: Grammar,
 {
     #[inline]
-    fn parse(&mut self, tokens: &[G::Symbol]) -> bool {
+    fn parse(&mut self, tokens: &[Symbol]) -> bool {
         for &token in tokens.iter() {
             self.begin_earleme();
             trace!("before pass 1 {:?}", &*self);

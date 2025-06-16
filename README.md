@@ -223,6 +223,10 @@ Big thanks to [mr Jeffrey Kegler](https://github.com/jeffreykegler) who brought 
 
 Special thanks to CD PROJEKT RED, HAEVN, Kaśka Sochacka, sanah, Kwiat Jabłoni, Alex Rainbird, Beth Paterson, Carbon Based Lifeforms, and Solar Fields for providing amazing music, which made coding even more enjoyable.
 
+## Dedication
+
+Dedicated to Jesus Christ, the Word Himself.
+
 ## License
 
 Dual-licensed for compatibility with the Rust project.

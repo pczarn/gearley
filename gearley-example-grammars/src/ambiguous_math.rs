@@ -1,6 +1,8 @@
+use std::num::NonZero;
+
 use cfg::Cfg;
 use cfg::Symbol;
-use cfg::Symbolic;
+use cfg::SymbolSource;
 use gearley_forest::Evaluate;
 
 pub fn grammar() -> Cfg {
@@ -17,9 +19,9 @@ pub fn grammar() -> Cfg {
     bnf
 }
 
-pub struct AmbiguousArithEvaluator;
+pub struct Evaluator;
 
-impl Evaluate<Symbol> for AmbiguousArithEvaluator {
+impl Evaluate for Evaluator {
     type Elem = i32;
 
     fn leaf(&self, terminal: Symbol, _values: u32) -> Self::Elem {
@@ -57,58 +59,17 @@ impl Evaluate<Symbol> for AmbiguousArithEvaluator {
     }
 }
 
-#[macro_export]
-macro_rules! ambiguous_arith_rhs_elem {
-    ('+') => {
-        0
-    };
-    ('-') => {
-        1
-    };
-    ('*') => {
-        2
-    };
-    ('/') => {
-        3
-    };
-    ('0') => {
-        4
-    };
-    ('1') => {
-        5
-    };
-    ('2') => {
-        6
-    };
-    ('3') => {
-        7
-    };
-    ('4') => {
-        8
-    };
-    ('5') => {
-        9
-    };
-    ('6') => {
-        10
-    };
-    ('7') => {
-        11
-    };
-    ('8') => {
-        12
-    };
-    ('9') => {
-        13
-    };
-    ($e:expr) => {
-        $e
-    };
-}
-
-#[macro_export]
-macro_rules! ambiguous_arith {
-    ($($e:tt)+) => (
-        &[$(Symbol::new(ambiguous_arith_rhs_elem!($e) as u32 + 3),)+]
-    )
+pub fn tokenize(input: &str) -> Vec<Symbol> {
+    const CHARS: &'static str = "+-*/0123456789";
+    let syms = SymbolSource::<NonZero<u32>>::generate_fresh().take(CHARS.len()).collect::<Vec<_>>();
+    let mut result = vec![];
+    for input_ch in input.chars() {
+        match CHARS.find(input_ch) {
+            Some(pos) => {
+                result.push(syms[pos + 3]);
+            }
+            None => panic!()
+        }
+    }
+    result
 }

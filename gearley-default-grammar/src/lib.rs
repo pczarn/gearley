@@ -55,8 +55,6 @@ pub struct DefaultGrammar {
     // Rules stored in column-major order.
     // Arrays of events and tracing info.
     columns: [Column; 3],
-    // Each rule can have only one eliminated nulling symbol.
-    nulling_eliminated: Vec<NullingEliminated>,
     // Rule origin preserved for post-parse actions.
     // Mapping between external and internal symbols.
     sym_maps: Mapping,
@@ -239,7 +237,7 @@ impl DefaultGrammar {
     fn populate_grammar_with_history(&mut self, grammar: &Cfg) {
         self.forest_info.eval
             .extend(grammar.rules().map(|rule| grammar.history_graph().earley()[rule.history_id.get()].origin()));
-        self.nulling_eliminated
+        self.forest_info.nulling_eliminated
             .extend(grammar.rules().map(|rule| grammar.history_graph().earley()[rule.history_id.get()].nullable()));
 
         self.populate_grammar_with_events_rhs(grammar);
@@ -473,7 +471,7 @@ impl Grammar for DefaultGrammar {
 
     #[inline]
     fn nulling(&self, pos: u32) -> NullingEliminated {
-        self.nulling_eliminated.get(pos as usize).and_then(|&ne| ne)
+        self.forest_info.nulling_eliminated.get(pos as usize).and_then(|&ne| ne)
     }
 
     #[inline]
@@ -547,17 +545,6 @@ impl Grammar for DefaultGrammar {
         } else {
             self.sym_maps.to_external[symbol.usize()]
         }
-    }
-
-    fn max_nulling_symbol(&self) -> Option<usize> {
-        (0..self.num_rules())
-            .filter_map(|action| self.nulling(action as u32).map(|(sym, _dir)| sym.usize()))
-            .chain(
-                self.eliminated_nulling_intermediate()
-                    .iter()
-                    .map(|&[_lhs, rhs0, _rhs1]| rhs0.usize()),
-            )
-            .max()
     }
 
     fn dot_before_eof(&self) -> Dot {

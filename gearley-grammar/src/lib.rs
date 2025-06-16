@@ -21,13 +21,6 @@ pub enum MaybePostdot {
 
 pub type NullingIntermediateRule = [Symbol; 3];
 
-
-#[derive(Serialize, Deserialize, Clone, Default, Debug)]
-pub struct ForestInfo {
-    pub eval: Vec<ExternalOrigin>,
-    pub nulling_intermediate_rules: Vec<NullingIntermediateRule>,
-}
-
 pub trait Grammar {
     fn eof(&self) -> Symbol;
 
@@ -72,8 +65,6 @@ pub trait Grammar {
     fn to_internal(&self, symbol: Symbol) -> Option<Symbol>;
 
     fn to_external(&self, symbol: Symbol) -> Symbol;
-
-    fn max_nulling_symbol(&self) -> Option<usize>;
 
     fn dot_before_eof(&self) -> Dot;
 
@@ -171,10 +162,6 @@ impl<'a, G> Grammar for &'a G where G: Grammar {
         (**self).to_external(symbol)
     }
 
-    fn max_nulling_symbol(&self) -> Option<usize> {
-        (**self).max_nulling_symbol()
-    }
-
     fn dot_before_eof(&self) -> Dot {
         (**self).dot_before_eof()
     }
@@ -185,5 +172,30 @@ impl<'a, G> Grammar for &'a G where G: Grammar {
 
     fn forest_info(&self) -> ForestInfo {
         (**self).forest_info()
+    }
+}
+
+
+#[derive(Serialize, Deserialize, Clone, Default, Debug)]
+pub struct ForestInfo {
+    pub eval: Vec<ExternalOrigin>,
+    pub nulling_intermediate_rules: Vec<NullingIntermediateRule>,
+    // Each rule can have only one eliminated nulling symbol.
+    pub nulling_eliminated: Vec<NullingEliminated>,
+}
+
+impl ForestInfo {
+    pub fn max_nulling_symbol(&self) -> Option<usize> {
+        self.nulling_eliminated.iter().flatten().map(|&(sym, _dir)| sym.usize())
+            .chain(
+                self.nulling_intermediate_rules
+                    .iter()
+                    .map(|&[_lhs, rhs0, _rhs1]| rhs0.usize()),
+            )
+            .max()
+    }
+
+    pub fn external_origin(&self, dot: u32) -> Option<ExternalOrigin> {
+        self.eval.get(dot as usize).copied()
     }
 }

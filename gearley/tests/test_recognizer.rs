@@ -4,9 +4,7 @@ extern crate cfg;
 extern crate env_logger;
 extern crate gearley;
 
-mod helpers;
-
-use cfg::{Cfg, Symbolic};
+use cfg::Cfg;
 
 use gearley::{DefaultGrammar, NullForest, Recognizer, RecognizerParseExt};
 

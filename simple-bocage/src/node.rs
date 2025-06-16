@@ -1,4 +1,5 @@
 pub use self::Node::*;
+use cfg_symbol::Symbol;
 use gearley_forest::node_handle::NodeHandle;
 
 // Node variants `Sum`/`Product` are better known in literature as `OR`/`AND`.

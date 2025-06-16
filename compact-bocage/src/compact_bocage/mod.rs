@@ -106,8 +106,7 @@ where
 
     fn nulling_symbol_count(&self) -> usize {
         // why 1?
-        self.grammar
-            .borrow()
+        self.forest_info
             .max_nulling_symbol()
             .map_or(1, |m| m + 1)
     }

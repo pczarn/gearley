@@ -2,7 +2,7 @@
 name = "gearley"
 version = "0.1.0"
 
-authors = [ "Piotr Czarnecki <pioczarn@gmail.com>" ]
+authors = [ "Peter Blackson <pioczarn@gmail.com>" ]
 description = "An Earley parser engine."
 keywords = ["grammar", "parsing", "language", "forest", "intersection"]
 documentation = "http://pczarn.github.io/gearley/"
@@ -24,13 +24,15 @@ gearley-grammar = { path = "../gearley-grammar/" }
 gearley-recognizer = { path = "../gearley-recognizer/" }
 gearley-default-grammar = { path = "../gearley-default-grammar/", optional = true }
 simple-bocage = { path = "../simple-bocage/", optional = true }
-gearley-parse = { path = "../gearley-parse/" }
+gearley-utils = { path = "../gearley-utils/" }
 
 [dev-dependencies]
 c_lexer_logos = "0.1.1"
 log = "0.4"
 env_logger = "0.11"
 cfg = { path = "../../cfg/cfg/" }
+cfg-load = { path = "../../cfg/cfg-load/" }
+gearley-example-grammars = { path = "../gearley-example-grammars/" }
 
 [features]
 default = ["gearley-default-grammar", "simple-bocage"]

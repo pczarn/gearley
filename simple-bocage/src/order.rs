@@ -4,7 +4,7 @@ use crate::node::Node;
 
 pub trait Order<S> {
     /// Apply the order to sum node alternatives.
-    fn sum<'b>(&mut self, alternatives: &'b [Node<S>]) -> &'b [Node<S>] {
+    fn sum<'b>(&mut self, alternatives: &'b [Node]) -> &'b [Node] {
         alternatives
     }
 

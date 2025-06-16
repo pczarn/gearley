@@ -2,42 +2,31 @@
 extern crate log;
 extern crate cfg;
 extern crate gearley;
-
-#[macro_use]
-mod grammars;
-mod helpers;
+extern crate gearley_example_grammars;
 
 // use gearley::{}
 
-use cfg::Symbol;
-use ambiguous_arith::AmbiguousArithEvaluator;
+use gearley_example_grammars::{ambiguous_math, precedenced_math};
 use gearley::{Bocage, DefaultGrammar, Recognizer, RecognizerParseExt};
-use grammars::*;
-
-const SUM_TOKENS: &'static [Symbol] = precedenced_arith!(
-    '1' '+' '(' '2' '*' '3' '-' '4' ')' '/'
-    '(' '5' '5' ')' '-' '(' '5' '4' ')' '*'
-    '5' '5' '+' '6' '2' '-' '1' '3' '-' '('
-    '(' '3' '6' ')' ')'
-);
 
 #[test]
 fn test_precedenced_arith() {
-    let external = precedenced_arith::grammar();
+    let external = precedenced_math::grammar();
     let cfg = DefaultGrammar::from_grammar(external);
     let mut rec = Recognizer::with_forest(&cfg, Bocage::new(&cfg));
-    assert!(rec.parse(SUM_TOKENS));
+    let tokens = precedenced_math::tokenize("1+(2*3-4)/(55)-(54)*55+62-13-((36))");
+    assert!(rec.parse(&tokens));
 }
 
 #[test]
 fn test_ambiguous_arithmetic() {
-    let tokens = ambiguous_arith!('2' '-' '0' '*' '3' '+' '1');
-    let external = ambiguous_arith::grammar();
+    let tokens = ambiguous_math::tokenize("2-0*3+1");
+    let external = ambiguous_math::grammar();
     let cfg = DefaultGrammar::from_grammar(external);
-    let mut evaluate = AmbiguousArithEvaluator;
+    let mut evaluate = ambiguous_math::Evaluator;
     let bocage = Bocage::new(&cfg);
     let mut rec = Recognizer::with_forest(&cfg, bocage);
-    assert!(rec.parse(tokens));
+    assert!(rec.parse(&tokens));
     let finished_node = rec.finished_node().expect("exhausted");
     let mut forest = rec.into_forest();
     let results = forest.evaluate(evaluate, finished_node);

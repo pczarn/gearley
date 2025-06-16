@@ -4,10 +4,8 @@ extern crate cfg;
 extern crate env_logger;
 extern crate gearley;
 
-mod helpers;
-
 use cfg::Cfg;
-use cfg::{Symbol, Symbolic};
+use cfg::Symbol;
 
 use gearley_forest::Evaluate;
 use simple_bocage::Bocage;
@@ -16,7 +14,7 @@ use gearley::{DefaultGrammar, Recognizer, RecognizerParseExt};
 
 struct NullingEval(Symbol);
 
-impl Evaluate<Symbol> for NullingEval {
+impl Evaluate for NullingEval {
     type Elem = bool;
 
     fn leaf(&self, terminal: Symbol, values: u32) -> Self::Elem {
@@ -66,7 +64,7 @@ macro_rules! test_grammar_with_nulling_intermediate {
             foo: Symbol,
         }
 
-        impl Evaluate<Symbol> for NullingIntermediateEval {
+        impl Evaluate for NullingIntermediateEval {
             type Elem = i32;
 
             fn leaf(&self, terminal: Symbol, values: u32) -> Self::Elem {

@@ -3,7 +3,7 @@ use cfg::Cfg;
 use gearley_default_grammar::DefaultGrammar;
 use gearley_forest::NullForest;
 use gearley_recognizer::Recognizer;
-use gearley_parse::RecognizerParseExt;
+use gearley_utils::RecognizerParseExt;
 
 #[test]
 fn test_recognize_nested() {

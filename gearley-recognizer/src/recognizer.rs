@@ -4,12 +4,12 @@ use std::marker::PhantomData;
 use bit_matrix::BitMatrix;
 
 use cfg_symbol::{Symbol, SymbolSource};
+use gearley_forest::completed_item::CompletedItem;
 use gearley_forest::{Forest, NullForest};
 use gearley_grammar::Grammar;
 use crate::item::{Item, CompletedItemLinked, Origin};
 use gearley_vec2d::Vec2d;
 
-use crate::event::{MedialItems, PredictedSymbols};
 use crate::local_prelude::*;
 use crate::predict::Predict;
 
@@ -65,18 +65,35 @@ where
     pub(crate) complete: BinaryHeap<CompletedItemLinked<F::NodeRef>>,
 }
 
+impl<G> Recognizer<G, NullForest, DefaultPerfHint>
+where
+    G: Grammar,
+{
+    /// Creates a new recognizer for a given grammar and forest. The recognizer has an initial
+    /// Earley set that predicts the grammar's start symbol.
+    pub fn new(grammar: G) -> Recognizer<G, NullForest, DefaultPerfHint> {
+        Recognizer::with_forest_and_policy(grammar, NullForest, DefaultPerfHint::new(8192))
+    }
+}
+
+impl<F, G> Recognizer<G, F, DefaultPerfHint>
+where
+    F: Forest,
+    G: Grammar,
+{
+    /// Creates a new recognizer for a given grammar and forest. The recognizer has an initial
+    /// Earley set that predicts the grammar's start symbol.
+    pub fn with_forest(grammar: G, forest: F) -> Recognizer<G, F, DefaultPerfHint> {
+        Recognizer::with_forest_and_policy(grammar, forest, DefaultPerfHint::new(8192))
+    }
+}
+
 impl<F, G, P> Recognizer<G, F, P>
 where
     F: Forest,
     G: Grammar,
     P: PerfHint,
 {
-    /// Creates a new recognizer for a given grammar and forest. The recognizer has an initial
-    /// Earley set that predicts the grammar's start symbol.
-    pub fn new(grammar: G, forest: F) -> Recognizer<G, F, P> where F: Default, P: Default {
-        Self::with_forest_and_policy(grammar, forest, P::default())
-    }
-
     pub fn with_forest_and_policy(grammar: G, forest: F, policy: P) -> Recognizer<G, F, P> {
         // Reserve the right capacity for vectors.
         let mut recognizer = Recognizer {
@@ -153,7 +170,7 @@ where
         let grammar = &self.grammar;
         // Build index by postdot
         // These medial positions themselves are sorted by postdot symbol.
-        self.medial.last_mut().sort_unstable_by(|a: &Item<<F as Forest<G::Symbol>>::NodeRef>, b| {
+        self.medial.last_mut().sort_unstable_by(|a: &Item<<F as Forest>::NodeRef>, b| {
             (grammar.get_rhs1_cmp(a.dot), a.dot, a.origin).cmp(&(
                 grammar.get_rhs1_cmp(b.dot),
                 b.dot,
@@ -244,14 +261,14 @@ where
     // Event access.
 
     /// Accesses predicted symbols.
-    pub fn predicted_symbols(&self) -> impl Iterator<Item = Symbol> {
+    pub fn predicted_symbols(&self) -> impl Iterator<Item = Symbol> + use<'_, F, G, P> {
         let earleme = self.earleme();
         self.predicted.iter_row(earleme).zip(SymbolSource::generate_fresh()).filter_map(|(is_present, sym)| if is_present { Some(sym) } else { None })
     }
 
     /// Accesses medial items.
-    pub fn medial_items(&self) -> impl Iterator<Item = Item<F::NodeRef>> {
-        self.medial[self.earleme()].iter()
+    pub fn medial_items(&self) -> impl Iterator<Item = Item<F::NodeRef>> + use<'_, F, G, P> {
+        self.medial[self.earleme()].iter().copied()
     }
 
     // Accessors.
@@ -346,7 +363,7 @@ impl<G, F, P> Recognizer<G, F, P>
     }
 
     /// Complete predicted items that have a common postdot symbol.
-    fn complete_predictions(&mut self, set_id: Origin, sym: G::Symbol, rhs_link: F::NodeRef) {
+    fn complete_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
         let mut unary: u32 = 0;
         for trans in self.grammar.completions(sym) {
             let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
@@ -374,7 +391,7 @@ impl<G, F, P> Recognizer<G, F, P>
     }
 
     /// Attempt to complete a predicted item with a postdot gensym.
-    fn complete_generated_binary_predictions(&mut self, set_id: Origin, sym: G::Symbol, rhs_link: F::NodeRef) {
+    fn complete_generated_binary_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
         let trans = self.grammar.gen_completion(sym);
         let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
         let will_be_useful = self.grammar.lr_set(trans.dot)[self.lookahead.mut_with_grammar(&self.grammar).sym().usize()];
@@ -485,7 +502,7 @@ where
 
     /// Returns the symbol of this completion.
     #[inline]
-    pub fn symbol(&self) -> G::Symbol {
+    pub fn symbol(&self) -> Symbol {
         self.lhs_sym
     }
 }

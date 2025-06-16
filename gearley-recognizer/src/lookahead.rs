@@ -55,11 +55,11 @@ impl<'a, L: Lookahead> Lookahead for &'a mut L {
         (**self).clear_hint()
     }
 
-    fn set_hint(&mut self, hint: S) {
+    fn set_hint(&mut self, hint: Symbol) {
         (**self).set_hint(hint)
     }
 
-    fn sym(&self) -> S {
+    fn sym(&self) -> Symbol {
         (**self).sym()
     }
 }

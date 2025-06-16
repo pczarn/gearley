@@ -4,19 +4,17 @@ extern crate cfg;
 extern crate env_logger;
 extern crate gearley;
 
-mod helpers;
-
 use cfg::sequence::CfgSequenceExt;
 // use cfg::Cfg;
 use cfg::{sequence::Separator::Trailing, Cfg};
-use cfg::{Symbol, Symbolic};
+use cfg::Symbol;
 
 use gearley::{Bocage, DefaultGrammar, Grammar, Recognizer, RecognizerParseExt};
 use gearley_forest::Evaluate;
 
 struct Eval;
 
-impl Evaluate<Symbol> for Eval {
+impl Evaluate for Eval {
     type Elem = i32;
 
     fn leaf(&self, terminal: Symbol, _values: u32) -> Self::Elem {

@@ -4,7 +4,6 @@ pub mod event;
 pub mod item;
 pub mod perf_hint;
 mod predict;
-mod complete;
 #[cfg(feature = "memusage")]
 mod memory_usage;
 pub mod lookahead;

@@ -4,7 +4,6 @@ use bumpalo::Bump;
 
 use gearley_forest::evaluate::Evaluate;
 use gearley_forest::node_handle::{NodeHandle, NULL_HANDLE};
-use gearley_grammar::Grammar;
 
 use allocator_api2::vec::Vec as AVec;
 
@@ -18,11 +17,11 @@ struct WorkNode<'a> {
     results: AVec<u32, &'a Bump>,
 }
 
-impl<G: Grammar> Bocage<G> {
+impl Bocage {
     // Once node liveness is marked, you may traverse the nodes.
     //
     // We get a list of linked lists of vecs. For each linked list, run .
-    pub fn evaluate<E: Evaluate<G::Symbol>>(&mut self, eval: E, root_node: NodeHandle) -> Vec<E::Elem> {
+    pub fn evaluate<E: Evaluate>(&mut self, eval: E, root_node: NodeHandle) -> Vec<E::Elem> {
         // let mut all_nodes = vec![];
         let alloc = Bump::new();
         let mut results: Vec<E::Elem> = vec![];

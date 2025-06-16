@@ -7,7 +7,10 @@ members = [
     "gearley-default-grammar",
     "gearley-forest",
     "compact-bocage",
-    "simple-bocage", "gearley-parse",
+    "simple-bocage",
+    "gearley-load",
+    "gearley-utils",
+    "gearley-example-grammars",
 ]
 
 exclude = [

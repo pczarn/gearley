@@ -8,7 +8,7 @@ use wasm_bindgen::prelude::*;
 use talc::*;
 use spin;
 
-use gearley::DefaultGrammar;
+use gearley::{DefaultGrammar, Recognizer, Bocage, RecognizerParseExt};
 
 use std::cell::RefCell;
 use std::sync::LazyLock;
@@ -71,14 +71,17 @@ pub fn get_logs() -> String {
     LOG_BUFFER.lock().unwrap().clone()
 }
 
-fn load(grammar: &str) -> Result<String, LoadError> {
+fn load(grammar: &str) -> Result<DefaultGrammar, LoadError> {
     let _ = init_logger();
     let cfg = Cfg::load(&grammar[..])?;
     let grammar = DefaultGrammar::from_grammar(cfg);
-    let mut recognizer = Recognizer::new(&grammar, Bocage::new(&grammar));
+    Ok(grammar)
+}
+
+fn parse_inner(grammar: DefaultGrammar, input: &str) {
+    let mut recognizer = Recognizer::with_forest(&grammar, Bocage::new(&grammar));
     recognizer.parse();
     println!("");
-    Ok(format!("test {}", get_logs()))
 }
 
 #[wasm_bindgen(start)]

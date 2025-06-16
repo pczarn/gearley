@@ -1,5 +1,6 @@
 use std::ops::{Index, IndexMut};
 
+use cfg_symbol::{Symbol, SymbolSource};
 use gearley_forest::node_handle::NodeHandle;
 use gearley_forest::Forest;
 use gearley_grammar::{ForestInfo, Grammar};
@@ -34,12 +35,12 @@ impl Bocage {
         let nulling_leaf_count = self.nulling_symbol_count();
         // Ensure that `max` is not ridiculously large.
         assert!(nulling_leaf_count < (1 << 20), "invalid nullable symbol");
-        self.graph.extend((0..=nulling_leaf_count).map(|i| {
+        self.graph.extend(SymbolSource::generate_fresh().take(nulling_leaf_count + 1).map(|symbol| {
             Node::NullingLeaf {
-                symbol: i.into(),
+                symbol,
             }
         }));
-        for &[lhs, rhs0, rhs1] in self.forest_info.nulling_intermediate_rules {
+        for &[lhs, rhs0, rhs1] in &self.forest_info.nulling_intermediate_rules {
             self.graph[NodeHandle::nulling(lhs).usize()] = Node::Product {
                     left_factor: NodeHandle::nulling(rhs0),
                     right_factor: Some(NodeHandle::nulling(rhs1)),
@@ -49,7 +50,7 @@ impl Bocage {
     }
 
     fn nulling_symbol_count(&self) -> usize {
-        self.grammar.max_nulling_symbol().unwrap_or(0)
+        self.forest_info.max_nulling_symbol().unwrap_or(0)
     }
 
     // #[inline]
@@ -70,7 +71,7 @@ impl Bocage {
     // }
 
     #[inline]
-    pub(crate) fn postprocess_product_tree_node(&self, node: &Node<G::Symbol>) -> Node<G::Symbol> {
+    pub(crate) fn postprocess_product_tree_node(&self, node: &Node) -> Node {
         if let &Node::Product {
             left_factor: factor,
             right_factor: None,
@@ -78,7 +79,7 @@ impl Bocage {
         } = node
         {
             // Add omitted phantom syms here.
-            if let Some((sym, dir)) = self.grammar.nulling(action) {
+            if let Some((sym, dir)) = self.forest_info.nulling_eliminated[action as usize] {
                 let (left, right) = if dir {
                     (factor, NodeHandle::nulling(sym))
                 } else {
@@ -99,7 +100,7 @@ impl Bocage {
 
     #[inline]
     pub(crate) fn is_transparent(&self, action: u32) -> bool {
-        action == NULL_ACTION || self.grammar.external_origin(action).is_none()
+        action == NULL_ACTION || self.forest_info.external_origin(action).is_none()
     }
 }
 
