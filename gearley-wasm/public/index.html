@@ -99,10 +99,16 @@
             grammar_editor.getSession().on('change', function() {
                 update()
             });
+            function process(result) {
+                var result = document.getElementById("result");
+                const matches = result.matchAll(/^\[TRACE\] - ([\w\d\.]+): (.+)/gm)
+                for (const match in matches) {
+                    console.log(match)
+                }
+            }
             function update() {
                 const input = input_editor.getSession().getValue();
                 const grammar = grammar_editor.getSession().getValue();
-                var result = document.getElementById("result");
 
                 if (typeof window.log_error === 'undefined') {
                     window.log_error = function(text) {
@@ -110,11 +116,13 @@
                     }
                 }
 
+                var result = ""
                 try {
-                    result.innerText = parse(input, grammar);
+                    result = parse(input, grammar);
                 } catch (e) {
-                    result.innerText += e.message;
+                    result += e.message;
                 }
+                process(result)
             }
         </script>
     </body>

@@ -8,3 +8,4 @@ pub use gearley_recognizer::{Recognizer, item::Item, item::Origin};
 pub use gearley_recognizer::perf_hint::{PerfHint, DefaultPerfHint};
 pub use gearley_recognizer as recognizer;
 pub use gearley_utils::RecognizerParseExt;
+pub use gearley_utils as utils;

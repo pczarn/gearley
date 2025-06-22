@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 
+use cfg::Cfg;
 use cfg_symbol::Symbol;
+use gearley_default_grammar::DefaultGrammar;
 use log::trace;
 
 #[cfg(feature = "simple-bocage")]
@@ -83,4 +85,14 @@ impl<G> RecognizerParseExt for Recognizer<G, NullForest> where
 
         self.is_finished()
     }
+}
+
+pub fn parse_terminal_list<'a>(cfg: Cfg, grammar: DefaultGrammar, terminal_list: impl Iterator<Item = &'a str>) -> bool {
+    let mut recognizer = Recognizer::with_forest(&grammar, Bocage::new(&grammar));
+    let name_map = cfg.sym_source().name_map();
+    let mut tokens = vec![];
+    for word in terminal_list {
+        tokens.push(name_map[word]);
+    }
+    recognizer.parse(&tokens)
 }
