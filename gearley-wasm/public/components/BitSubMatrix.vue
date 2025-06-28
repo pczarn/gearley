@@ -1,5 +1,5 @@
 <template>
-    <h1>predicted symbols</h1>
+    <h2>predicted symbols</h2>
     <ul>
         <template v-for="(ch, index) of content.row.trim()">
             <li v-if="ch === '1'">

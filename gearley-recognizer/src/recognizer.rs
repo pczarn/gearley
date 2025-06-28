@@ -125,6 +125,7 @@ where
         let earleme = self.earleme() as Origin;
         // Add a leaf node to the forest with the given value.
         let node = self.forest.leaf(symbol, earleme + 1, value);
+        trace!("scan: Scan {{ symbol: {:?}, node: {:?} }}", symbol, node);
         self.complete(earleme, symbol, node);
     }
 
@@ -261,7 +262,7 @@ where
         } else {
             let has_dot_before_eof = |item: &&Item<_>| item.dot == self.grammar.dot_before_eof();
             let item_node = |item: &Item<_>| item.node;
-            self.medial.last_item().filter(has_dot_before_eof).map(item_node)
+            self.medial[self.medial.len() - 1].first().filter(has_dot_before_eof).map(item_node)
         }
     }
 

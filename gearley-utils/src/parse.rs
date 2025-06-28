@@ -70,20 +70,23 @@ where
         while let Some((i, &token)) = iter.next() {
             self.begin_earleme();
             if let Some((_i, t)) = iter.peek() {
-                self.lookahead().set_hint(**t);
+                trace!("lookahead_set_hint: {:?}", **t);
+                let s = self.grammar().to_internal(**t).unwrap();
+                self.lookahead().set_hint(s);
             } else {
+                trace!("lookahead_clear_hint: None null");
                 self.lookahead().clear_hint();
             }
-            self.scan(token, i as u32);
+            self.scan(self.grammar().to_internal(token).unwrap(), i as u32);
             if !self.end_earleme() {
                 return Err(ParseError::Parse { msg: "failed to parse", token, i })
             }
         }
-        self.begin_earleme();
-        self.scan(self.grammar().eof(), 0);
-        if !self.end_earleme() {
-            return Err(ParseError::Parse { msg: "failed to read EOF", token: self.grammar().eof(), i: 0 });
-        }
+        // self.begin_earleme();
+        // self.scan(self.grammar().eof(), 0);
+        // if !self.end_earleme() {
+        //     return Err(ParseError::Parse { msg: "failed to read EOF", token: self.grammar().eof(), i: 0 });
+        // }
 
         trace!("finished {:?}", &*self);
 

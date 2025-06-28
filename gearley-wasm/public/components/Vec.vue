@@ -1,5 +1,5 @@
 <template>
-    <h1>medial items</h1>
+    <h2>medial items</h2>
     <ul>
         <template v-for="(item, index) of content">
             <li>

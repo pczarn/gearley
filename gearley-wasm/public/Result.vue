@@ -99,6 +99,7 @@
         </div>
         <BitSubMatrix v-if="kind === 'BitSubMatrix'" :content="content" :names="names" />
         <Vec v-if="op === 'medial_sort_and_remove_unary_medial_items'" :content="content" :names="names" />
+        <Scan v-if="kind === 'Scan'" :content="content" :names="names" />
     </div>
 </template>
 
@@ -106,12 +107,14 @@
 import Cfg from 'components/Cfg.vue'
 import Vec from 'components/Vec.vue'
 import BitSubMatrix from 'components/BitSubMatrix.vue'
+import Scan from 'components/Scan.vue'
 
 export default {
     components: {
         Cfg,
         Vec,
         BitSubMatrix,
+        Scan,
     },
     data() {
         return {

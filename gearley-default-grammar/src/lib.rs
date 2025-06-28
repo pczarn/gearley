@@ -124,6 +124,8 @@ impl DefaultGrammar {
                 }
             }
         }
+        assert_eq!(grammar.wrapped_roots().len(), 1);
+        let end_of_input = grammar.wrapped_roots().first().unwrap().end_of_input;
         let mut not_gensyms = gensyms.clone();
         not_gensyms.negate(); 
         for not_gensym in not_gensyms.iter() {
@@ -131,6 +133,7 @@ impl DefaultGrammar {
             for (dst, src) in (&mut *order)[not_gensym.usize()].iter_blocks_mut().zip(gensyms.bit_vec().blocks()) {
                 *dst |= src;
             }
+            order.set(end_of_input.usize(), not_gensym.usize(), true);
         }
         // the order above is not transitive.
         // We modify it so that if `A < B` and `B < C` then `A < C`
