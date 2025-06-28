@@ -18,43 +18,7 @@
         bocage: {{ bocage }}
     </div>
     <div v-if="!raw" v-for="[op, kind, content] in logs">
-        <div v-if="kind == 'Cfg'">
-            <h1>{{ op }}</h1>
-            <h2>Grammar Info</h2>
-            <table>
-                <tbody>
-                    <tr>
-                        <td>After</td>
-                        <td>{{ op }}</td>
-                    </tr>
-                    <tr>
-                        <td>Num syms</td>
-                        <td>{{ content.sym_source.next_symbol.n - 1 }}</td>
-                    </tr>
-                    <tr>
-                        <td>Num rules</td>
-                        <td>{{ content.rules.length }}</td>
-                    </tr>
-                </tbody>
-            </table>
-            <h2>Rules</h2>
-            <table>
-                <thead>
-                    <th>LHS</th>
-                    <th>RHS</th>
-                </thead>
-                <tbody>
-                    <tr v-for="rule in content.rules">
-                        <td>{{ name_of(content, rule.lhs) }}</td>
-                        <td>
-                            <span v-for="sym in rule.rhs">
-                                {{ name_of(content, sym) }},
-                            </span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <Cfg v-if="kind == 'Cfg'" :content="content" :op="op" />
         <div v-if="kind == 'DefaultGrammar'">
             <h1>{{ op }}</h1>
             <h2>DefaultGrammar</h2>
@@ -82,8 +46,10 @@
                 <tbody>
                     <tr v-for="(val, index) in content.prediction_matrix.bit_vec.storage.split(' ')">
                         <td>{{ index }}</td>
-                        <td v-for="bit in val.split('')">
-                            {{ bit }}
+                        <td v-for="(bit, index2) in val.split('').slice(0, size.syms)">
+                            <span :class="{ one: bit === '1', diagonal: index === index2 }">
+                                {{ bit }}
+                            </span>
                         </td>
                     </tr>
                 </tbody>
@@ -95,10 +61,10 @@
                     <th v-for="index in content.lr_sets.row_bits">{{ index - 1 }}</th>
                 </thead>
                 <tbody>
-                    <tr v-for="(val, index) in content.lr_sets.bit_vec.storage.split(' ')">
+                    <tr v-for="(val, index) in content.lr_sets.bit_vec.storage.trim().split(' ')">
                         <td>{{ index }}</td>
-                        <td v-for="bit in val.split('')">
-                            {{ bit }}
+                        <td v-for="(bit, index2) in val.split('')">
+                            <span :class="{ one: bit === '1', diagonal: index === index2 }">{{ bit }}</span>
                         </td>
                     </tr>
                 </tbody>
@@ -131,18 +97,22 @@
                 </ol>
             </ul>
         </div>
-        <div v-if="kind == 'BitSubMatrix'">
-            <ul>
-                <li v-for="(ch, index) of content.row.trim()">
-                    {{ names[index] }}: {{ ch }}
-                </li>
-            </ul>
-        </div>
+        <BitSubMatrix v-if="kind === 'BitSubMatrix'" :content="content" :names="names" />
+        <Vec v-if="op === 'medial_sort_and_remove_unary_medial_items'" :content="content" :names="names" />
     </div>
 </template>
 
 <script>
+import Cfg from 'components/Cfg.vue'
+import Vec from 'components/Vec.vue'
+import BitSubMatrix from 'components/BitSubMatrix.vue'
+
 export default {
+    components: {
+        Cfg,
+        Vec,
+        BitSubMatrix,
+    },
     data() {
         return {
             input_editor: null,
@@ -238,6 +208,10 @@ export default {
             }
             return mapping.map(sym_with_name => sym_with_name.name && sym_with_name.name.name)
         },
+        size() {
+            const result = this.logs && this.logs.find(([op, kind, content]) => kind == 'DefaultGrammarSize')
+            return result && result[2]
+        },
         bocage() {
             const result = this.logs && this.logs.find(([op, kind, content]) => kind == 'Bocage')
             return result && result[2]
@@ -315,5 +289,13 @@ input:checked + .slider:before {
 
 .slider.round:before {
   border-radius: 50%;
+}
+
+span.one {
+    background-color: green;
+}
+
+span.diagonal {
+    color: white;
 }
 </style>

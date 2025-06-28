@@ -157,7 +157,7 @@ where
         self.sort_medial_items();
         self.remove_unary_medial_items();
         self.remove_unreachable_sets();
-        trace!("medial_sort_and_remove_unary_medial_items: {:?}", self.medial.last());
+        trace!("medial_sort_and_remove_unary_medial_items: Vec {:?}", self.medial.last());
         // `earleme` is now at least 1.
         // Prediction pass.
         self.prediction_pass();
