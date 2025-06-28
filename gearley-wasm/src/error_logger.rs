@@ -24,7 +24,8 @@ cfg_if! {
         }
 
         fn hook_impl(info: &panic::PanicInfo) {
-            let mut msg = info.to_string();
+            let mut msg = "Panic:\n".to_string();
+            msg.push_str(&info.to_string());
 
             // Add the error stack to our message.
             //
@@ -55,7 +56,7 @@ cfg_if! {
         use std::io::{self, Write};
 
         fn hook_impl(info: &panic::PanicInfo) {
-            let _ = writeln!(io::stderr(), "{}", info);
+            let _ = writeln!(io::stderr(), "Non-wasm panic: {}", info);
         }
     }
 }
@@ -88,6 +89,6 @@ pub fn set_panic_hook() {
     //
     // For more details see
     // https://github.com/rustwasm/console_error_panic_hook#readme
-    #[cfg(feature = "console_error_panic_hook")]
+    // #[cfg(feature = "console_error_panic_hook")]
     set_once();
 }

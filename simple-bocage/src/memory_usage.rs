@@ -1,9 +1,20 @@
+use gearley_grammar::ForestInfo;
 use memusage::MemoryReport;
+
+use crate::node::Node;
 
 use super::Bocage;
 
-impl<G> MemoryReport for Bocage<G> {
-    fn indirect(&self) -> usize {
-        self.graph.memory_use() + self.gc.liveness.memory_use() + self.gc.dfs.memory_use()
-    }
-}
+// impl MemoryReport for Bocage {
+//     fn children(&self) -> usize {
+//         self.graph.children() + self.forest_info.children()
+//     }
+// }
+
+// impl MemoryReport for Node {}
+
+// impl MemoryReport for ForestInfo {
+//     fn children(&self) -> usize {
+//         self.eval.indirect()
+//     }
+// }

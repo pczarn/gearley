@@ -11,7 +11,6 @@
             html, body {
                 margin: 0;
                 padding: 0;
-                height: 100%;
             }
 
             .container {
@@ -45,6 +44,7 @@
 
             .left-box, .right-box {
                 flex: 1;
+                overflow: auto;
                 padding: 20px;
             }
 
@@ -67,63 +67,66 @@
                 border-left: gray solid 2px;
                 font-family: 'Courier New', Courier, monospace;
             }
+
+            #result {
+                height: 60vh;
+            }
         </style>
     </head>
     <body>
         <div class="container">
             <div class="top-box">
-                <div id="input_editor">abcd</div>
+                <div id="input_editor">a b c d</div>
             </div>
             <div class="bottom-row">
                 <div class="left-box">
                     <div id="grammar_editor">test ::= a b c d;</div>
                 </div>
-                <div class="right-box" id="result">
+                <div class="right-box">
+                    <div id="result">
+                        <Result></Result>
+                    </div>
                 </div>
             </div>
         </div>
+        <script src="https://unpkg.com/vue@latest"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vue3-sfc-loader/dist/vue3-sfc-loader.js"></script>
         <script src="ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
         <script type="module">
             import init, { parse } from "/pkg/gearley_wasm.js";
+            import { createApp } from 'https://unpkg.com/petite-vue?module'
+
+            window._parse = parse
             await init().catch(console.error);
 
-            var input_editor = ace.edit("input_editor");
-            input_editor.setTheme("ace/theme/monokai");
-            input_editor.session.setMode("ace/mode/javascript");
-            input_editor.getSession().on('change', function() {
-                update()
-            });
-            var grammar_editor = ace.edit("grammar_editor");
-            grammar_editor.setTheme("ace/theme/monokai");
-            grammar_editor.session.setMode("ace/mode/javascript");
-            grammar_editor.getSession().on('change', function() {
-                update()
-            });
-            function process(result) {
-                var result = document.getElementById("result");
-                const matches = result.matchAll(/^\[TRACE\] - ([\w\d\.]+): (.+)/gm)
-                for (const match in matches) {
-                    console.log(match)
-                }
-            }
-            function update() {
-                const input = input_editor.getSession().getValue();
-                const grammar = grammar_editor.getSession().getValue();
-
-                if (typeof window.log_error === 'undefined') {
-                    window.log_error = function(text) {
-                        result.innerText = text;
+            const options = {
+                moduleCache: {
+                    vue: Vue
+                },
+                async getFile(url) {
+                    
+                    const res = await fetch(url);
+                    if ( !res.ok )
+                    throw Object.assign(new Error(res.statusText + ' ' + url), { res });
+                    return {
+                    getContentData: asBinary => asBinary ? res.arrayBuffer() : res.text(),
                     }
-                }
+                },
+                addStyle(textContent) {
 
-                var result = ""
-                try {
-                    result = parse(input, grammar);
-                } catch (e) {
-                    result += e.message;
-                }
-                process(result)
+                    const style = Object.assign(document.createElement('style'), { textContent });
+                    const ref = document.head.getElementsByTagName('style')[0] || null;
+                    document.head.insertBefore(style, ref);
+                },
             }
+
+            const { loadModule } = window['vue3-sfc-loader'];
+
+            const app = Vue.createApp({});
+
+            app.component('Result', Vue.defineAsyncComponent( () => loadModule('./Result.vue', options)))
+
+            app.mount('#result');
         </script>
     </body>
 </html>

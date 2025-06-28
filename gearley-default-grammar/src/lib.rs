@@ -11,7 +11,7 @@ use cfg_symbol::intern::Mapping;
 use miniserde::{Serialize, Deserialize};
 
 use cfg::history::earley::{EventAndDistance, EventId, ExternalDottedRule, ExternalOrigin, MinimalDistance, NullingEliminated};
-use cfg::{Cfg, CfgRule, Symbol, SymbolBitSet};
+use cfg::{Cfg, CfgRule, Symbol, SymbolBitSet, SymbolName};
 
 use gearley_grammar::{ForestInfo, Grammar, MaybePostdot, NullingIntermediateRule, PredictionTransition};
 use gearley_vec2d::Vec2d;
@@ -41,6 +41,7 @@ pub struct DefaultGrammar {
     start_sym: Symbol,
     original_start_sym: Symbol,
     has_trivial_derivation: bool,
+    sof_sym: Symbol,
     eof_sym: Symbol,
     dot_before_eof: Dot,
     size: DefaultGrammarSize,
@@ -84,32 +85,29 @@ impl DefaultGrammar {
 
     pub fn from_grammar(mut grammar: Cfg) -> Self {
         grammar.make_proper();
-        trace!("ROOTS: {:?}", grammar.roots());
-        trace!("NUM_SYMS: {:?}", grammar.num_syms());
-        trace!("MAX_SYM: {:?}", grammar.rules().map(|rule| rule.rhs.iter().map(|&sym| sym.usize()).max().unwrap_or(0).max(rule.lhs.usize())).max());
-        trace!("<WRAP INPUT>");
-        let rules_before_wrap = grammar.rules().count();
+        trace!("make_proper: {:?}", grammar);
         grammar.wrap_input();
-        trace!("NUM_SYMS: {:?}", grammar.num_syms());
-        trace!("MAX_SYM: {:?}", grammar.rules().map(|rule| rule.rhs.iter().map(|&sym| sym.usize()).max().unwrap_or(0).max(rule.lhs.usize())).max());
-        trace!("ROOTS: {:?}", grammar.roots());
-        trace!("WRAPPED ROOTS: {:?}", grammar.wrapped_roots());
-        trace!("RULES: WAS {} IS {} ADDED {:?}", rules_before_wrap, grammar.rules().count(), grammar.rules().skip(rules_before_wrap).collect::<Vec<_>>());
-        trace!("NUM_SYMS: {}", grammar.num_syms());
-        trace!("<BINARIZE AND ELIMINATE NULLING RULES>");
+        trace!("wrap_input: {:?}", grammar);
         let nulling = grammar.binarize_and_eliminate_nulling_rules();
-        trace!("NUM_SYMS: {}", grammar.num_syms());
-        trace!("MAX_SYM: {:?}", grammar.rules().map(|rule| rule.rhs.iter().map(|&sym| sym.usize()).max().unwrap_or(0).max(rule.lhs.usize())).max());
-        for rule in grammar.rules().enumerate() {
-            trace!("Rule {}: {:?}", rule.0, rule.1);
-        }
+        trace!("binarize_and_eliminate_nulling_rules: {:?}", grammar);
+        trace!("nulling: {:?}", nulling);
         let maps = Self::remap_symbols(&mut grammar);
+        #[derive(Debug)]
+        struct SymWithName {
+            sym: Symbol,
+            name: Option<SymbolName>,
+        }
+        trace!("to_external: mapping {:?}", maps.to_external.iter().copied().zip(grammar.sym_source().names()).map(|(sym, name)| SymWithName { sym, name } ).collect::<Vec<_>>());
+        trace!("to_internal: mapping {:?}", maps.to_internal);
+        trace!("remap_symbols: {:?}", grammar);
         Self::sort_rules_by_lhs(&mut grammar);
+        trace!("sort_rules_by_lhs: {:?}", grammar);
         Self::from_processed_grammars(grammar, maps, &nulling)
     }
 
     fn remap_symbols(grammar: &mut Cfg) -> Mapping {
         let gensyms = Self::find_gensyms(grammar);
+        trace!("gensyms: {:?}", gensyms);
         let mut order = grammar.empty_matrix();
         for rule in grammar.rules() {
             if rule.rhs.len() == 1 {
@@ -127,24 +125,18 @@ impl DefaultGrammar {
             }
         }
         let mut not_gensyms = gensyms.clone();
-        // for gensym in gensyms.iter() {
-        //     println!("gensym: {:?}", gensym);
-        // }
-        trace!("{:?}", gensyms);
         not_gensyms.negate(); 
         for not_gensym in not_gensyms.iter() {
-            trace!("not gensym: {:?}", not_gensym);
-            // TODO fix argument order
+            // TODO fix argument order (????)
             for (dst, src) in (&mut *order)[not_gensym.usize()].iter_blocks_mut().zip(gensyms.bit_vec().blocks()) {
                 *dst |= src;
             }
         }
-        trace!("{:?}", &*order);
         // the order above is not transitive.
         // We modify it so that if `A < B` and `B < C` then `A < C`
         order.transitive_closure();
+        trace!("order_transitive_closure: {:?}", order);
         let mut remap = Remap::new(grammar);
-        remap.remove_unused_symbols();
         remap.reorder_symbols(|left, right| {
             if order[(left, right)] {
                 cmp::Ordering::Less
@@ -154,6 +146,7 @@ impl DefaultGrammar {
                 cmp::Ordering::Equal
             }
         });
+        remap.remove_unused_symbols();
         remap.get_mapping()
     }
 
@@ -175,7 +168,7 @@ impl DefaultGrammar {
             }
         }
         for rule in grammar.rules() {
-            if occurrences[rule.lhs.usize()] == (1, 1, 0) && grammar.history_graph().earley()[rule.history_id.get()].origin().is_null() {
+            if occurrences[rule.lhs.usize()] == (1, 1, 0) && rule.history.origin().is_null() {
                 gensyms.set(rule.lhs, true);
             }
         }
@@ -192,6 +185,7 @@ impl DefaultGrammar {
         result.populate_maps(maps);
         result.populate_grammar(&grammar);
         result.populate_nulling(nulling);
+        trace!("result: {:?}", result);
         result
     }
 
@@ -204,7 +198,8 @@ impl DefaultGrammar {
             gensyms: num_gensyms,
             external_syms: maps.to_internal.len(),
             internal_syms: maps.to_external.len(),
-        }
+        };
+        trace!("sizes: {:?}", self.size);
     }
 
     fn populate_grammar(&mut self, grammar: &Cfg) {
@@ -219,6 +214,7 @@ impl DefaultGrammar {
         assert_eq!(grammar.roots().len(), 1);
         let wrapped_root = grammar.wrapped_roots().first().copied().expect("start symbol not found");
         self.start_sym = wrapped_root.root;
+        self.sof_sym = wrapped_root.start_of_input;
         self.eof_sym = wrapped_root.end_of_input;
         self.dot_before_eof = grammar.rules().position(|rule| rule.rhs.get(1) == Some(&wrapped_root.end_of_input)).unwrap() as u32;
         self.original_start_sym = wrapped_root.inner_root;
@@ -236,9 +232,9 @@ impl DefaultGrammar {
 
     fn populate_grammar_with_history(&mut self, grammar: &Cfg) {
         self.forest_info.eval
-            .extend(grammar.rules().map(|rule| grammar.history_graph().earley()[rule.history_id.get()].origin()));
+            .extend(grammar.rules().map(|rule| rule.history.origin()));
         self.forest_info.nulling_eliminated
-            .extend(grammar.rules().map(|rule| grammar.history_graph().earley()[rule.history_id.get()].nullable()));
+            .extend(grammar.rules().map(|rule| rule.history.nullable()));
 
         self.populate_grammar_with_events_rhs(grammar);
         self.populate_grammar_with_trace_rhs(grammar);
@@ -354,7 +350,7 @@ impl DefaultGrammar {
             let is_unary = rule.rhs.get(1).is_none();
             let rhs0_sym = rule.rhs[0];
             let mut lhs = rule.lhs;
-            while lhs.usize() >= self.size.syms + 1 {
+            while lhs.usize() >= self.size.syms {
                 let idx = rules_by_rhs0.binary_search_by_key(&lhs.usize(), |elem| elem.rhs[0].usize()).expect("lhs not found at rhs0 of any rule");
                 lhs = rules_by_rhs0[idx].lhs;
             }
@@ -385,9 +381,9 @@ impl DefaultGrammar {
 
     fn populate_prediction_events(&mut self, grammar: &Cfg) {
         let iter_events_pred =
-            iter::repeat((EventId::null(), MinimalDistance::null())).take(self.size.syms + 1);
+            iter::repeat((EventId::null(), MinimalDistance::null())).take(self.size.syms + self.size.gensyms + 1);
         self.columns[0].events.extend(iter_events_pred);
-        let iter_trace_pred = iter::repeat(ExternalDottedRule::null()).take(self.size.syms + 1);
+        let iter_trace_pred = iter::repeat(ExternalDottedRule::null()).take(self.size.syms + self.size.gensyms + 1);
         self.columns[0].tracing.extend(iter_trace_pred);
         // Prediction event and tracing.
         for (dot, rule) in grammar.column(0).zip(grammar.rules()) {
@@ -400,9 +396,8 @@ impl DefaultGrammar {
 
     fn populate_nulling(&mut self, nulling: &Cfg) {
         self.has_trivial_derivation = !nulling.is_empty();
-        let histories = nulling.history_graph().earley();
         let iter_nulling_intermediate = nulling.rules().filter_map(|rule| {
-            if histories[rule.history_id.get()].origin().is_null() && rule.rhs.len() == 2 {
+            if rule.history.origin().is_null() && rule.rhs.len() == 2 {
                 Some([rule.lhs, rule.rhs[0], rule.rhs[1]])
             } else {
                 None
@@ -414,6 +409,11 @@ impl DefaultGrammar {
 }
 
 impl Grammar for DefaultGrammar {
+    #[inline]
+    fn sof(&self) -> Symbol {
+        self.sof_sym
+    }
+
     #[inline]
     fn eof(&self) -> Symbol {
         self.eof_sym
@@ -526,7 +526,7 @@ impl Grammar for DefaultGrammar {
     }
 
     fn gen_completion(&self, sym: Symbol) -> PredictionTransition {
-        self.gen_completions[sym.usize()]
+        self.gen_completions[sym.usize() - self.size.syms]
     }
 
     #[inline(always)]

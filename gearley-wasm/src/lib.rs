@@ -17,7 +17,7 @@ use std::panic;
 use std::fmt::Write;
 use log::trace;
 
-static mut ARENA: [u8; 100_000] = [0; 100_000];
+static mut ARENA: [u8; 10000_000] = [0; 10000_000];
 
 #[global_allocator]
 static ALLOCATOR: Talck<spin::Mutex<()>, ClaimOnOom> = Talc::new(unsafe {
@@ -68,7 +68,9 @@ pub fn init_logger() -> Result<(), SetLoggerError> {
 }
 
 pub fn get_logs() -> String {
-    LOG_BUFFER.lock().unwrap().clone()
+    let result = LOG_BUFFER.lock().unwrap().clone();
+    LOG_BUFFER.lock().unwrap().clear();
+    result
 }
 
 fn load(grammar: &str) -> Result<(Cfg, DefaultGrammar), LoadError> {
@@ -88,11 +90,24 @@ pub fn parse(input: &str, grammar: &str) -> String {
     error_logger::set_panic_hook();
     match load(grammar) {
         Ok((cfg, default_grammar)) => {
-            utils::parse_terminal_list(cfg, default_grammar, input.split(" "));
-            get_logs()
+            match utils::parse_terminal_list(cfg, default_grammar, input.split(" ")) {
+                Ok(true) => {
+                    get_logs()
+                }
+                Ok(false) => {
+                    "failed to finish the parse".to_string()
+                }
+                Err(parse_error) => {
+                    let mut result = "Failed to parse:\n".to_string();
+                    result.push_str(&parse_error.to_string());
+                    result.push_str(&get_logs()[..]);
+                    result
+                }
+            }
         },
         Err(mut load_error) => {
-            let mut result = load_error.to_string();
+            let mut result = "Failed to load:\n".to_string();
+            result.push_str(&load_error.to_string());
             result.push_str(&get_logs()[..]);
             result
         }

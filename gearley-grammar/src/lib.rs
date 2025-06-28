@@ -22,6 +22,8 @@ pub enum MaybePostdot {
 pub type NullingIntermediateRule = [Symbol; 3];
 
 pub trait Grammar {
+    fn sof(&self) -> Symbol;
+
     fn eof(&self) -> Symbol;
 
     fn lr_set(&self, dot: Dot) -> &BitSlice;
@@ -74,6 +76,10 @@ pub trait Grammar {
 }
 
 impl<'a, G> Grammar for &'a G where G: Grammar {
+    fn sof(&self) -> Symbol {
+        (**self).sof()
+    }
+
     fn eof(&self) -> Symbol {
         (**self).eof()
     }

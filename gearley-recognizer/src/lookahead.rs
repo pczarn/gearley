@@ -2,7 +2,7 @@ use cfg_symbol::Symbol;
 use gearley_grammar::Grammar;
 
 pub trait Lookahead {
-    fn sym(&self) -> Symbol;
+    fn sym(&self) -> Option<Symbol>;
 
     fn set_hint(&mut self, hint: Symbol);
 
@@ -10,8 +10,7 @@ pub trait Lookahead {
 }
 
 pub(crate) struct DefaultLookahead {
-    next_symbol: Symbol,
-    useless_symbol: Symbol,
+    next_symbol: Option<Symbol>,
 }
 
 pub(crate) struct LookaheadWithGrammar<'a, 'b, G: Grammar, L> {
@@ -20,25 +19,23 @@ pub(crate) struct LookaheadWithGrammar<'a, 'b, G: Grammar, L> {
 }
 
 impl<'a, 'b, G: Grammar> Lookahead for LookaheadWithGrammar<'a, 'b, G, DefaultLookahead> {
-    fn sym(&self) -> Symbol {
+    fn sym(&self) -> Option<Symbol> {
         self.lookahead.next_symbol
     }
 
     fn set_hint(&mut self, hint: Symbol) {
-        self.lookahead.next_symbol = self.grammar.to_internal(hint).unwrap();
+        self.lookahead.next_symbol = Some(hint);
     }
 
     fn clear_hint(&mut self) {
-        self.lookahead.next_symbol = self.lookahead.useless_symbol;
+        self.lookahead.next_symbol = None;
     }
 }
 
 impl DefaultLookahead {
-    pub(crate) fn new<G: Grammar>(grammar: &G) -> Self {
-        let useless_symbol = grammar.useless_symbol();
+    pub(crate) fn new<G: Grammar>(_grammar: &G) -> Self {
         DefaultLookahead {
-            next_symbol: useless_symbol,
-            useless_symbol,
+            next_symbol: None,
         }
     }
 
@@ -59,7 +56,7 @@ impl<'a, L: Lookahead> Lookahead for &'a mut L {
         (**self).set_hint(hint)
     }
 
-    fn sym(&self) -> Symbol {
+    fn sym(&self) -> Option<Symbol> {
         (**self).sym()
     }
 }

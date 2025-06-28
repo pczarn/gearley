@@ -7,6 +7,7 @@ use cfg_symbol::{Symbol, SymbolSource};
 use gearley_forest::completed_item::CompletedItem;
 use gearley_forest::{Forest, NullForest};
 use gearley_grammar::Grammar;
+use log::trace;
 use crate::item::{Item, CompletedItemLinked, Origin};
 use gearley_vec2d::Vec2d;
 
@@ -113,9 +114,11 @@ where
 
     pub fn begin_earleme(&mut self) {
         // nothing to do
+        let rows = format!("{:?}", self.predicted.sub_matrix(self.earleme() .. self.earleme() + 1));
+        trace!("predicted: BitSubMatrix {{ row: {:?} }}", rows.replace('\n', " "));
     }
 
-    /// Reads a token. Creates a leaf bocage node with the given value. After reading one or more
+    /// Reads an internal token. Creates a leaf bocage node with the given value. After reading one or more
     /// tokens, the parse can be advanced.
     pub fn scan(&mut self, symbol: Symbol, value: F::LeafValue) {
         // This method is a part of the scan pass.
@@ -136,10 +139,13 @@ where
         if self.is_exhausted() {
             false
         } else {
+            trace!("completions_after_scan: {:?}", self.complete);
             // Completion pass, which saves successful parses.
             self.complete_all_sums_entirely();
+            trace!("medial_after_completion: {:?}", self.medial.last());
             // Do the rest.
             self.advance_without_completion();
+            trace!("prediction_pass: {:?}", self.predicted.sub_matrix(self.earleme() .. self.earleme() + 1));
             true
         }
     }
@@ -151,6 +157,7 @@ where
         self.sort_medial_items();
         self.remove_unary_medial_items();
         self.remove_unreachable_sets();
+        trace!("medial_sort_and_remove_unary_medial_items: {:?}", self.medial.last());
         // `earleme` is now at least 1.
         // Prediction pass.
         self.prediction_pass();
@@ -170,12 +177,8 @@ where
         let grammar = &self.grammar;
         // Build index by postdot
         // These medial positions themselves are sorted by postdot symbol.
-        self.medial.last_mut().sort_unstable_by(|a: &Item<<F as Forest>::NodeRef>, b| {
-            (grammar.get_rhs1_cmp(a.dot), a.dot, a.origin).cmp(&(
-                grammar.get_rhs1_cmp(b.dot),
-                b.dot,
-                b.origin,
-            ))
+        self.medial.last_mut().sort_unstable_by_key(|item: &Item<<F as Forest>::NodeRef>| {
+            (grammar.get_rhs1_cmp(item.dot), item.dot, item.origin)
         });
     }
 
@@ -205,8 +208,8 @@ where
             //   ^ m = 0
             // | 0 | 1 | 2 |
             self.predicted[new_earleme].clear();
-            self.predicted.truncate(new_earleme);
-            self.medial.truncate(new_earleme);
+            self.predicted.truncate(new_earleme + 1);
+            self.medial.truncate(new_earleme + 1);
         }
     }
 
@@ -218,7 +221,8 @@ where
         let iter = self.medial.last().iter();
         // For each medial item in the current set, predict its postdot symbol.
         let earleme = self.earleme();
-        let row = &mut self.predicted[earleme];
+        trace!("earleme: {}, rows_and_cols: {:?}", earleme, self.predicted.size());
+        let row = &mut self.predicted[earleme + 1];
         for ei in iter {
             let postdot = self.grammar.get_rhs1(ei.dot).unwrap();
             row.predict(postdot, self.grammar.prediction_row(postdot));
@@ -227,11 +231,14 @@ where
 
     /// Resets the recognizer to its initial state by removing all contents.
     pub fn reset(&mut self) {
-        self.predict(self.grammar.start_sym());
         // Remove items.
         self.medial.clear();
         self.medial.next_set();
         self.complete.clear();
+        // Earleme is now equal 0.
+        // Reset predictions.
+        self.predicted[0].clear();
+        self.predict(self.grammar.start_sym());
     }
 
     // Finished node access.
@@ -281,6 +288,10 @@ where
     pub fn into_forest(self) -> F {
         self.forest
     }
+
+    pub fn grammar(&self) -> &G {
+        &self.grammar
+    }
 }
 
 /// A set of completed items with all having a common triple **(Symbol; start input location ..
@@ -306,7 +317,11 @@ impl<G, F, P> Recognizer<G, F, P>
 {
     /// Complete items.
     pub fn complete(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
-        debug_assert!(sym != self.grammar.eof());
+        // debug_assert!(sym != self.grammar.eof());
+        trace!("complete_predicted: {:?}", self.predicted.sub_matrix(set_id as usize .. set_id as usize + 1));
+        #[derive(Debug)]
+        struct Complete { set_id: Origin, sym: Symbol };
+        trace!("complete: {:?}", Complete { set_id, sym });
         if sym.usize() >= self.grammar.num_syms() {
             // New item after a generated symbol, either completed or medial.
             // from A ::= • g42   c
@@ -331,6 +346,7 @@ impl<G, F, P> Recognizer<G, F, P>
         // let outer_start = self.medial.indices()[set_id as usize];
         // let outer_end: usize = self.medial.indices()[set_id as usize + 1];
         let specific_set = &self.medial[set_id as usize];
+        trace!("complete_specific_set: {:?}", specific_set);
 
         // When the set has 16 or more items, we use binary search to narrow down the range of
         // items.
@@ -348,12 +364,17 @@ impl<G, F, P> Recognizer<G, F, P>
             .take_while(|ei| self.grammar.get_rhs1(ei.dot) == Some(sym))
             .count();
         let start: u32 = self.medial.index_at(set_id as usize) as u32;
+        trace!("complete_inner: {:?}", &self.medial[set_id as usize][inner_start .. inner_start + inner_end]);
         for idx in inner_start .. inner_start + inner_end {
             // New completed item.
             // from A ::= B • C
             // to   A ::= B   C •
             let dot = self.medial[set_id as usize][idx].dot;
-            if self.grammar.lr_set(dot)[self.lookahead.mut_with_grammar(&self.grammar).sym().usize()] {
+            // let will_be_useful = self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lr_set(dot)[sym.usize()]);
+            let will_be_useful = true;
+            trace!("dot: {:?}", dot);
+            trace!("will_be_useful: {:?}", will_be_useful);
+            if will_be_useful {
                 self.complete.heap_push_linked(CompletedItemLinked {
                     idx: start + idx as u32,
                     node: Some(rhs_link),
@@ -365,9 +386,11 @@ impl<G, F, P> Recognizer<G, F, P>
     /// Complete predicted items that have a common postdot symbol.
     fn complete_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
         let mut unary: u32 = 0;
+        trace!("complete_predictions: {:?}", self.grammar.completions(sym));
         for trans in self.grammar.completions(sym) {
             let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
-            let will_be_useful = self.grammar.lr_set(trans.dot)[self.lookahead.mut_with_grammar(&self.grammar).sym().usize()];
+            let will_be_useful = self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lr_set(trans.dot)[sym.usize()]);
+            trace!("was_predicted_will_be_useful: Bools {{ was_predicted: {:?}, will_be_useful: {:?} }}", was_predicted, will_be_useful);
             if was_predicted && will_be_useful {
                 // No checks for uniqueness, because completions are deduplicated.
                 // --- UNARY
@@ -394,7 +417,7 @@ impl<G, F, P> Recognizer<G, F, P>
     fn complete_generated_binary_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
         let trans = self.grammar.gen_completion(sym);
         let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
-        let will_be_useful = self.grammar.lr_set(trans.dot)[self.lookahead.mut_with_grammar(&self.grammar).sym().usize()];
+        let will_be_useful = self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lr_set(trans.dot)[sym.usize()]);
         if was_predicted && will_be_useful {
             // No checks for uniqueness, because completions are deduplicated.
             // --- UNARY

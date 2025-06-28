@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 use cfg::Cfg;
 use cfg_symbol::Symbol;
@@ -12,7 +12,45 @@ use gearley_grammar::Grammar;
 use gearley_recognizer::{Recognizer, lookahead::Lookahead};
 
 pub trait RecognizerParseExt {
-    fn parse(&mut self, tokens: &[Symbol]) -> bool;
+    fn parse(&mut self, tokens: &[Symbol]) -> Result<bool, ParseError>;
+}
+
+#[derive(Debug)]
+pub enum ParseError {
+    Parse {
+        msg: &'static str,
+        token: Symbol,
+        i: usize,
+    },
+    Tokenize {
+        msg: &'static str,
+        word: String,
+    },
+    Finish {
+        msg: &'static str,
+    }
+}
+
+impl Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParseError::Parse { msg, token, i } => {
+                f.write_str(msg)?;
+                f.write_str(": ")?;
+                write!(f, "{:?}@{}", token, i)?;
+                Ok(())
+            }
+            ParseError::Tokenize { msg, word } => {
+                f.write_str(msg)?;
+                f.write_str(": ")?;
+                f.write_str(word)?;
+                Ok(())
+            }
+            ParseError::Finish { msg } => {
+                f.write_str(msg)
+            }
+        }
+    }
 }
 
 #[cfg(feature = "simple-bocage")]
@@ -22,23 +60,34 @@ where
     G: Grammar,
 {
     #[inline]
-    fn parse(&mut self, tokens: &[Symbol]) -> bool {
+    fn parse(&mut self, tokens: &[Symbol]) -> Result<bool, ParseError> {
+        self.begin_earleme();
+        self.scan(self.grammar().sof(), 0);
+        if !self.end_earleme() {
+            return Err(ParseError::Parse { msg: "failed to read SOF", token: self.grammar().sof(), i: 0 });
+        }
         let mut iter = tokens.iter().enumerate().peekable();
         while let Some((i, &token)) = iter.next() {
             self.begin_earleme();
-            trace!("before pass 1 {:?}", &*self);
-            self.scan(token, i as u32);
-            trace!("before pass 2 {:?}", &*self);
             if let Some((_i, t)) = iter.peek() {
                 self.lookahead().set_hint(**t);
             } else {
                 self.lookahead().clear_hint();
             }
-            assert!(self.end_earleme(), "failed to parse after {:?}@{}", token, i);
+            self.scan(token, i as u32);
+            if !self.end_earleme() {
+                return Err(ParseError::Parse { msg: "failed to parse", token, i })
+            }
         }
+        self.begin_earleme();
+        self.scan(self.grammar().eof(), 0);
+        if !self.end_earleme() {
+            return Err(ParseError::Parse { msg: "failed to read EOF", token: self.grammar().eof(), i: 0 });
+        }
+
         trace!("finished {:?}", &*self);
 
-        self.is_finished()
+        Ok(self.is_finished())
     }
 }
 
@@ -73,26 +122,39 @@ impl<G> RecognizerParseExt for Recognizer<G, NullForest> where
     G: Grammar,
 {
     #[inline]
-    fn parse(&mut self, tokens: &[Symbol]) -> bool {
-        for &token in tokens.iter() {
+    fn parse(&mut self, tokens: &[Symbol]) -> Result<bool, ParseError> {
+        for (i, token) in tokens.iter().copied().enumerate() {
             self.begin_earleme();
             trace!("before pass 1 {:?}", &*self);
             self.scan(token, ());
             trace!("before pass 2 {:?}", &*self);
-            assert!(self.end_earleme());
+            if !self.end_earleme() {
+                return Err(ParseError::Parse { msg: "failed to recognize", token, i })
+            }
         }
         trace!("finished {:?}", &*self);
 
-        self.is_finished()
+        Ok(self.is_finished())
     }
 }
 
-pub fn parse_terminal_list<'a>(cfg: Cfg, grammar: DefaultGrammar, terminal_list: impl Iterator<Item = &'a str>) -> bool {
+pub fn parse_terminal_list<'a>(cfg: Cfg, grammar: DefaultGrammar, terminal_list: impl Iterator<Item = &'a str>) -> Result<bool, ParseError> {
     let mut recognizer = Recognizer::with_forest(&grammar, Bocage::new(&grammar));
     let name_map = cfg.sym_source().name_map();
     let mut tokens = vec![];
     for word in terminal_list {
-        tokens.push(name_map[word]);
+        if let Some(token) = name_map.get(word) {
+            tokens.push(*token);
+        } else {
+            return Err(ParseError::Tokenize { msg: "failed to tokenize", word: word.to_string() })
+        }
     }
-    recognizer.parse(&tokens)
+    let result = recognizer.parse(&tokens);
+    if let Some(node) = recognizer.finished_node() {
+        trace!("finished_node: NodeHandle {{ handle: {:?} }}", node);
+    } else {
+        return Err(ParseError::Finish { msg: "failed to get finished node" });
+    }
+    trace!("bocage: {:?}", recognizer.into_forest());
+    result
 }

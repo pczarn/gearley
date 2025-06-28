@@ -8,6 +8,7 @@ use gearley_forest::completed_item::CompletedItem;
 
 use crate::node::{Node, NULL_ACTION};
 
+#[derive(Debug)]
 pub struct Bocage {
     pub(crate) graph: Vec<Node>,
     pub(crate) forest_info: ForestInfo,

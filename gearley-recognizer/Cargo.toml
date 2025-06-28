@@ -12,3 +12,4 @@ gearley-grammar = { path = "../gearley-grammar/" }
 cfg-symbol = { workspace = true }
 bit-matrix = { workspace = true }
 memusage = { version = "0.2.0", optional = true }
+log = "0.4"
