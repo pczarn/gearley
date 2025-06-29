@@ -41,7 +41,7 @@ export default {
     props: ['op', 'content'],
     methods: {
         name_of(sym) {
-            let name = this.content.sym_source.names[sym.n - 1]
+            let name = this.content.sym_source && this.content.sym_source.names[sym.n - 1]
             if (name === undefined || name == null) {
                 return `g(${sym.n - 1})`
             } else {

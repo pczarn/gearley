@@ -40,3 +40,4 @@ memusage = ["dep:memusage", "gearley-forest/memusage", "gearley-recognizer/memus
 nightly = []
 simple-bocage = ["dep:simple-bocage"]
 gearley-default-grammar = ["dep:gearley-default-grammar"]
+log = ["gearley-recognizer/log"]

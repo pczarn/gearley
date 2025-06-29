@@ -26,7 +26,8 @@ impl Bocage {
         let alloc = Bump::new();
         let mut results: Vec<E::Elem> = vec![];
         let mut work_stack = vec![WorkNode { node: NULL_HANDLE, child: 0, parent: 0, results: AVec::new_in(&alloc) }, WorkNode { node: root_node, child: 0, parent: 0, results: AVec::new_in(&alloc) }];
-        while let Some(mut work) = work_stack.pop() {
+        while work_stack.len() > 1 {
+            let mut work = work_stack.pop().unwrap();
             let node = work.node;
             match (self.postprocess_product_tree_node(&self[work.node]), work.child) {
                 (Node::Sum { count, .. }, n) if n < count => {

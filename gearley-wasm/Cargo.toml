@@ -27,7 +27,7 @@ spin = { version = "0.9.8", default-features = false, features = ["lock_api", "s
 
 cfg-load = { path = "../../cfg/cfg-load/", version = "0.0.1" }
 cfg-grammar = { path = "../../cfg/cfg-grammar/", version = "0.0.1" }
-gearley = { path = "../gearley/", version = "0.1.0" }
+gearley = { path = "../gearley/", version = "0.1.0", features = ["log"] }
 # gearley-load = { path = "../gearley-load/", version = "0.1.0" }
 
 [dev-dependencies]

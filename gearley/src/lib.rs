@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+
 pub use gearley_forest::{Forest, NullForest};
 pub use gearley_grammar::Grammar;
 #[cfg(feature = "gearley-default-grammar")]

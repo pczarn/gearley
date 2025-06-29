@@ -9,9 +9,8 @@ gearley-forest = { path = "../gearley-forest/" }
 gearley-grammar = { path = "../gearley-grammar/" }
 gearley-recognizer = { path = "../gearley-recognizer/" }
 gearley-default-grammar = { path = "../gearley-default-grammar/" }
-cfg = { path = "../../cfg/cfg/" }
+cfg = { workspace = true }
 cfg-grammar = { version = "0.0.1", path = "../../cfg/cfg-grammar/" }
-cfg-symbol = { version = "0.0.1", path = "../../cfg/cfg-symbol/" }
 cfg-sequence = { version = "0.0.1", path = "../../cfg/cfg-sequence/" }
 simple-bocage = { path = "../simple-bocage/", optional = true }
 cfg-load = { path = "../../cfg/cfg-load/", version = "0.0.1" }
@@ -19,7 +18,6 @@ cfg-load = { path = "../../cfg/cfg-load/", version = "0.0.1" }
 [dev-dependencies]
 gearley-default-grammar = { path = "../gearley-default-grammar/" }
 env_logger = "0.11"
-cfg = { path = "../../cfg/cfg/", version = "0.9.0" }
 
 [features]
 default = ["simple-bocage"]

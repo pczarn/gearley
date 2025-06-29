@@ -21,7 +21,7 @@ fn test_recognize_nested() {
     external.set_roots([start]);
     let cfg = DefaultGrammar::from_grammar(external);
     let mut rec = Recognizer::with_forest(&cfg, NullForest);
-    let finished = rec.parse(&[terminal; 3]);
+    let finished = rec.parse(&[terminal; 3]).unwrap();
     assert!(finished);
 }
 
@@ -39,7 +39,7 @@ fn test_recognize_reset() {
     let cfg = DefaultGrammar::from_grammar(external);
     let mut rec = Recognizer::with_forest(&cfg, NullForest);
     for _ in 0..1000 {
-        let finished = rec.parse(&[terminal; 3]);
+        let finished = rec.parse(&[terminal; 3]).unwrap();
         assert!(finished);
         rec.reset();
     }

@@ -8,7 +8,6 @@ members = [
     "gearley-forest",
     "compact-bocage",
     "simple-bocage",
-    "gearley-load",
     "gearley-utils",
     "gearley-example-grammars",
 ]
@@ -25,4 +24,5 @@ debug = true
 
 [workspace.dependencies]
 cfg-symbol = { path = "../cfg/cfg-symbol/", features = ["miniserde"] }
+cfg = { path = "../cfg/cfg/", features = ["miniserde"] }
 bit-matrix = { version = "0.8.1", features = ["miniserde", "memusage"] }

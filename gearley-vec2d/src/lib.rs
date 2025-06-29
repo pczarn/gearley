@@ -45,12 +45,12 @@ impl<I> Vec2d<I> {
     }
 
     pub fn truncate(&mut self, new_len: usize) where I: Copy {
-        let new_medial_start = self.indices[new_len - 1];
+        let new_medial_start = self.indices[new_len];
         self.chart.copy_within(self.current_start.., new_medial_start as usize);
         self.chart
-            .truncate(new_medial_start as usize + self.current_start);
+            .truncate(new_medial_start as usize + self.chart.len() - self.current_start);
         self.current_start = new_medial_start as usize;
-        self.indices.truncate(new_len - 1);
+        self.indices.truncate(new_len);
     }
 
     #[inline]

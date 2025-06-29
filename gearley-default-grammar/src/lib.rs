@@ -278,7 +278,7 @@ impl DefaultGrammar {
             trace!("{}", grammar.stringify_to_bnf());
         }
         trace!("{}", grammar.stringify_to_bnf());
-        let mut times = 10;
+        let mut times = 100;
         for rule in grammar.rules() {
             if rule.rhs[0].usize() < self.size.syms {
                 let mut lhs = rule.lhs.usize();

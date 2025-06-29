@@ -15,7 +15,7 @@ fn test_precedenced_arith() {
     let cfg = DefaultGrammar::from_grammar(external);
     let mut rec = Recognizer::with_forest(&cfg, Bocage::new(&cfg));
     let tokens = precedenced_math::tokenize("1+(2*3-4)/(55)-(54)*55+62-13-((36))");
-    assert!(rec.parse(&tokens));
+    assert!(rec.parse(&tokens).unwrap());
 }
 
 #[test]
@@ -23,10 +23,10 @@ fn test_ambiguous_arithmetic() {
     let tokens = ambiguous_math::tokenize("2-0*3+1");
     let external = ambiguous_math::grammar();
     let cfg = DefaultGrammar::from_grammar(external);
-    let mut evaluate = ambiguous_math::Evaluator;
+    let evaluate = ambiguous_math::Evaluator;
     let bocage = Bocage::new(&cfg);
     let mut rec = Recognizer::with_forest(&cfg, bocage);
-    assert!(rec.parse(&tokens));
+    assert!(rec.parse(&tokens).unwrap());
     let finished_node = rec.finished_node().expect("exhausted");
     let mut forest = rec.into_forest();
     let results = forest.evaluate(evaluate, finished_node);

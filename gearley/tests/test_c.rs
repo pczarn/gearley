@@ -185,6 +185,14 @@ const SYM_NAMES: [Option<&'static str>; 176] = [
     Some("error"),
 ];
 
+
+
+
+
+
+
+
+
 #[allow(non_snake_case)]
 fn grammar() -> Cfg {
     let mut grammar = Cfg::new();
@@ -859,8 +867,8 @@ fn grammar() -> Cfg {
 fn test_parse_c() {
     use c_lexer_logos::token::Token::*;
     use c_lexer_logos::Lexer;
+    let _ = env_logger::try_init();
     let external = grammar();
-    println!("{}", external.to_bnf());
     let mut grammar = Cfg::new();
     let [
         _term,
@@ -1067,7 +1075,7 @@ fn test_parse_c() {
     let cfg = DefaultGrammar::from_grammar(external);
     let mut rec: Recognizer<&'_ DefaultGrammar, Bocage> =
         Recognizer::with_forest(&cfg, Bocage::new(&cfg));
-    let finished = rec.parse(&tokens[..]);
+    let finished = rec.parse(&tokens[..]).unwrap();
     assert!(finished);
     // println!(
     //     Some"memory( us)e: all:{} forest:{}",

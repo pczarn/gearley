@@ -7,7 +7,6 @@ use cfg_symbol::{Symbol, SymbolSource};
 use gearley_forest::completed_item::CompletedItem;
 use gearley_forest::{Forest, NullForest};
 use gearley_grammar::Grammar;
-use log::trace;
 use crate::item::{Item, CompletedItemLinked, Origin};
 use gearley_vec2d::Vec2d;
 
@@ -15,6 +14,13 @@ use crate::local_prelude::*;
 use crate::predict::Predict;
 
 use crate::{binary_heap::BinaryHeap, lookahead::{DefaultLookahead, Lookahead}};
+
+#[cfg(feature = "log")]
+use log::trace;
+#[cfg(not(feature = "log"))]
+macro_rules! trace {
+    ($($tt:tt)*) => {};
+}
 
 /// The recognizer implements the Earley algorithm. It parses the given input according
 /// to the `grammar`. The parse result is constructed inside the `forest`.
@@ -200,17 +206,22 @@ where
             .max()
             .unwrap_or(self.earleme());
         let new_earleme = max_origin + 1;
-        if self.earleme() > new_earleme {
+        if self.earleme() > new_earleme && new_earleme > 1 {
+            trace!("remove_unreachable_sets {:?} > {:?}", self.earleme(), new_earleme);
             // | 0 | 1 | 2 | 3 |
             //               ^ current_medial_start
             //   _________diff = 2
             //       ____drop = 1
             //           ^ self.earleme = 2
-            //   ^ m = 0
+            // 
+            //   ^ new_earleme = 0
             // | 0 | 1 | 2 |
-            self.predicted[new_earleme].clear();
-            self.predicted.truncate(new_earleme + 1);
-            self.medial.truncate(new_earleme + 1);
+            self.predicted[new_earleme + 1].clear();
+            self.predicted.truncate(new_earleme);
+            self.medial.truncate(new_earleme);
+            debug_assert_eq!(self.medial.len(), new_earleme - 1);
+            debug_assert_eq!(self.earleme(), new_earleme - 2);
+            // earleme == new_earleme - 2
         }
     }
 

@@ -18,7 +18,7 @@ impl Evaluate for NullingEval {
     type Elem = bool;
 
     fn leaf(&self, terminal: Symbol, values: u32) -> Self::Elem {
-        unreachable!()
+        false
     }
 
     fn nulling<'r>(&self, symbol: Symbol, results: &'r mut Vec<Self::Elem>) {
@@ -26,7 +26,7 @@ impl Evaluate for NullingEval {
     }
 
     fn product<'a>(&self, action: u32, args: impl Iterator<Item = &'a Self::Elem>) -> Self::Elem where Self::Elem: 'a {
-        unreachable!()
+        false
     }
 }
 
@@ -40,7 +40,7 @@ macro_rules! test_trivial_grammar {
         let cfg = DefaultGrammar::from_grammar(external);
         let bocage = $Bocage::new(&cfg);
         let mut rec = Recognizer::with_forest(&cfg, bocage);
-        assert!(rec.parse(&[]));
+        assert!(rec.parse(&[]).unwrap());
         let finished_node = rec.finished_node().unwrap();
         let results = rec.into_forest().evaluate(NullingEval(start), finished_node);
         assert_eq!(results, &[true]);
@@ -106,7 +106,7 @@ macro_rules! test_grammar_with_nulling_intermediate {
         let cfg = DefaultGrammar::from_grammar(external);
         let bocage = $Bocage::new(&cfg);
         let mut rec = Recognizer::with_forest(&cfg, bocage);
-        assert!(rec.parse(&[foo]));
+        assert!(rec.parse(&[foo]).unwrap());
         let finished_node = rec.finished_node().expect("exhausted");
         let results = rec.into_forest().evaluate(NullingIntermediateEval { a, foo }, finished_node);
         assert_eq!(results, &[10]);

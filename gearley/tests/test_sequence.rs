@@ -50,12 +50,10 @@ fn test_sequence() {
     external.set_roots([start]);
 
     let cfg = DefaultGrammar::from_grammar(external);
-    let plus = cfg.to_internal(plus).unwrap();
-    let minus = cfg.to_internal(minus).unwrap();
     let tokens = &[plus, minus, plus, minus, plus, minus];
     let bocage = Bocage::new(&cfg);
     let mut recognizer = Recognizer::with_forest(&cfg, bocage);
-    assert!(recognizer.parse(tokens));
+    assert!(recognizer.parse(tokens).unwrap());
 
     let finished_node = recognizer.finished_node().expect("exhausted");
 

@@ -196,7 +196,7 @@ impl ForestInfo {
             .chain(
                 self.nulling_intermediate_rules
                     .iter()
-                    .map(|&[_lhs, rhs0, _rhs1]| rhs0.usize()),
+                    .flat_map(|&[lhs, rhs0, _rhs1]| [lhs.usize(), rhs0.usize()]),
             )
             .max()
     }

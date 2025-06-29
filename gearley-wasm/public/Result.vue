@@ -19,84 +19,9 @@
     </div>
     <div v-if="!raw" v-for="[op, kind, content] in logs">
         <Cfg v-if="kind == 'Cfg'" :content="content" :op="op" />
-        <div v-if="kind == 'DefaultGrammar'">
-            <h1>{{ op }}</h1>
-            <h2>DefaultGrammar</h2>
-            <table>
-                <tbody>
-                    <tr v-for="(val, key) in content">
-                        <template v-if="typeof val.n !== 'undefined'">
-                            <td>{{ key }}</td>
-                            <td>{{ val.n }}</td>
-                        </template>
-                        <template v-if="typeof val === 'boolean'">
-                            <td>{{ key }}</td>
-                            <td>{{ val }}</td>
-                        </template>
-                    </tr>
-                    <tr><td>dot_before_eof</td><td>{{ content.dot_before_eof }}</td></tr>
-                </tbody>
-            </table>
-            <h2>prediction_matrix</h2>
-            <table>
-                <thead>
-                    <th></th>
-                    <th v-for="index in content.prediction_matrix.row_bits">{{ index - 1 }}</th>
-                </thead>
-                <tbody>
-                    <tr v-for="(val, index) in content.prediction_matrix.bit_vec.storage.split(' ')">
-                        <td>{{ index }}</td>
-                        <td v-for="(bit, index2) in val.split('').slice(0, size.syms)">
-                            <span :class="{ one: bit === '1', diagonal: index === index2 }">
-                                {{ bit }}
-                            </span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <h2>lr_sets</h2>
-            <table>
-                <thead>
-                    <th></th>
-                    <th v-for="index in content.lr_sets.row_bits">{{ index - 1 }}</th>
-                </thead>
-                <tbody>
-                    <tr v-for="(val, index) in content.lr_sets.bit_vec.storage.trim().split(' ')">
-                        <td>{{ index }}</td>
-                        <td v-for="(bit, index2) in val.split('')">
-                            <span :class="{ one: bit === '1', diagonal: index === index2 }">{{ bit }}</span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <h2>completion_matrix</h2>
-            <table>
-                <tbody>
-                    <tr v-for="([i1, i2], index) in eachCons(content.completions.indices, 2)">
-                        <td>{{ index }}</td>
-                        <td v-for="prediction_transition in content.completions.chart.slice(i1, i2)">
-                            symbol: {{ prediction_transition.symbol.n }}, dot: {{ prediction_transition.dot }}, is_unary: {{ prediction_transition.is_unary }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div v-if="kind == 'DefaultGrammarSize'">
-            <h1>{{ op }}</h1>
-            <h2>DefaultGrammarSize</h2>
-            <ul>
-                <li v-for="(val, key) in content">{{ key }}: {{ val }}</li>
-            </ul>
-        </div>
-        <div v-if="kind == 'mapping' && op == 'to_external'">
-            <h1>{{ op }}</h1>
-            <h2>Mapping</h2>
-            <ul>
-                <ol start="0">
-                    <li v-for="sym_with_name in content">{{ sym_with_name.name ? sym_with_name.name.name : 'None' }} ({{ sym_with_name.sym.n }})</li>
-                </ol>
-            </ul>
-        </div>
+        <DefaultGrammar v-if="kind === 'DefaultGrammar'" :op="op" :content="content" :names="names" />
+        <DefaultGrammarSize v-if="kind === 'DefaultGrammarSize'" :op="op" :content="content" />
+        <Mapping v-if="kind == 'mapping' && op == 'to_external'" :op="op" :content="content" />
         <BitSubMatrix v-if="kind === 'BitSubMatrix'" :content="content" :names="names" />
         <Vec v-if="op === 'medial_sort_and_remove_unary_medial_items'" :content="content" :names="names" />
         <Scan v-if="kind === 'Scan'" :content="content" :names="names" />
@@ -108,6 +33,9 @@ import Cfg from 'components/Cfg.vue'
 import Vec from 'components/Vec.vue'
 import BitSubMatrix from 'components/BitSubMatrix.vue'
 import Scan from 'components/Scan.vue'
+import DefaultGrammar from 'components/DefaultGrammar.vue'
+import DefaultGrammarSize from 'components/DefaultGrammarSize.vue'
+import Mapping from 'components/Mapping.vue'
 
 export default {
     components: {
@@ -115,6 +43,9 @@ export default {
         Vec,
         BitSubMatrix,
         Scan,
+        Mapping,
+        DefaultGrammar,
+        DefaultGrammarSize,
     },
     data() {
         return {
@@ -154,18 +85,6 @@ export default {
                 this.result = e.message;
             }
             console.log(this.result.length)
-        },
-        name_of(content, sym) {
-            let name = content.sym_source.names[sym.n - 1]
-            if (name === undefined || name == null) {
-                return `g(${sym.n - 1})`
-            } else {
-                return `${name.name} (${sym.n - 1})`
-            } 
-        },
-        eachCons(array, num) {
-            return Array.from({ length: array.length - num + 1 },
-                              (_, i) => array.slice(i, i + num))
         }
     },
     computed: {
@@ -186,6 +105,7 @@ export default {
                 var NoOp = {"root_node": "no_op"};
                 var Root = function(x) { return x };
                 var NodeHandle = function(x) { return x };
+                var BinaryHeap = function(x) { return x };
                 return (${textExpression})`)
                 return fn.bind(contextData)();
             }
@@ -210,6 +130,14 @@ export default {
                 return []
             }
             return mapping.map(sym_with_name => sym_with_name.name && sym_with_name.name.name)
+        },
+        rules() {
+            let cfg = this.logs.find(([op, kind, content]) => { return op === 'sort_rules_by_lhs' })
+            cfg = cfg && cfg[2]
+            if (!cfg) {
+                return []
+            }
+            return cfg.rules
         },
         size() {
             const result = this.logs && this.logs.find(([op, kind, content]) => kind == 'DefaultGrammarSize')

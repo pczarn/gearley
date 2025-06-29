@@ -1,7 +1,6 @@
 use std::fmt::{Debug, Display};
 
-use cfg::Cfg;
-use cfg_symbol::Symbol;
+use cfg::{Cfg, Symbol};
 use gearley_default_grammar::DefaultGrammar;
 use log::trace;
 
@@ -88,7 +87,7 @@ where
         //     return Err(ParseError::Parse { msg: "failed to read EOF", token: self.grammar().eof(), i: 0 });
         // }
 
-        trace!("finished {:?}", &*self);
+        trace!("finished: {:?}", &*self);
 
         Ok(self.is_finished())
     }
@@ -126,16 +125,19 @@ impl<G> RecognizerParseExt for Recognizer<G, NullForest> where
 {
     #[inline]
     fn parse(&mut self, tokens: &[Symbol]) -> Result<bool, ParseError> {
+        self.begin_earleme();
+        self.scan(self.grammar().sof(), ());
+        if !self.end_earleme() {
+            return Err(ParseError::Parse { msg: "failed to read SOF", token: self.grammar().sof(), i: 0 });
+        }
         for (i, token) in tokens.iter().copied().enumerate() {
             self.begin_earleme();
-            trace!("before pass 1 {:?}", &*self);
-            self.scan(token, ());
-            trace!("before pass 2 {:?}", &*self);
+            self.scan(self.grammar().to_internal(token).unwrap(), ());
             if !self.end_earleme() {
                 return Err(ParseError::Parse { msg: "failed to recognize", token, i })
             }
         }
-        trace!("finished {:?}", &*self);
+        trace!("finished: {:?}", &*self);
 
         Ok(self.is_finished())
     }
