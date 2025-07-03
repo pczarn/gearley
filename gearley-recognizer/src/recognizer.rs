@@ -401,7 +401,7 @@ impl<G, F, P> Recognizer<G, F, P>
         trace!("complete_predictions: {:?}", self.grammar.completions(sym));
         for trans in self.grammar.completions(sym) {
             let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
-            let will_be_useful = self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lr_set(trans.dot)[sym.usize()]);
+            let will_be_useful = true;//self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lr_set(trans.dot)[sym.usize()]);
             trace!("was_predicted_will_be_useful: Bools {{ was_predicted: {:?}, will_be_useful: {:?} }}", was_predicted, will_be_useful);
             if was_predicted && will_be_useful {
                 // No checks for uniqueness, because completions are deduplicated.
@@ -412,6 +412,7 @@ impl<G, F, P> Recognizer<G, F, P>
                 // from A ::= • B   C
                 // to   A ::=   B • C
                 // Where C is terminal or nonterminal.
+                trace!("new_medial_item: {{ lhs: {:?}, rhs0: {:?}, rhs1: {:?} }}", self.grammar.get_lhs(trans.dot), (), self.grammar.get_rhs1(trans.dot));
                 self.medial.push_item(Item {
                     origin: set_id,
                     dot: trans.dot,
@@ -420,7 +421,7 @@ impl<G, F, P> Recognizer<G, F, P>
                 unary += trans.is_unary as u32;
             }
         }
-        for idx in self.medial.len() as u32 - unary .. self.medial.len() as u32 {
+        for idx in self.medial.item_count() as u32 - unary .. self.medial.item_count() as u32 {
             self.complete.heap_push_linked(CompletedItemLinked { idx, node: None }, &self.medial)
         }
     }
@@ -429,8 +430,8 @@ impl<G, F, P> Recognizer<G, F, P>
     fn complete_generated_binary_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
         let trans = self.grammar.gen_completion(sym);
         let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
-        let will_be_useful = self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lr_set(trans.dot)[sym.usize()]);
-        if was_predicted && will_be_useful {
+        // let will_be_useful = self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lr_set(trans.dot)[sym.usize()]);
+        if was_predicted {
             // No checks for uniqueness, because completions are deduplicated.
             // --- UNARY
             // from A ::= • g42
@@ -445,7 +446,7 @@ impl<G, F, P> Recognizer<G, F, P>
                 node: rhs_link,
             });
             if trans.is_unary {
-                self.complete.heap_push_linked(CompletedItemLinked { idx: self.medial.len() as u32 - 1, node: None }, &mut self.medial);
+                self.complete.heap_push_linked(CompletedItemLinked { idx: self.medial.item_count() as u32 - 1, node: None }, &mut self.medial);
             }
         }
     }

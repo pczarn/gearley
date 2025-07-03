@@ -1,10 +1,7 @@
-extern crate c_lexer_logos;
-extern crate cfg;
-extern crate gearley;
-
 use cfg::Cfg;
 use cfg_load::CfgLoadExt;
 use gearley::{Bocage, DefaultGrammar, Recognizer, RecognizerParseExt};
+use cfg_examples::c::grammar as c_grammar;
 
 const SYM_NAMES: [Option<&'static str>; 176] = [
     Some("term"),
@@ -184,12 +181,6 @@ const SYM_NAMES: [Option<&'static str>; 176] = [
     Some("type_name"),
     Some("error"),
 ];
-
-
-
-
-
-
 
 
 
@@ -869,6 +860,7 @@ fn test_parse_c() {
     use c_lexer_logos::Lexer;
     let _ = env_logger::try_init();
     let external = grammar();
+    let from_examples = c_grammar();
     let mut grammar = Cfg::new();
     let [
         _term,
@@ -960,6 +952,9 @@ fn test_parse_c() {
         equal,
     ] = grammar.sym();
 
+    // assert!(from_examples.equivalent(&external));
+    assert_eq!(from_examples.to_bnf(), external.to_bnf());
+
     let contents = include_str!("../benches/part_gcc_test.i");
     let tokens: Vec<_> = Lexer::lex(&contents[..])
         .unwrap()
@@ -1008,7 +1003,8 @@ fn test_parse_c() {
                 AndOp => Some(and_op),
                 OrOp => Some(or_op),
                 MulAssign => Some(mul_assign),
-                DivAssign => Some(div_assign),
+                DivAssign => [2025-07-01T10:23:12Z TRACE gearley_recognizer::recognizer] complete: Complete { set_id: 5, sym: Symbol { n: 73 } }
+Some(div_assign),
                 ModAssign => Some(mod_assign),
                 AddAssign => Some(add_assign),
                 SubAssign => Some(sub_assign),

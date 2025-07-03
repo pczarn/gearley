@@ -18,13 +18,13 @@ cfg-symbol = { workspace = true }
 bit-matrix = { workspace = true }
 bit-vec = "0.6"
 serde = { version = "1.0", features = ["derive"], optional = true }
-memusage = { version = "0.2.0", optional = true }
 gearley-forest = { path = "../gearley-forest/" }
 gearley-grammar = { path = "../gearley-grammar/" }
 gearley-recognizer = { path = "../gearley-recognizer/" }
 gearley-default-grammar = { path = "../gearley-default-grammar/", optional = true }
 simple-bocage = { path = "../simple-bocage/", optional = true }
 gearley-utils = { path = "../gearley-utils/" }
+cap = { version = "0.1", optional = true }
 
 [dev-dependencies]
 c_lexer_logos = "0.1.1"
@@ -33,10 +33,10 @@ env_logger = "0.11"
 cfg = { path = "../../cfg/cfg/" }
 cfg-load = { path = "../../cfg/cfg-load/" }
 gearley-example-grammars = { path = "../gearley-example-grammars/" }
+cfg-examples = { path = "../../cfg/cfg-examples/" }
 
 [features]
 default = ["gearley-default-grammar", "simple-bocage"]
-memusage = ["dep:memusage", "gearley-forest/memusage", "gearley-recognizer/memusage"]
 nightly = []
 simple-bocage = ["dep:simple-bocage"]
 gearley-default-grammar = ["dep:gearley-default-grammar"]

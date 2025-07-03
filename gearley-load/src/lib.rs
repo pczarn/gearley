@@ -21,7 +21,7 @@ macro_rules! grammar {
             
         )+
         struct Evaluator {
-            name_map: HashMap<Rc<str>, Symbol>,
+            name_map: HashMap<SymbolName, Symbol>,
             cfg: Cfg,
             $($terminal_name: Symbol,)+
         }

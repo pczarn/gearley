@@ -44,6 +44,8 @@ impl<I> Vec2d<I> {
         self.current_start = 0;
     }
 
+    /// Truncates the sets such that `new_len` sets remain,
+    /// and the set at `self[new_len]` becomes the in-progress set.
     pub fn truncate(&mut self, new_len: usize) where I: Copy {
         let new_medial_start = self.indices[new_len];
         self.chart.copy_within(self.current_start.., new_medial_start as usize);
