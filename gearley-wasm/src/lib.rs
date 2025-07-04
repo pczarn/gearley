@@ -33,7 +33,7 @@ extern "C" {
 
 use wasm_bindgen::prelude::*;
 
-use cfg_load::{CfgLoadExt, LoadError};
+use cfg_load::{CfgLoadExt, CfgLoadAdvancedExt, LoadError};
 use cfg_grammar::Cfg;
 
 use log::{Record, Level, Metadata, SetLoggerError, LevelFilter};
@@ -80,15 +80,31 @@ fn load(grammar: &str) -> Result<(Cfg, DefaultGrammar), LoadError> {
     Ok((cfg, grammar))
 }
 
+fn loadAdvanced(grammar: &str) -> Result<(Cfg, DefaultGrammar), LoadError> {
+    let _ = init_logger();
+    let (cfg, lexer_map, symset) = Cfg::load_advanced(&grammar[..])?;
+    let grammar = DefaultGrammar::from_grammar(cfg.clone());
+    Ok((cfg, grammar))
+}
+
 #[wasm_bindgen(start)]
 fn start() {
     error_logger::set_panic_hook();
 }
 
 #[wasm_bindgen]
-pub fn parse(input: &str, grammar: &str) -> String {
+pub fn parse(input: &str, grammar: &str, mode: &str) -> String {
     error_logger::set_panic_hook();
-    match load(grammar) {
+    let result = match mode {
+        "basic" => {
+            load(grammar)
+        }
+        "advanced" => {
+            loadAdvanced(grammar)
+        }
+        _ => return "Unknown mode".to_string()
+    };
+    match result {
         Ok((cfg, default_grammar)) => {
             match utils::parse_terminal_list(cfg, default_grammar, input.split(" ")) {
                 Ok(true) => {

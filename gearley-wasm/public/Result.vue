@@ -47,44 +47,15 @@ export default {
         DefaultGrammar,
         DefaultGrammarSize,
     },
+    props: ['result'],
     data() {
         return {
-            input_editor: null,
-            grammar_editor: null,
-            result: '',
             raw: false,
         }
-    },
-    mounted() {
-        if (typeof window.log_error === 'undefined') {
-            window.log_error = function(text) {
-                this.result = text;
-            }
-        }
-        this.input_editor = ace.edit("input_editor");
-        this.input_editor.setTheme("ace/theme/monokai");
-        this.input_editor.session.setMode("ace/mode/javascript");
-        this.input_editor.getSession().on('change', this.update);
-        this.grammar_editor = ace.edit("grammar_editor");
-        this.grammar_editor.setTheme("ace/theme/monokai");
-        this.grammar_editor.session.setMode("ace/mode/javascript");
-        this.grammar_editor.getSession().on('change', this.update);
-        this.update()
     },
     methods: {
         toggleRaw() {
             this.raw = !this.raw
-        },
-        update() {
-            const input = this.input_editor.getValue();
-            const grammar = this.grammar_editor.getValue();
-
-            try {
-                this.result = window._parse(input, grammar);
-            } catch (e) {
-                this.result = e.message;
-            }
-            console.log(this.result.length)
         }
     },
     computed: {

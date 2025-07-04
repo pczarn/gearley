@@ -5,6 +5,16 @@ use cfg::Symbol;
 use cfg::SymbolSource;
 use gearley_forest::Evaluate;
 
+pub(crate) static BNF: &'static str = r##"
+sum ::= sum "+" product | sum "-" product | product;
+product ::= product "*" factor | product "/" factor | factor;
+factor ::= "(" sum ")" | number;
+
+lexer {
+    number ::= Regexp("[0-9]");
+}
+"##;
+
 pub fn grammar() -> Cfg {
     let mut bnf = Cfg::new();
     let [sum, product, factor, number, plus, minus, mul, div, lparen, rparen] = bnf.sym();

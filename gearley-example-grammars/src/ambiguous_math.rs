@@ -5,6 +5,12 @@ use cfg::Symbol;
 use cfg::SymbolSource;
 use gearley_forest::Evaluate;
 
+pub(crate) static BNF: &'static str = r##"
+expr ::= expr op expr | num;
+op ::= "+" | "-" | "*" | "/";
+num ::= Regexp("[0-9]");
+"##;
+
 pub fn grammar() -> Cfg {
     let mut bnf = Cfg::new();
     let [expr, op, num, plus, minus, mul, div] = bnf.sym();
