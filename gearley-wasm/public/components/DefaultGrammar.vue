@@ -67,7 +67,7 @@
             <ol :start="content.size.syms">
                 <li v-for="gen in content.gen_completions">
                     <Symbol :sym="gen.symbol" :names="names" />
-                    <Rule :dot="gen.dot" />
+                    <!-- <Rule :dot="gen.dot" /> -->
                 </li>
             </ol>
         </Header>
@@ -77,11 +77,13 @@
 <script>
 import { getTransitionRawChildren } from 'vue';
 import Header from './Header.vue';
+import Symbol from './Symbol.vue';
 
 export default {
     props: ['op', 'content', 'names'],
     components: {
         Header,
+        Symbol,
     },
     methods: {
         eachCons(array, num) {

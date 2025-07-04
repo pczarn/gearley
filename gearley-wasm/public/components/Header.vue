@@ -75,30 +75,41 @@ export default {
 </script>
 
 <style scoped>
+.card-header {
+  display: flex;
+  align-items: center;
+}
+
 .level-1 {
-    font-size: 1.5em;
+    font-size: 1.4em;
 }
 
 .level-2 {
-    font-size: 1.2em;
+    font-size: 1.1em;
 }
 
 .level-1 .card-header-icon {
-    font-size: 1.1em;
+    font-size: 0.9em;
     /* height: 1.1em;
     width: 1.1em; */
 }
 
 .level-2 .card-header-icon {
-    font-size: 1em;
+    font-size: 0.8em;
     /* height: 1em;
     width: 1em; */
 }
 
 .card-header-icon.button {
-  margin: 0.75rem;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
 }
 .card {
-  margin: 0.75rem;
+  margin: 0.5rem;
+}
+
+.card-content {
+  margin-left: 1.25rem;
+  margin-top: 0.75rem;
 }
 </style>
