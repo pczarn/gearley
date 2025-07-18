@@ -19,23 +19,23 @@
 
 [crates.io shield]: https://img.shields.io/crates/v/gearley?label=latest
 [crates.io link]: https://crates.io/crates/gearley
-[docs.rs badge]: https://docs.rs/gearley/badge.svg?version=0.0.5
-[docs.rs link]: https://docs.rs/gearley/0.0.5/gearley/
+[docs.rs badge]: https://docs.rs/gearley/badge.svg?version=0.0.4
+[docs.rs link]: https://docs.rs/gearley/0.0.4/gearley/
 [github ci badge]: https://github.com/pczarn/gearley/workflows/CI/badge.svg?branch=master
 [rustc 1.80+]: https://img.shields.io/badge/rustc-1.80%2B-blue.svg
-[deps.rs status]: https://deps.rs/crate/gearley/0.0.5/status.svg
-[deps.rs link]: https://deps.rs/crate/gearley/0.0.5
+[deps.rs status]: https://deps.rs/crate/gearley/0.0.4/status.svg
+[deps.rs link]: https://deps.rs/crate/gearley/0.0.4
 [shields.io download count]: https://img.shields.io/crates/d/gearley.svg
 
-Work in progress.
-[You can check the documentation here](`https://docs.rs/gearley/latest/gearley/).
+Work in progress!
+[You can check the documentation here](https://docs.rs/gearley/latest/gearley/).
 
 This engine is meant to be the foundation of an industrial-grade parser generator.
 
 Gearley is based on the [Marpa parser](http://jeffreykegler.github.io/Marpa-web-site/)
 by Jeffrey Kegler.
 
-The goal of gearley is to provide an upgrade to Marpa within a modern language, whereas Marpa itself was intended to make the best results in the academic literature on Earley's algorithm available as a practical general parser.
+The goal of gearley is to provide an upgrade to Marpa within a modern programming language, whereas Marpa itself was intended to make the best results in the academic literature on Earley's algorithm available as a practical general parser.
 
 ## Properties
 
