@@ -1,6 +1,4 @@
 <template>
-    <h1>{{ op }}</h1>
-    <h2>DefaultGrammarSize</h2>
     <ul>
         <li v-for="(val, key) in content">{{ key }}: {{ val }}</li>
     </ul>
@@ -8,6 +6,6 @@
 
 <script>
 export default {
-    props: ['op', 'content'],
+    props: ['op', 'content', 'names']
 }
 </script>

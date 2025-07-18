@@ -6,6 +6,7 @@ pub use cfg_history::earley::{EventAndDistance, ExternalDottedRule, NullingElimi
 
 type Dot = u32;
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Serialize, Deserialize, Copy, Clone, Debug)]
 pub struct PredictionTransition {
     pub symbol: Symbol,
@@ -182,6 +183,7 @@ impl<'a, G> Grammar for &'a G where G: Grammar {
 }
 
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Serialize, Deserialize, Clone, Default, Debug)]
 pub struct ForestInfo {
     pub eval: Vec<ExternalOrigin>,

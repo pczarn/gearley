@@ -28,6 +28,9 @@ Storage.prototype.getObject = function (key) {
 
 export default {
   mounted() {
+    if (this.defaultCollapse !== null && this.id) {
+        this.saveCollapsedState(this.default)
+    }
     if (this.id) {
       const state = this.getCollapseState();
       if (state) {
@@ -46,11 +49,15 @@ export default {
     level: {
         type: Number,
         default: 1,
+    },
+    defaultCollapse: {
+      type: Boolean,
+      default: null
     }
   },
   data() {
     return {
-      isCollapsed: true
+      isCollapsed: this.defaultCollapse === null ? true : this.defaultCollapse
     };
   },
   methods: {

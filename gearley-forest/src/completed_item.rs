@@ -4,13 +4,13 @@ type Dot = u32;
 type Origin = u32;
 
 #[derive(Clone, Copy, Debug)]
-pub struct CompletedItem<N> {
+pub struct CompletedItem<N, O = Origin> {
     /// The dot position.
     pub dot: Dot,
     /// The origin location.
     /// It comes after `dot`, so that (origin, dot) can be compared in a single instruction
     /// on little-endian systems.
-    pub origin: Origin,
+    pub origin: O,
     /// Left bocage node.
     pub left_node: N,
     /// Right bocage node.

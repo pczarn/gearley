@@ -1,15 +1,9 @@
-#[macro_use]
-extern crate log;
-extern crate cfg;
-extern crate env_logger;
-extern crate gearley;
-
 use cfg::sequence::CfgSequenceExt;
-// use cfg::Cfg;
-use cfg::{sequence::Separator::Trailing, Cfg};
+use cfg::Cfg;
+use cfg::sequence::Separator::Trailing;
 use cfg::Symbol;
 
-use gearley::{Bocage, DefaultGrammar, Grammar, Recognizer, RecognizerParseExt};
+use gearley::{Bocage, DefaultGrammar, Recognizer, RecognizerParseExt};
 use gearley_forest::Evaluate;
 
 struct Eval;

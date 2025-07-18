@@ -5,15 +5,11 @@ use cfg::Symbol;
 use cfg::SymbolSource;
 use gearley_forest::Evaluate;
 
-pub(crate) static BNF: &'static str = r##"
-sum ::= sum "+" product | sum "-" product | product;
-product ::= product "*" factor | product "/" factor | factor;
-factor ::= "(" sum ")" | number;
-
-lexer {
-    number ::= Regexp("[0-9]");
-}
-"##;
+pub(crate) static BNF: &'static str = include_str!("grammar.panini");
+pub(crate) static INPUTS: &'static [&'static str] = &[
+    include_str!("example.txt"),
+    include_str!("example2.txt")
+];
 
 pub fn grammar() -> Cfg {
     let mut bnf = Cfg::new();

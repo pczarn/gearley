@@ -1,0 +1,601 @@
+static reg_errcode_t
+byte_regex_compile (pattern, size, syntax, bufp)
+     const char *pattern;
+     size_t size;
+     reg_syntax_t syntax;
+     struct re_pattern_buffer *bufp;
+{
+  switch (x) {
+        case '*':
+          {
+            boolean keep_string_p = 0;
+            char zero_times_ok = 0, many_times_ok = 0;
+            for (;;)
+              {
+                zero_times_ok |= c != '+';
+                many_times_ok |= c != '?';
+                if (p == pend)
+                  break;
+                do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; if (translate) c = (unsigned char) translate[c]; } while (0);
+                if (c == '*'
+                    || (!(syntax & (((unsigned long int) 1) << 1)) && (c == '+' || c == '?')))
+                  ;
+                else if (c == '\'')
+                  {
+                  }
+                else
+                  {
+                    p--;
+                    break;
+                  }
+               }
+            if (!laststart)
+              break;
+            if (many_times_ok)
+              {
+                ;
+                while ((unsigned long) (b - bufp->buffer + (1 + 2)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0);
+                if ((translate ? (char) translate[(unsigned char) (*(p - 2))] : (*(p - 2))) == (translate ? (char) translate[(unsigned char) ('.')] : ('.'))
+      && zero_times_ok
+                    && p < pend && (translate ? (char) translate[(unsigned char) (*p)] : (*p)) == (translate ? (char) translate[(unsigned char) ('\n')] : ('\n'))
+                    && !(syntax & ((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1)))
+                  {
+                    byte_store_op1 (jump, b, (int) ((laststart) - (b) - (1 + 2)));
+                    keep_string_p = 1;
+                  }
+                else
+                  byte_store_op1 (maybe_pop_jump, b, (int) ((laststart - (1 + 2)) - (b) - (1 + 2)))
+                                   ;
+                b += 1 + 2;
+              }
+            while ((unsigned long) (b - bufp->buffer + (1 + 2)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0);
+            byte_insert_op1 (keep_string_p ? on_failure_keep_string_jump : on_failure_jump, laststart, (int) ((b + 1 + 2) - (laststart) - (1 + 2)), b)
+                                                                ;
+            pending_exact = 0;
+            b += 1 + 2;
+            if (!zero_times_ok)
+              {
+                while ((unsigned long) (b - bufp->buffer + (1 + 2)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0);
+                byte_insert_op1 (dummy_failure_jump, laststart, (int) ((laststart + 2 + 2 * 2) - (laststart) - (1 + 2)), b)
+                                    ;
+                b += 1 + 2;
+              }
+            }
+   break;
+ case '.':
+          laststart = b;
+          do { while ((unsigned long) (b - bufp->buffer + (1)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (anychar); } while (0);
+          break;
+        case '[':
+          {
+            boolean had_char_class = 0;
+     unsigned int range_start = 0xffffffff;
+            if (p == pend) return (free (compile_stack.stack), REG_EBRACK);
+     while ((unsigned long) (b - bufp->buffer + (34)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0);
+            laststart = b;
+            do { while ((unsigned long) (b - bufp->buffer + (1)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (*p == '^' ? charset_not : charset); } while (0);
+            if (*p == '^')
+              p++;
+            p1 = p;
+            do { while ((unsigned long) (b - bufp->buffer + (1)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) ((1 << 8) / 8); } while (0);
+            (memset (b, 0, (1 << 8) / 8), (b));
+            if ((re_opcode_t) b[-2] == charset_not
+                && (syntax & ((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1)))
+              (b[((unsigned char) ('\n')) / 8] |= 1 << (((unsigned char) '\n') % 8));
+            for (;;)
+              {
+                if (p == pend) return (free (compile_stack.stack), REG_EBRACK);
+                do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; if (translate) c = (unsigned char) translate[c]; } while (0);
+                if ((syntax & ((unsigned long int) 1)) && c == 'a')
+                  {
+                    if (p == pend) return (free (compile_stack.stack), REG_EESCAPE);
+                    do {if (p == pend) return REG_EEND; c1 = (unsigned char) *p++; if (translate) c1 = (unsigned char) translate[c1]; } while (0);
+                    (b[((unsigned char) (c1)) / 8] |= 1 << (((unsigned char) c1) % 8));
+      range_start = c1;
+                    continue;
+                  }
+                if (c == ']' && p != p1 + 1)
+                  break;
+                if (had_char_class && c == '-' && *p != ']')
+                  return (free (compile_stack.stack), REG_ERANGE);
+                if (c == '-'
+                    && !(p - 2 >= pattern && p[-2] == '[')
+                    && !(p - 3 >= pattern && p[-3] == '[' && p[-2] == '^')
+                    && *p != ']')
+                  {
+                    reg_errcode_t ret
+                      = byte_compile_range (range_start, &p, pend, translate,
+         syntax, b);
+                    if (ret != REG_NOERROR) return (free (compile_stack.stack), ret);
+      range_start = 0xffffffff;
+                  }
+                else if (p[0] == '-' && p[1] != ']')
+                  {
+                    reg_errcode_t ret;
+                    do {if (p == pend) return REG_EEND; c1 = (unsigned char) *p++; if (translate) c1 = (unsigned char) translate[c1]; } while (0);
+                    ret = byte_compile_range (c, &p, pend, translate, syntax, b);
+                    if (ret != REG_NOERROR) return (free (compile_stack.stack), ret);
+      range_start = 0xffffffff;
+                  }
+                else if (syntax & ((((unsigned long int) 1) << 1) << 1) && c == '[' && *p == ':')
+                  {
+                    char str[6 + 1];
+                    do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; if (translate) c = (unsigned char) translate[c]; } while (0);
+                    c1 = 0;
+                    if (p == pend) return (free (compile_stack.stack), REG_EBRACK);
+                    for (;;)
+                      {
+                        do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; if (translate) c = (unsigned char) translate[c]; } while (0);
+                        if ((c == ':' && *p == ']') || p == pend)
+                          break;
+   if (c1 < 6)
+     str[c1++] = c;
+   else
+     str[0] = 0;
+                      }
+                    str[c1] = 0;
+                    if (c == ':' && *p == ']')
+                      {
+                        int ch;
+                        boolean is_alnum = ((strcmp (str, "alnum") == 0));
+                        boolean is_alpha = ((strcmp (str, "alpha") == 0));
+                        boolean is_blank = ((strcmp (str, "blank") == 0));
+                        boolean is_cntrl = ((strcmp (str, "cntrl") == 0));
+                        boolean is_digit = ((strcmp (str, "digit") == 0));
+                        boolean is_graph = ((strcmp (str, "graph") == 0));
+                        boolean is_lower = ((strcmp (str, "lower") == 0));
+                        boolean is_print = ((strcmp (str, "print") == 0));
+                        boolean is_punct = ((strcmp (str, "punct") == 0));
+                        boolean is_space = ((strcmp (str, "space") == 0));
+                        boolean is_upper = ((strcmp (str, "upper") == 0));
+                        boolean is_xdigit = ((strcmp (str, "xdigit") == 0));
+                        if (!(((strcmp (str, "alpha") == 0)) || ((strcmp (str, "upper") == 0)) || ((strcmp (str, "lower") == 0)) || ((strcmp (str, "digit") == 0)) || ((strcmp (str, "alnum") == 0)) || ((strcmp (str, "xdigit") == 0)) || ((strcmp (str, "space") == 0)) || ((strcmp (str, "print") == 0)) || ((strcmp (str, "punct") == 0)) || ((strcmp (str, "graph") == 0)) || ((strcmp (str, "cntrl") == 0)) || ((strcmp (str, "blank") == 0))))
+     return (free (compile_stack.stack), REG_ECTYPE);
+                        do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; if (translate) c = (unsigned char) translate[c]; } while (0);
+                        if (p == pend) return (free (compile_stack.stack), REG_EBRACK);
+                        for (ch = 0; ch < 1 << 8; ch++)
+                          {
+                            if ( (is_alnum && (1 && ((*__ctype_b_loc ())[(int) ((ch))] & (unsigned short int) _ISalnum)))
+                                || (is_alpha && (1 && ((*__ctype_b_loc ())[(int) ((ch))] & (unsigned short int) _ISalpha)))
+                                || (is_blank && (1 && ((*__ctype_b_loc ())[(int) ((ch))] & (unsigned short int) _ISblank)))
+                                || (is_cntrl && (1 && ((*__ctype_b_loc ())[(int) ((ch))] & (unsigned short int) _IScntrl))))
+         (b[((unsigned char) (ch)) / 8] |= 1 << (((unsigned char) ch) % 8));
+       if ( (is_digit && (1 && ((*__ctype_b_loc ())[(int) ((ch))] & (unsigned short int) _ISdigit)))
+                                || (is_graph && (1 && ((*__ctype_b_loc ())[(int) ((ch))] & (unsigned short int) _ISgraph)))
+                                || (is_lower && (1 && ((*__ctype_b_loc ())[(int) ((ch))] & (unsigned short int) _ISlower)))
+                                || (is_print && (1 && ((*__ctype_b_loc ())[(int) ((ch))] & (unsigned short int) _ISprint))))
+         (b[((unsigned char) (ch)) / 8] |= 1 << (((unsigned char) ch) % 8));
+       if ( (is_punct && (1 && ((*__ctype_b_loc ())[(int) ((ch))] & (unsigned short int) _ISpunct)))
+                                || (is_space && (1 && ((*__ctype_b_loc ())[(int) ((ch))] & (unsigned short int) _ISspace)))
+                                || (is_upper && (1 && ((*__ctype_b_loc ())[(int) ((ch))] & (unsigned short int) _ISupper)))
+                                || (is_xdigit && (1 && ((*__ctype_b_loc ())[(int) ((ch))] & (unsigned short int) _ISxdigit))))
+         (b[((unsigned char) (ch)) / 8] |= 1 << (((unsigned char) ch) % 8));
+       if ( translate && (is_upper || is_lower)
+    && ((1 && ((*__ctype_b_loc ())[(int) ((ch))] & (unsigned short int) _ISupper)) || (1 && ((*__ctype_b_loc ())[(int) ((ch))] & (unsigned short int) _ISlower))))
+         (b[((unsigned char) (ch)) / 8] |= 1 << (((unsigned char) ch) % 8));
+                          }
+                        had_char_class = 1;
+                      }
+                    else
+                      {
+                        c1++;
+                        while (c1--)
+                          p--;
+                        (b[((unsigned char) ('[')) / 8] |= 1 << (((unsigned char) '[') % 8));
+                        (b[((unsigned char) (':')) / 8] |= 1 << (((unsigned char) ':') % 8));
+   range_start = ':';
+                        had_char_class = 0;
+                      }
+                  }
+                else if (syntax & ((((unsigned long int) 1) << 1) << 1) && c == '[' && *p == '=')
+    {
+      unsigned char str[16 + 1];
+      do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; if (translate) c = (unsigned char) translate[c]; } while (0);
+      c1 = 0;
+      if (p == pend) return (free (compile_stack.stack), REG_EBRACK);
+      for (;;)
+        {
+   do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; if (translate) c = (unsigned char) translate[c]; } while (0);
+   if ((c == '=' && *p == ']') || p == pend)
+     break;
+   if (c1 < 16)
+     str[c1++] = c;
+   else
+     str[0] = 0;
+                      }
+      str[c1] = 0;
+      if (c == '=' && *p == ']' && str[0] != 0)
+        {
+     {
+       if (c1 != 1)
+         return (free (compile_stack.stack), REG_ECOLLATE);
+       do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; if (translate) c = (unsigned char) translate[c]; } while (0);
+       (b[((unsigned char) (str[0])) / 8] |= 1 << (((unsigned char) str[0]) % 8));
+     }
+   had_char_class = 1;
+        }
+                    else
+                      {
+                        c1++;
+                        while (c1--)
+                          p--;
+                        (b[((unsigned char) ('[')) / 8] |= 1 << (((unsigned char) '[') % 8));
+                        (b[((unsigned char) ('=')) / 8] |= 1 << (((unsigned char) '=') % 8));
+   range_start = '=';
+                        had_char_class = 0;
+                      }
+    }
+                else if (syntax & ((((unsigned long int) 1) << 1) << 1) && c == '[' && *p == '.')
+    {
+      unsigned char str[128];
+      do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; if (translate) c = (unsigned char) translate[c]; } while (0);
+      c1 = 0;
+      if (p == pend) return (free (compile_stack.stack), REG_EBRACK);
+      for (;;)
+        {
+   do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; if (translate) c = (unsigned char) translate[c]; } while (0);
+   if ((c == '.' && *p == ']') || p == pend)
+     break;
+   if (c1 < sizeof (str))
+     str[c1++] = c;
+   else
+     str[0] = 0;
+                      }
+      str[c1] = 0;
+      if (c == '.' && *p == ']' && str[0] != 0)
+        {
+     {
+       if (c1 != 1)
+         return (free (compile_stack.stack), REG_ECOLLATE);
+       do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; if (translate) c = (unsigned char) translate[c]; } while (0);
+       (b[((unsigned char) (str[0])) / 8] |= 1 << (((unsigned char) str[0]) % 8));
+       range_start = ((const unsigned char *) str)[0];
+     }
+   had_char_class = 0;
+        }
+                    else
+                      {
+                        c1++;
+                        while (c1--)
+                          p--;
+                        (b[((unsigned char) ('[')) / 8] |= 1 << (((unsigned char) '[') % 8));
+                        (b[((unsigned char) ('.')) / 8] |= 1 << (((unsigned char) '.') % 8));
+   range_start = '.';
+                        had_char_class = 0;
+                      }
+    }
+                else
+                  {
+                    had_char_class = 0;
+                    (b[((unsigned char) (c)) / 8] |= 1 << (((unsigned char) c) % 8));
+      range_start = c;
+                  }
+              }
+            while ((int) b[-1] > 0 && b[b[-1] - 1] == 0)
+              b[-1]--;
+            b += b[-1];
+          }
+          break;
+ case '(':
+          if (syntax & (((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+            goto handle_open;
+          else
+            goto normal_char;
+        case ')':
+          if (syntax & (((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+            goto handle_close;
+          else
+            goto normal_char;
+        case '\n':
+          if (syntax & (((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+            goto handle_alt;
+          else
+            goto normal_char;
+ case '|':
+          if (syntax & (((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+            goto handle_alt;
+          else
+            goto normal_char;
+        case '{':
+           if (syntax & (((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) && syntax & ((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+             goto handle_interval;
+           else
+             goto normal_char;
+        case 'a':
+          if (p == pend) return (free (compile_stack.stack), REG_EESCAPE);
+          do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; } while (0);
+          switch (c)
+            {
+            case '(':
+              if (syntax & (((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+                goto normal_backslash;
+            handle_open:
+              bufp->re_nsub++;
+              regnum++;
+              if ((compile_stack.avail == compile_stack.size))
+                {
+                  ((compile_stack.stack) = (compile_stack_elt_t *) realloc (compile_stack.stack, (compile_stack.size << 1) * sizeof (compile_stack_elt_t)))
+                                                ;
+                  if (compile_stack.stack == ((void *)0)) return REG_ESPACE;
+                  compile_stack.size <<= 1;
+                }
+              (compile_stack.stack[compile_stack.avail]).begalt_offset = begalt - bufp->buffer;
+              (compile_stack.stack[compile_stack.avail]).fixup_alt_jump
+                = fixup_alt_jump ? fixup_alt_jump - bufp->buffer + 1 : 0;
+              (compile_stack.stack[compile_stack.avail]).laststart_offset = b - bufp->buffer;
+              (compile_stack.stack[compile_stack.avail]).regnum = regnum;
+              if (regnum <= 255)
+                {
+                  (compile_stack.stack[compile_stack.avail]).inner_group_offset = b
+      - bufp->buffer + 2;
+                  do { while ((unsigned long) (b - bufp->buffer + (3)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (start_memory); *b++ = (unsigned char) (regnum); *b++ = (unsigned char) (0); } while (0);
+                }
+              compile_stack.avail++;
+              fixup_alt_jump = 0;
+              laststart = 0;
+              begalt = b;
+       pending_exact = 0;
+              break;
+            case ')':
+              if (syntax & (((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1)) goto normal_backslash;
+              if ((compile_stack.avail == 0))
+  {
+    if (syntax & (((((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+      goto normal_backslash;
+    else
+      return (free (compile_stack.stack), REG_ERPAREN);
+  }
+            handle_close:
+              if (fixup_alt_jump)
+                {
+                  do { while ((unsigned long) (b - bufp->buffer + (1)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (push_dummy_failure); } while (0);
+                  byte_store_op1 (jump_past_alt, fixup_alt_jump, (int) ((b - 1) - (fixup_alt_jump) - (1 + 2)));
+                }
+              if ((compile_stack.avail == 0))
+  {
+    if (syntax & (((((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+      goto normal_char;
+    else
+      return (free (compile_stack.stack), REG_ERPAREN);
+  }
+              ;
+              {
+                regnum_t this_group_regnum;
+                compile_stack.avail--;
+                begalt = bufp->buffer + (compile_stack.stack[compile_stack.avail]).begalt_offset;
+                fixup_alt_jump
+                  = (compile_stack.stack[compile_stack.avail]).fixup_alt_jump
+                    ? bufp->buffer + (compile_stack.stack[compile_stack.avail]).fixup_alt_jump - 1
+                    : 0;
+                laststart = bufp->buffer + (compile_stack.stack[compile_stack.avail]).laststart_offset;
+                this_group_regnum = (compile_stack.stack[compile_stack.avail]).regnum;
+  pending_exact = 0;
+                if (this_group_regnum <= 255)
+                  {
+      unsigned char *inner_group_loc
+                      = bufp->buffer + (compile_stack.stack[compile_stack.avail]).inner_group_offset;
+                    *inner_group_loc = regnum - this_group_regnum;
+                    do { while ((unsigned long) (b - bufp->buffer + (3)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (stop_memory); *b++ = (unsigned char) (this_group_regnum); *b++ = (unsigned char) (regnum - this_group_regnum); } while (0)
+                                                           ;
+                  }
+              }
+              break;
+            case '|':
+              if (syntax & ((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) || syntax & (((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+                goto normal_backslash;
+            handle_alt:
+              if (syntax & ((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+                goto normal_char;
+              while ((unsigned long) (b - bufp->buffer + (1 + 2)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0);
+              byte_insert_op1 (on_failure_jump, begalt, (int) ((b + 2 + 2 * 2) - (begalt) - (1 + 2)), b)
+                                      ;
+              pending_exact = 0;
+              b += 1 + 2;
+              if (fixup_alt_jump)
+                byte_store_op1 (jump_past_alt, fixup_alt_jump, (int) ((b) - (fixup_alt_jump) - (1 + 2)));
+              fixup_alt_jump = b;
+              while ((unsigned long) (b - bufp->buffer + (1 + 2)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0);
+              b += 1 + 2;
+              laststart = 0;
+              begalt = b;
+              break;
+            case '{':
+              if (!(syntax & (((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+    || (syntax & ((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1)))
+                goto normal_backslash;
+            handle_interval:
+              {
+                int lower_bound = -1, upper_bound = -1;
+  const char *beg_interval = p;
+                if (p == pend)
+    goto invalid_interval;
+                { while (p != pend) { do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; if (translate) c = (unsigned char) translate[c]; } while (0); if (c < '0' || c > '9') break; if (lower_bound <= (0x7fff)) { if (lower_bound < 0) lower_bound = 0; lower_bound = lower_bound * 10 + c - '0'; } } };
+                if (c == ',')
+                  {
+                    { while (p != pend) { do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; if (translate) c = (unsigned char) translate[c]; } while (0); if (c < '0' || c > '9') break; if (upper_bound <= (0x7fff)) { if (upper_bound < 0) upper_bound = 0; upper_bound = upper_bound * 10 + c - '0'; } } };
+      if (upper_bound < 0)
+        upper_bound = (0x7fff);
+                  }
+                else
+                  upper_bound = lower_bound;
+                if (! (0 <= lower_bound && lower_bound <= upper_bound))
+    goto invalid_interval;
+                if (!(syntax & ((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1)))
+                  {
+      if (c != 'a' || p == pend)
+        goto invalid_interval;
+                    do {if (p == pend) return REG_EEND; c = (unsigned char) *p++; if (translate) c = (unsigned char) translate[c]; } while (0);
+                  }
+                if (c != '}')
+    goto invalid_interval;
+                if (!laststart)
+                  {
+      if (syntax & (((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1)
+   && !(syntax & (((((((((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1)))
+                      return (free (compile_stack.stack), REG_BADRPT);
+                    else if (syntax & ((((((unsigned long int) 1) << 1) << 1) << 1) << 1))
+                      laststart = b;
+                    else
+                      goto unfetch_interval;
+                  }
+                if ((0x7fff) < upper_bound)
+    return (free (compile_stack.stack), REG_BADBR);
+                 if (upper_bound == 0)
+                   {
+                     while ((unsigned long) (b - bufp->buffer + (1 + 2)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0);
+                     byte_insert_op1 (jump, laststart, (int) ((b + 1 + 2) - (laststart) - (1 + 2)), b)
+                            ;
+                     b += 1 + 2;
+                   }
+                 else
+                   {
+                     unsigned nbytes = 2 + 4 * 2 +
+         (upper_bound > 1) * (2 + 4 * 2);
+                     while ((unsigned long) (b - bufp->buffer + (nbytes)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0);
+                     byte_insert_op2 (succeed_n, laststart, (int) ((b + 1 + 2 * 2 + (upper_bound > 1) * (1 + 2 * 2)) - (laststart) - (1 + 2)), lower_bound, b)
+                     ;
+                     b += 1 + 2 * 2;
+                     byte_insert_op2 (set_number_at, laststart, 1
+     + 2 * 2, lower_bound, b);
+                     b += 1 + 2 * 2;
+                     if (upper_bound > 1)
+                       {
+                         byte_store_op2 (jump_n, b, (int) ((laststart + 2 * 2 + 1) - (b) - (1 + 2)), upper_bound - 1)
+                                                      ;
+                         b += 1 + 2 * 2;
+                         byte_insert_op2 (set_number_at, laststart,
+          b - laststart,
+          upper_bound - 1, b);
+                         b += 1 + 2 * 2;
+                       }
+                   }
+                pending_exact = 0;
+  break;
+       invalid_interval:
+  if (!(syntax & (((((((((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1)))
+    return (free (compile_stack.stack), p == pend ? REG_EBRACE : REG_BADBR);
+       unfetch_interval:
+  p = beg_interval;
+  c = '{';
+  if (syntax & ((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+    goto normal_char;
+  else
+    goto normal_backslash;
+       }
+            case 'w':
+       if (syntax & (((((((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+  goto normal_char;
+              laststart = b;
+              do { while ((unsigned long) (b - bufp->buffer + (1)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (wordchar); } while (0);
+              break;
+            case 'W':
+       if (syntax & (((((((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+  goto normal_char;
+              laststart = b;
+              do { while ((unsigned long) (b - bufp->buffer + (1)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (notwordchar); } while (0);
+              break;
+            case '<':
+       if (syntax & (((((((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+  goto normal_char;
+              do { while ((unsigned long) (b - bufp->buffer + (1)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (wordbeg); } while (0);
+              break;
+            case '>':
+       if (syntax & (((((((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+  goto normal_char;
+              do { while ((unsigned long) (b - bufp->buffer + (1)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (wordend); } while (0);
+              break;
+            case 'b':
+       if (syntax & (((((((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+  goto normal_char;
+              do { while ((unsigned long) (b - bufp->buffer + (1)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (wordbound); } while (0);
+              break;
+            case 'B':
+       if (syntax & (((((((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+  goto normal_char;
+              do { while ((unsigned long) (b - bufp->buffer + (1)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (notwordbound); } while (0);
+              break;
+            case 0:
+       if (syntax & (((((((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+  goto normal_char;
+              do { while ((unsigned long) (b - bufp->buffer + (1)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (begbuf); } while (0);
+              break;
+            case 0:
+       if (syntax & (((((((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+  goto normal_char;
+              do { while ((unsigned long) (b - bufp->buffer + (1)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (endbuf); } while (0);
+              break;
+            case '1': case '2': case '3': case '4': case '5':
+            case '6': case '7': case '8': case '9':
+              if (syntax & ((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+                goto normal_char;
+              c1 = c - '0';
+              if (c1 > regnum)
+                return (free (compile_stack.stack), REG_ESUBREG);
+              if (group_in_compile_stack (compile_stack, (regnum_t) c1))
+                goto normal_char;
+              laststart = b;
+              do { while ((unsigned long) (b - bufp->buffer + (2)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (duplicate); *b++ = (unsigned char) (c1); } while (0);
+              break;
+            case '+':
+            case '?':
+              if (syntax & (((unsigned long int) 1) << 1))
+                goto handle_plus;
+              else
+                goto normal_backslash;
+            default:
+            normal_backslash:
+              c = (translate ? (char) translate[(unsigned char) (c)] : (c));
+              goto normal_char;
+            }
+          break;
+ default:
+ normal_char:
+          if (!pending_exact
+              || pending_exact + *pending_exact + 1 != b
+       || *pending_exact == (1 << 8) - 1
+              || *p == '*' || *p == '^'
+       || ((syntax & (((unsigned long int) 1) << 1))
+    ? *p == 'a' && (p[1] == '+' || p[1] == '?')
+    : (*p == '+' || *p == '?'))
+       || ((syntax & (((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+                  && ((syntax & ((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+        ? *p == 'a'
+                      : (p[0] == 'a' && p[1] == 'a'))))
+         {
+            laststart = b;
+            do { while ((unsigned long) (b - bufp->buffer + (2)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (exactn); *b++ = (unsigned char) (0); } while (0);
+            pending_exact = b - 1;
+          }
+          do { while ((unsigned long) (b - bufp->buffer + (1)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (c); } while (0);
+          (*pending_exact)++;
+            break;
+        }
+  if (fixup_alt_jump)
+    byte_store_op1 (jump_past_alt, fixup_alt_jump, (int) ((b) - (fixup_alt_jump) - (1 + 2)));
+  if (!(compile_stack.avail == 0))
+    return (free (compile_stack.stack), REG_EPAREN);
+  if (syntax & ((((((((((((((((((((unsigned long int) 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1) << 1))
+    do { while ((unsigned long) (b - bufp->buffer + (1)) > bufp->allocated) do { unsigned char *old_buffer = bufp->buffer; if (bufp->allocated == (1 << 16)) return REG_ESIZE; bufp->allocated <<= 1; if (bufp->allocated > (1 << 16)) bufp->allocated = (1 << 16); bufp->buffer = (unsigned char *) realloc ((bufp->buffer), (bufp->allocated)); if (bufp->buffer == ((void *)0)) return REG_ESPACE; if (old_buffer != bufp->buffer) { int incr = bufp->buffer - old_buffer; (b) += incr; (begalt) += incr; if (fixup_alt_jump) (fixup_alt_jump) += incr; if (laststart) (laststart) += incr; if (pending_exact) (pending_exact) += incr; } } while (0); *b++ = (unsigned char) (succeed); } while (0);
+  free (compile_stack.stack);
+  bufp->used = b - bufp->buffer;
+  return REG_NOERROR;
+}
+static void
+byte_store_op1 (op, loc, arg)
+    re_opcode_t op;
+    unsigned char *loc;
+    int arg;
+{
+  *loc = (unsigned char) op;
+  do { (loc + 1)[0] = (arg) & 0377; (loc + 1)[1] = (arg) >> 8; } while (0);
+}
+static void
+byte_store_op2 (op, loc, arg1, arg2)
+    re_opcode_t op;
+    unsigned char *loc;
+    int arg1, arg2;
+{
+  *loc = (unsigned char) op;
+  do { (loc + 1)[0] = (arg1) & 0377; (loc + 1)[1] = (arg1) >> 8; } while (0);
+  do { (loc + 1 + 2)[0] = (arg2) & 0377; (loc + 1 + 2)[1] = (arg2) >> 8; } while (0);
+}

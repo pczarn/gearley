@@ -1,6 +1,7 @@
 use std::fmt::{Debug, Display};
 
-use cfg::{Cfg, Symbol};
+use cfg::{Cfg, Symbol, SymbolBitSet};
+use cfg_load::advanced::{AdvancedGrammar, LexerMap};
 use gearley_default_grammar::DefaultGrammar;
 use log::trace;
 
@@ -18,7 +19,7 @@ pub trait RecognizerParseExt {
 pub enum ParseError {
     Parse {
         msg: &'static str,
-        token: Symbol,
+        tokens: Vec<Symbol>,
         i: usize,
     },
     Tokenize {
@@ -33,10 +34,10 @@ pub enum ParseError {
 impl Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ParseError::Parse { msg, token, i } => {
+            ParseError::Parse { msg, tokens, i } => {
                 f.write_str(msg)?;
                 f.write_str(": ")?;
-                write!(f, "{:?}@{}", token, i)?;
+                write!(f, "{:?}@{}", tokens, i)?;
                 Ok(())
             }
             ParseError::Tokenize { msg, word } => {
@@ -63,7 +64,7 @@ where
         self.begin_earleme();
         self.scan(self.grammar().sof(), 0);
         if !self.end_earleme() {
-            return Err(ParseError::Parse { msg: "failed to read SOF", token: self.grammar().sof(), i: 0 });
+            return Err(ParseError::Parse { msg: "failed to read SOF", tokens: vec![self.grammar().sof()], i: 0 });
         }
         let mut iter = tokens.iter().enumerate().peekable();
         while let Some((i, &token)) = iter.next() {
@@ -78,7 +79,7 @@ where
             }
             self.scan(self.grammar().to_internal(token).unwrap(), i as u32);
             if !self.end_earleme() {
-                return Err(ParseError::Parse { msg: "failed to parse", token, i })
+                return Err(ParseError::Parse { msg: "failed to parse", tokens: vec![token], i })
             }
         }
         // self.begin_earleme();
@@ -128,13 +129,13 @@ impl<G> RecognizerParseExt for Recognizer<G, NullForest> where
         self.begin_earleme();
         self.scan(self.grammar().sof(), ());
         if !self.end_earleme() {
-            return Err(ParseError::Parse { msg: "failed to read SOF", token: self.grammar().sof(), i: 0 });
+            return Err(ParseError::Parse { msg: "failed to read SOF", tokens: vec![self.grammar().sof()], i: 0 });
         }
         for (i, token) in tokens.iter().copied().enumerate() {
             self.begin_earleme();
             self.scan(self.grammar().to_internal(token).unwrap(), ());
             if !self.end_earleme() {
-                return Err(ParseError::Parse { msg: "failed to recognize", token, i })
+                return Err(ParseError::Parse { msg: "failed to recognize", tokens: vec![token], i })
             }
         }
         trace!("finished: {:?}", &*self);
@@ -162,4 +163,27 @@ pub fn parse_terminal_list<'a>(cfg: Cfg, grammar: DefaultGrammar, terminal_list:
     }
     trace!("bocage: {:?}", recognizer.into_forest());
     result
+}
+
+pub fn parse_tokenizing(mut loaded: AdvancedGrammar, grammar: DefaultGrammar, input: &str) -> Result<bool, ParseError> {
+    loaded.lexer_map.compute();
+    let mut recognizer = Recognizer::with_forest(&grammar, Bocage::new(&grammar));
+
+    recognizer.begin_earleme();
+    recognizer.scan(recognizer.grammar().sof(), 0);
+    if !recognizer.end_earleme() {
+        return Err(ParseError::Parse { msg: "failed to read SOF", tokens: vec![recognizer.grammar().sof()], i: 0 });
+    }
+    for (i, ch) in input.chars().enumerate() {
+        recognizer.begin_earleme();
+        for &terminal in loaded.lexer_map.get(ch) {
+            recognizer.scan(recognizer.grammar().to_internal(terminal).unwrap(), ch as u32);
+        }
+        if !recognizer.end_earleme() {
+            return Err(ParseError::Parse { msg: "failed to recognize", tokens: loaded.lexer_map.get(ch).to_vec(), i })
+        }
+    }
+    trace!("finished: {:?}", recognizer);
+
+    Ok(recognizer.is_finished())
 }

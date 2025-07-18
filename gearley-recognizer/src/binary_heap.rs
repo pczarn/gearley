@@ -101,6 +101,82 @@ where
     }
 }
 
+// impl<G, F, P> TokenizingRecognizer<G, F, P>
+// where
+//     F: Forest,
+//     G: Grammar,
+//     P: PerfHint,
+// {
+//     /// Returns the greatest item in the binary heap, or `None` if it is empty.
+//     #[inline]
+//     pub fn heap_peek(&self) -> Option<CompletedItem<F::NodeRef>> {
+//         self.complete.0.get(0).and_then(|&right_item| {
+//             self.medial
+//                 .get_item(right_item.idx as usize)
+//                 .map(|left_item| CompletedItem {
+//                     origin: left_item.origin,
+//                     dot: left_item.dot,
+//                     left_node: left_item.node,
+//                     right_node: right_item.node,
+//                 })
+//         })
+//     }
+
+//     #[inline(always)]
+//     fn heap_get(&self, idx_idx: usize) -> Option<&Item<F::NodeRef>> {
+//         self.complete.0
+//             .get(idx_idx)
+//             .and_then(|&item| self.medial.get_item(item.idx as usize))
+//     }
+
+//     /// Removes the greatest item from the binary heap and returns it, or `None` if it
+//     /// is empty.
+//     pub fn heap_pop(&mut self) -> Option<CompletedItem<F::NodeRef>> {
+//         self.complete.0.pop().and_then(move |mut right_item| {
+//             if !self.complete.0.is_empty() {
+//                 swap(&mut right_item, &mut self.complete.0[0]);
+//                 self.sift_down(0);
+//             }
+//             self.medial
+//                 .get_item(right_item.idx as usize)
+//                 .map(|left_item| CompletedItem {
+//                     origin: left_item.origin,
+//                     dot: left_item.dot,
+//                     left_node: left_item.node,
+//                     right_node: right_item.node,
+//                 })
+//         })
+//     }
+
+//     /// Take an element at `pos` and move it down the heap,
+//     /// while its children are larger.
+//     fn sift_down_range(&mut self, mut pos: usize, end: usize) {
+//         let element_idx = self.complete.0[pos];
+//         let element = self.medial.get_item(element_idx.idx as usize).expect("invalid Item index");
+//         let mut child = 2 * pos + 1;
+//         while child < end {
+//             let right = child + 1;
+//             // compare with the greater of the two children
+//             if right < end && !(self.heap_get(child).unwrap() > self.heap_get(right).unwrap()) {
+//                 child = right;
+//             }
+//             // if we are already in order, stop.
+//             if element >= self.heap_get(child).unwrap() {
+//                 break;
+//             }
+//             self.complete.0[pos] = self.complete.0[child];
+//             pos = child;
+//             child = 2 * pos + 1;
+//         }
+//         self.complete.0[pos] = element_idx;
+//     }
+
+//     fn sift_down(&mut self, pos: usize) {
+//         let len = self.complete.0.len();
+//         self.sift_down_range(pos, len);
+//     }
+// }
+
 impl<R> BinaryHeap<CompletedItemLinked<R>> where R: Clone + Copy {
     pub(super) fn is_empty(&self) -> bool {
         self.0.is_empty()

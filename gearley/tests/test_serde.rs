@@ -1,24 +1,29 @@
-#![cfg(feature = "serde")]
-#[macro_use]
-extern crate log;
-extern crate cfg;
-extern crate env_logger;
-extern crate gearley;
-extern crate serde;
+#![cfg(feature = "test-serde")]
 
-mod grammars;
+use cfg::Cfg;
+use gearley::{DefaultGrammar, Grammar};
 
-use gearley::forest::NullForest;
-use gearley::grammar::Grammar;
-use gearley::recognizer::Recognizer;
-
-use grammars::*;
-
-use serde::de::value::StringDeserializer;
-use serde::de::IntoDeserializer;
+use miniserde::json;
 
 #[test]
 fn test_serde() {
-    let x = InternalGrammar::deserialize(String::into_deserializer(""));
-    assert!(true);
+    let mut cfg = Cfg::new();
+    let [test, a, b, c] = cfg.sym();
+    cfg.rule(test).rhs([a, b, c]);
+    cfg.set_roots([test]);
+    let original = DefaultGrammar::from_grammar(cfg);
+    let json = json::to_string(&original);
+    println!("{}", json);
+    match json::from_str::<DefaultGrammar>(&json) {
+        Ok(x) => {
+            assert_eq!(x.externalized_start_sym(), test);
+            assert_eq!(x.num_rules(), original.num_rules());
+        }
+        Err(err) => {
+            // if let Err(err) = serde_json::from_str::<DefaultGrammar>(&json) {
+            //     panic!("{:?}", err);
+            // }
+            panic!()
+        }
+    }
 }

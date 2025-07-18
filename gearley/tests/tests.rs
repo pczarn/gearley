@@ -1,11 +1,3 @@
-#[macro_use]
-extern crate log;
-extern crate cfg;
-extern crate gearley;
-extern crate gearley_example_grammars;
-
-// use gearley::{}
-
 use gearley_example_grammars::{ambiguous_math, precedenced_math};
 use gearley::{Bocage, DefaultGrammar, Recognizer, RecognizerParseExt};
 

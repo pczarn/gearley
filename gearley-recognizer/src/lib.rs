@@ -4,16 +4,15 @@ pub mod event;
 pub mod item;
 pub mod perf_hint;
 mod predict;
-#[cfg(feature = "memusage")]
-mod memory_usage;
 pub mod lookahead;
 mod recognizer;
+mod tokenizing_recognizer;
 
 pub use crate::recognizer::Recognizer;
+// pub use crate::tokenizing_recognizer::TokenizingRecognizer;
 
 mod local_prelude {
     pub use crate::recognizer::Recognizer;
-    pub use crate::item::{Item, CompletedItemLinked, Origin};
+    pub use crate::item::{Item, CompletedItemLinked};
     pub use crate::perf_hint::{PerfHint, DefaultPerfHint};
-    pub use crate::lookahead::Lookahead;
 }

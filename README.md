@@ -30,10 +30,12 @@
 Work in progress.
 [You can check the documentation here](`https://docs.rs/gearley/latest/gearley/).
 
-This engine is meant to be a foundation of an optimized parser generator.
+This engine is meant to be the foundation of an industrial-grade parser generator.
 
-Gearley is inspired by the [Marpa parser](http://jeffreykegler.github.io/Marpa-web-site/)
+Gearley is based on the [Marpa parser](http://jeffreykegler.github.io/Marpa-web-site/)
 by Jeffrey Kegler.
+
+The goal of gearley is to provide an upgrade to Marpa within a modern language, whereas Marpa itself was intended to make the best results in the academic literature on Earley's algorithm available as a practical general parser.
 
 ## Properties
 
@@ -101,20 +103,23 @@ Made in Poland ❤️🤍.
 
 ## Research
 
-While coding and optimizing the engine, we have discovered new optimizations for parsers in the Marpa/Earley lineage, and the result is an algorithm called Panini:
+While coding and optimizing the engine, we have discovered new optimizations for parsers in the Marpa/Earley lineage, and the result is a mathematically elegant algorithm called Panini:
 
 1. Optimization of partial parse completion for the recognizer and the parse result.
     1.a) Application of a priority queue for orderly bottom-up completion of partial parses.
         * We use a binary heap for online sorting by priority.
         * This enables us to create a simpler parse result by building a directed acyclic graph with topological order.
-    1.b) Furthermore, in-order evaluation of the parse result and its partial parses, which is more efficient in runtime and memory use.
+    1.b) Furthermore, in-order construction of the parse result, which is more efficient in runtime and memory use.
+    1.c) We had to forbid infinite cycles.
 2. Application of a 3D bit matrix of size N x |S| x 2 for top-down prediction of partial parses and for Leo optimization.
     * We use a flat dynamic array of bits for the bit matrix.
     * A `symbol` is predicted at `input_location` when predicted[input_location][symbol][0] is set.
     * Leo optimization for LHS `symbol` at `input_location` is possible when predicted[input_location][symbol][1] is set.
 3. Removal of unreachable Earley sets for smaller memory use.
+4. Binarization of rules, as suggested in Jeffrey Kegler's Kollos documentation.
+5. TODO: Reconciling lookahead and custom events through the property of "minimal distance to the next event".
 
-Kudos to the Rust team for creating a language that easily enables research during coding.
+Kudos to the Rust team for creating a language that easily enables research during coding itself without the need to roll out extensive notes and documentation.
 
 These have already been published in this repository, never to be patented.
 
@@ -128,8 +133,10 @@ The recognizer provides [an interface](https://docs.rs/gearley/0.0.5/gearley/for
 may reuse the default parse forest algorithm, but write your own code for [controlling
 rule order](https://docs.rs/gearley/0.0.5/gearley/forest/order/trait.Order.html), and for storing evaluated values within each tree node.
 
-Yet another interface gives [control over rule completion](https://docs.rs/gearley/0.0.5/gearley/recognizer/struct.CompleteSum.html). You may reject certain
-completed rules or modify their parse forests as the parse progresses.
+Yet another interface gives
+[control over rule completion](https://docs.rs/gearley/0.0.5/gearley/recognizer/struct.CompleteSum.html).
+You may reject completed rules or modify their parse forests as the
+parse progresses.
 
 Gearley is perfectly extensible on every level.
 
@@ -156,7 +163,7 @@ Origin — the Earley set number where a rule was predicted. Always smaller than
 the current Earley set ID for non-predicted items.
 
 Rule history — a rule summary that contains an action number and other information
-about semantics and the rule's journey through transformations. Each rule carries
+about semantics and the rule's journey through grammar transformations. Each rule carries
 its own history.
 
 ### Parse forest
@@ -222,10 +229,6 @@ Thanks to Jay Earley, John Aycock, R. Nigel Horspool, and Elizabeth Scott who pi
 Big thanks to [mr Jeffrey Kegler](https://github.com/jeffreykegler) who brought my attention to parsing and made this project possible through his work on Marpa/Earley and Kollos.
 
 Special thanks to CD PROJEKT RED, HAEVN, Kaśka Sochacka, sanah, Kwiat Jabłoni, Alex Rainbird, Beth Paterson, Carbon Based Lifeforms, and Solar Fields for providing amazing music, which made coding even more enjoyable.
-
-## Dedication
-
-Dedicated to Jesus Christ, the Word Himself.
 
 ## License
 

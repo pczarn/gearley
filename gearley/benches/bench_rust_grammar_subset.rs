@@ -1,21 +1,17 @@
 #![feature(test)]
 #![cfg(feature = "nightly")]
 
-extern crate cfg;
-extern crate gearley;
 extern crate test;
 
 macro_rules! trace(($($tt:tt)*) => ());
 
-#[path = "../tests/helpers/mod.rs"]
-mod helpers;
+use std::hint::black_box;
 
-use cfg::earley::Grammar;
+use cfg::sequence::CfgSequenceExt;
+use cfg::{Cfg, SymbolSource};
 use cfg::sequence::Separator::Proper;
-use gearley::prelude::*;
-use gearley::memory_usage::MemoryUse;
-
-use helpers::Parse;
+use gearley::*;
+use gearley_utils::RecognizerParseExt;
 
 macro_rules! rhs_elem {
     (use) => {
@@ -145,11 +141,11 @@ const _TOKEN_NAMES: &'static [&'static str] = &[
     "ident",
 ];
 
-fn grammar() -> Grammar {
-    let mut external = Grammar::new();
-    let (start, use_decls, use_decl, segments, segment, import_mod, import_seq, import, pub_opt) =
+fn grammar() -> Cfg {
+    let mut external = Cfg::new();
+    let [start, use_decls, use_decl, segments, segment, import_mod, import_seq, import, pub_opt] =
         external.sym();
-    let (use_tok, as_tok, mod_sep, star, comma, semi, lbrace, rbrace, pub_tok, ident) =
+    let [use_tok, as_tok, mod_sep, star, comma, semi, lbrace, rbrace, pub_tok, ident] =
         external.sym();
     external
         .sequence(segments)
@@ -179,32 +175,38 @@ fn grammar() -> Grammar {
         .rule(pub_opt)
         .rhs([pub_tok])
         .rhs([]);
-    external.set_start(start);
+    external.set_roots([start]);
     external
 }
 
 #[bench]
-fn bench_recognize_decl_use(b: &mut test::Bencher) {
+fn bench_recognize_decl_use(b: &mut test::bench::Bencher) {
     let external = grammar();
-    let cfg = DefaultGrammar::from_grammar(&external);
+    let syms: Vec<_> = SymbolSource::generate_fresh().take(external.num_syms()).collect();
+    let tokens: Vec<_> = TOKENS.iter().map(|&t| syms[t as usize]).collect();
+    let grammar = DefaultGrammar::from_grammar(external);
 
     b.iter(|| {
-        let mut rec: Recognizer<NullForest> = Recognizer::new_with_limit(&cfg, 2_000_000);
-        rec.parse(TOKENS);
-        test::black_box(&rec);
+        let grammar = black_box(&grammar);
+        let mut rec: Recognizer<&DefaultGrammar, NullForest> = Recognizer::new(grammar);
+        rec.parse(&tokens[..]).unwrap();
+        black_box(&rec);
     })
 }
 
 #[bench]
-fn bench_parse_decl_use(b: &mut test::Bencher) {
+fn bench_parse_decl_use(b: &mut test::bench::Bencher) {
     let external = grammar();
-    let cfg = DefaultGrammar::from_grammar(&external);
+    let syms: Vec<_> = SymbolSource::generate_fresh().take(external.num_syms()).collect();
+    let tokens: Vec<_> = TOKENS.iter().map(|&t| syms[t as usize]).collect();
+    let grammar = DefaultGrammar::from_grammar(external);
 
     b.iter(|| {
-        let mut rec: Recognizer<Bocage<&'_ DefaultGrammar>> =
-            Recognizer::new_with_limit(&cfg, 2_000_000);
-        let finished = rec.parse(TOKENS);
+        let grammar = black_box(&grammar);
+        let mut rec: Recognizer<&'_ DefaultGrammar, Bocage> =
+            Recognizer::with_forest(grammar, Bocage::new(grammar));
+        let finished = rec.parse(&tokens[..]).unwrap();
         assert!(finished);
-        test::black_box(&rec.forest);
+        black_box(&rec.into_forest());
     })
 }

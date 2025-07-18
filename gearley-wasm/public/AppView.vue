@@ -5,7 +5,7 @@
                 <select name="load-mode" id="load-mode" v-model="selectedMode">
                     <option v-for="val in loadModes" :value="val">{{ val }}</option>
                 </select>
-                <select name="load-example" id="load-example">
+                <select name="load-example" id="load-example" v-model="selectedExample">
                     <option v-for="val in loadExamples" :value="val.id">{{ val.name }}</option>
                 </select>
             </div>
@@ -43,26 +43,17 @@ export default {
     data() {
         return {
             editor: null,
+            typingTimer: null,
+            typing: false,
             result: '',
-            selectedMode: 'basic',
+            selectedMode: 'advanced',
+            selectedExample: null,
             loadModes: [
                 'advanced',
-                'basic'
+                'basic',
+                'c-lexer'
             ],
-            allLoadExamples: [
-                {
-                    id: 'test',
-                    name: 'Test v0.1',
-                    mode: 'basic',
-                    content: `<input>a b c d</input>\n<grammar>test ::= a b c d;</grammar>`
-                },
-                {
-                    id: 'adv',
-                    name: 'Tokenizing v0.1',
-                    mode: 'advanced',
-                    content: `<input>a b c d</input>\n\n<grammar>test ::= "a b c d";</grammar>`
-                }
-            ]
+            allLoadExamples: []
         }
     },
     computed: {
@@ -79,16 +70,38 @@ export default {
 
         this.editor = ace.edit("full-editor");
         this.editor.setTheme("ace/theme/monokai");
+        this.editor.setOptions({
+            fontSize: "11pt"
+        });
         this.editor.session.setMode("ace/mode/javascript");
-        const input = this.loadExamples[0].content
-        this.editor.setValue(input)
+        function each_slice(ary, size) {
+            let result = []
+            for (var i = 0, l = ary.length; i < l; i += size){
+                const [id, name, mode, content] = ary.slice(i, i + size)
+                result.push({ id, name, mode, content });
+            }
+            return result
+        };
+        this.allLoadExamples = each_slice(window._getGrammars(), 4)
+        this.selectedExample = this.allLoadExamples.find((val) => val.mode === this.selectedMode).id
         this.editor.getSession().on('change', this.update);
-        this.processInput(input)
     },
     methods: {
         update() {
-            const input = this.editor.getValue();
-            this.processInput(input)
+            if (this.typing) {
+                clearTimeout(this.typingTimer);
+                this.typingTimer = setTimeout(() => {
+                    this.typing = false;
+                    this.update();
+                }, 200);
+            } else {
+                this.typing = true;
+                this.typingTimer = setTimeout(() => {
+                    this.typing = false;
+                }, 200);
+                const input = this.editor.getValue();
+                this.processInput(input)
+            }
         },
         processInput(input) {
             const matchedInput = input.match(/<input>([\s\S]+)<\/input>/m)
@@ -97,9 +110,10 @@ export default {
                 this.result = 'Error: could not find <input> or <grammar>'
                 return
             }
+            const modes = this.loadModes
 
             function parseWithWasm(input, grammar, mode) {
-                if (mode === 'basic' || mode === 'advanced') {
+                if (modes.find((m) => m === mode)) {
                     return window._parse(input, grammar, mode)
                 } else {
                     return 'Unknown mode'
@@ -111,6 +125,15 @@ export default {
             } catch (e) {
                 this.result = e.message;
             }
+        },
+    },
+    watch: {
+        selectedExample() {
+            const info = this.loadExamples.find((val) => val.id === this.selectedExample)
+            const samples = window._getExamples(info.id)
+            const sfg = `<input>${samples[0]}</input>\n<grammar>${info.content}</grammar>`
+            this.editor.setValue(sfg)
+            this.processInput(sfg)
         }
     }
 }
@@ -127,6 +150,8 @@ export default {
     display: flex;
     align-items: center;
 
+    font-size: 1.1em;
+
     flex: 0 0 40px;
     padding: 5px;
     border-bottom: gray solid 4px;
@@ -135,6 +160,7 @@ export default {
 .bar .item select {
     margin: 7px 7px;
     padding: 3px 3px;
+    width: 150px;
 }
 
 .bar .item a {
@@ -160,6 +186,7 @@ export default {
 .main-row {
     display: flex;
     flex: 1;
+    overflow: auto;
 }
 
 .left-box, .right-box {

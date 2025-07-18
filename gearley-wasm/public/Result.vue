@@ -17,18 +17,20 @@
     <div v-if="!raw">
         bocage: {{ bocage }}
     </div>
-    <div v-if="!raw" v-for="[op, kind, content] in logs">
-        <Cfg v-if="kind == 'Cfg'" :content="content" :op="op" />
-        <DefaultGrammar v-if="kind === 'DefaultGrammar'" :op="op" :content="content" :names="names" />
-        <DefaultGrammarSize v-if="kind === 'DefaultGrammarSize'" :op="op" :content="content" />
-        <Mapping v-if="kind == 'mapping' && op == 'to_external'" :op="op" :content="content" />
-        <BitSubMatrix v-if="kind === 'BitSubMatrix'" :content="content" :names="names" />
-        <Vec v-if="op === 'medial_sort_and_remove_unary_medial_items'" :content="content" :names="names" />
-        <Scan v-if="kind === 'Scan'" :content="content" :names="names" />
+    <div v-if="!raw" v-for="([op, kind, content, lines], index) of logs">
+        <Header v-if="children[kind]" :title="op" :id="op">
+            <component :is="children[kind]" :op="op" :content="content" :names="names" />
+            <Header title="logs" :level="2" :defaultCollapse="true">
+                <pre class="logs">
+                    {{ lines }}
+                </pre>
+            </Header>
+        </Header>
     </div>
 </template>
 
 <script>
+import { markRaw } from 'vue'
 import Cfg from 'components/Cfg.vue'
 import Vec from 'components/Vec.vue'
 import BitSubMatrix from 'components/BitSubMatrix.vue'
@@ -36,6 +38,7 @@ import Scan from 'components/Scan.vue'
 import DefaultGrammar from 'components/DefaultGrammar.vue'
 import DefaultGrammarSize from 'components/DefaultGrammarSize.vue'
 import Mapping from 'components/Mapping.vue'
+import Header from 'components/Header.vue'
 
 export default {
     components: {
@@ -46,11 +49,22 @@ export default {
         Mapping,
         DefaultGrammar,
         DefaultGrammarSize,
+        Header,
     },
     props: ['result'],
     data() {
         return {
             raw: false,
+            limit: 1000,
+            children: {
+                Cfg: markRaw(Cfg),
+                Vec: markRaw(Vec),
+                BitSubMatrix: markRaw(BitSubMatrix),
+                Scan: markRaw(Scan),
+                Mapping: markRaw(Mapping),
+                DefaultGrammar: markRaw(DefaultGrammar),
+                DefaultGrammarSize: markRaw(DefaultGrammarSize),
+            }
         }
     },
     methods: {
@@ -80,9 +94,17 @@ export default {
                 return (${textExpression})`)
                 return fn.bind(contextData)();
             }
-            const matches = this.result.matchAll(/^\[TRACE\] - ([\w]+): (\w+) (.+)$/gm)
-            const logs = []
-            for (const [all, path, kind, content] of matches) {
+            const lines = this.result.split("\n")
+            let logs = []
+            for (const line of lines) {
+                const myMatch = line.match(/^\[TRACE\] - ([\w]+): (\w+) (.+)$/)
+                if (myMatch === null) {
+                    if (logs.length > 0) {
+                        logs[logs.length - 1][3] += line
+                    }
+                    continue
+                }
+                const [all, path, kind, content] = myMatch
                 function replacer(s, captured) {
                     return `"${captured}":`
                 }
@@ -90,7 +112,10 @@ export default {
                     .replace(/\w+ {/g, "{")
                     .replace(/(\w+):/g, replacer)
                 const evaled = wrappedEval(replaced, {})
-                logs.push([path, kind, evaled])
+                logs.push([path, kind, evaled, line])
+            }
+            if (logs.length > this.limit) {
+                logs = logs.slice(0, this.limit)
             }
             return logs
         },
@@ -199,5 +224,10 @@ span.one {
 
 span.diagonal {
     color: white;
+}
+
+.logs {
+    width: 700px;
+    white-space: pre-wrap;
 }
 </style>

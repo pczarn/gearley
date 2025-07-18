@@ -5,8 +5,6 @@ extern crate gearley;
 extern crate test;
 
 use gearley::*;
-#[cfg(feature = "memusage")]
-use gearley::recognizer::memory_usage::MemoryUse;
 
 use gearley_example_grammars::{ambiguous_math, precedenced_math};
 
@@ -20,7 +18,7 @@ fn bench_ambiguous_arithmetic(b: &mut test::Bencher) {
         let evaluator = ambiguous_math::Evaluator;
         let mut rec: Recognizer<&'_ DefaultGrammar, Bocage> =
             Recognizer::with_forest(&cfg, Bocage::new(&cfg));
-        assert!(rec.parse(&tokens));
+        assert!(rec.parse(&tokens).unwrap());
         let finished_node = rec.finished_node().expect("exhausted");
         let results = rec.into_forest().evaluate(evaluator, finished_node);
         test::black_box(results);
@@ -38,7 +36,7 @@ fn bench_evaluate_precedenced_arith(b: &mut test::Bencher) {
         let evaluator = precedenced_math::Evaluator;
         let bocage = Bocage::new(&cfg);
         let mut recognizer = Recognizer::with_forest (&cfg, bocage);
-        recognizer.parse(&sum_tokens);
+        assert!(recognizer.parse(&sum_tokens).unwrap());
         let finished_node = recognizer.finished_node().expect("exhausted");
         let results = recognizer.into_forest().evaluate(evaluator, finished_node);
         test::black_box(results);

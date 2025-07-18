@@ -1003,8 +1003,7 @@ fn test_parse_c() {
                 AndOp => Some(and_op),
                 OrOp => Some(or_op),
                 MulAssign => Some(mul_assign),
-                DivAssign => [2025-07-01T10:23:12Z TRACE gearley_recognizer::recognizer] complete: Complete { set_id: 5, sym: Symbol { n: 73 } }
-Some(div_assign),
+                DivAssign => Some(div_assign),
                 ModAssign => Some(mod_assign),
                 AddAssign => Some(add_assign),
                 SubAssign => Some(sub_assign),

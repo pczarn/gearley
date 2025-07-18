@@ -1,9 +1,3 @@
-#[macro_use]
-extern crate log;
-extern crate cfg;
-extern crate env_logger;
-extern crate gearley;
-
 use cfg::Cfg;
 use cfg::Symbol;
 
@@ -17,7 +11,7 @@ struct NullingEval(Symbol);
 impl Evaluate for NullingEval {
     type Elem = bool;
 
-    fn leaf(&self, terminal: Symbol, values: u32) -> Self::Elem {
+    fn leaf(&self, _terminal: Symbol, _values: u32) -> Self::Elem {
         false
     }
 
@@ -25,7 +19,7 @@ impl Evaluate for NullingEval {
         results.push(symbol == self.0);
     }
 
-    fn product<'a>(&self, action: u32, args: impl Iterator<Item = &'a Self::Elem>) -> Self::Elem where Self::Elem: 'a {
+    fn product<'a>(&self, _action: u32, _args: impl Iterator<Item = &'a Self::Elem>) -> Self::Elem where Self::Elem: 'a {
         false
     }
 }
@@ -67,7 +61,7 @@ macro_rules! test_grammar_with_nulling_intermediate {
         impl Evaluate for NullingIntermediateEval {
             type Elem = i32;
 
-            fn leaf(&self, terminal: Symbol, values: u32) -> Self::Elem {
+            fn leaf(&self, terminal: Symbol, _values: u32) -> Self::Elem {
                 if terminal == self.foo {
                     3
                 } else {

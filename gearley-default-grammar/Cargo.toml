@@ -8,11 +8,15 @@ edition = "2021"
 [dependencies]
 gearley-grammar = { path = "../gearley-grammar/" }
 gearley-vec2d = { path = "../gearley-vec2d/" }
-cfg = { path = "../../cfg/cfg/", features = ["miniserde"] }
+cfg = { path = "../../cfg/cfg/" }
 bit-matrix = { workspace = true }
 cfg-symbol = { workspace = true }
-miniserde = "0.1"
+miniserde = { workspace = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+
 log = { version = "0.4", optional = true }
 
 [features]
 default = ["log"]
+serde = ["dep:serde", "cfg/serde", "gearley-grammar/serde", "gearley-vec2d/serde"]
+# nanoserde = ["dep:nanoserde", "cfg/nanoserde"]

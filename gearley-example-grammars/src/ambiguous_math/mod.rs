@@ -5,11 +5,11 @@ use cfg::Symbol;
 use cfg::SymbolSource;
 use gearley_forest::Evaluate;
 
-pub(crate) static BNF: &'static str = r##"
-expr ::= expr op expr | num;
-op ::= "+" | "-" | "*" | "/";
-num ::= Regexp("[0-9]");
-"##;
+pub(crate) static BNF: &'static str = include_str!("grammar.panini");
+
+pub(crate) static INPUTS: &'static [&'static str] = &[
+    include_str!("example.txt")
+];
 
 pub fn grammar() -> Cfg {
     let mut bnf = Cfg::new();
@@ -67,7 +67,7 @@ impl Evaluate for Evaluator {
 
 pub fn tokenize(input: &str) -> Vec<Symbol> {
     const CHARS: &'static str = "+-*/0123456789";
-    let syms = SymbolSource::<NonZero<u32>>::generate_fresh().take(CHARS.len()).collect::<Vec<_>>();
+    let syms = SymbolSource::<NonZero<u32>>::generate_fresh().take(CHARS.len() + 3).collect::<Vec<_>>();
     let mut result = vec![];
     for input_ch in input.chars() {
         match CHARS.find(input_ch) {

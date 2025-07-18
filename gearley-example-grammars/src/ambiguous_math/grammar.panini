@@ -1,0 +1,3 @@
+expr ::= expr ~ op ~ expr | num;
+op ::= "+" | "-" | "*" | "/";
+num ::= Regexp("[0-9]");

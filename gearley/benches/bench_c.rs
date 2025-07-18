@@ -1,19 +1,10 @@
 #![feature(test)]
 #![cfg(feature = "nightly")]
 
-extern crate c_lexer_logos;
-extern crate cfg;
-extern crate gearley;
-extern crate test;
-
 macro_rules! trace(($($tt:tt)*) => ());
 
-use cfg::earley::Grammar;
-use cfg::sequence::Separator::Proper;
 use gearley::*;
-use gearley::memory_usage::MemoryUse;
 
-use helpers::Parse;
 use test::Bencher;
 
 const SYM_NAMES: &'static [&'static str] = &[

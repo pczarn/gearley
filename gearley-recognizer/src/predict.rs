@@ -24,6 +24,18 @@ impl<F, G, P> Recognizer<G, F, P>
     }
 }
 
+// impl<F, G, P> TokenizingRecognizer<G, F, P>
+//     where F: Forest,
+//     G: Grammar,
+//     P: PerfHint,
+// {
+//     /// Makes the current Earley set predict a given symbol.
+//     pub fn predict(&mut self, symbol: Symbol) {
+//         let earleme = self.earleme();
+//         self.main_predicted[earleme].predict(symbol, self.grammar.prediction_row(symbol));
+//     }
+// }
+
 impl Predict for BitSlice {
     fn predict(&mut self, sym: Symbol, source: &BitSlice) {
         if !self[sym.usize()] {

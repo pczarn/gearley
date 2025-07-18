@@ -332,7 +332,8 @@ impl<G, F, P> Recognizer<G, F, P>
         // debug_assert!(sym != self.grammar.eof());
         trace!("complete_predicted: {:?}", self.predicted.sub_matrix(set_id as usize .. set_id as usize + 1));
         #[derive(Debug)]
-        struct Complete { set_id: Origin, sym: Symbol };
+        #[allow(dead_code)]
+        struct Complete { set_id: Origin, sym: Symbol }
         trace!("complete: {:?}", Complete { set_id, sym });
         if sym.usize() >= self.grammar.num_syms() {
             // New item after a generated symbol, either completed or medial.

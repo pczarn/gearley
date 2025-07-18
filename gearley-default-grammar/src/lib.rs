@@ -8,7 +8,6 @@ use cfg::classify::CfgClassifyExt;
 use cfg::predict_sets::{FirstSets, FollowSets, PredictSets};
 use cfg::symbol_bit_matrix::{CfgSymbolBitMatrixExt, Remap};
 use cfg_symbol::intern::Mapping;
-use miniserde::{Serialize, Deserialize};
 
 use cfg::history::earley::{EventAndDistance, EventId, ExternalDottedRule, ExternalOrigin, MinimalDistance, NullingEliminated};
 use cfg::{Cfg, CfgRule, Symbol, SymbolBitSet, SymbolName};
@@ -18,7 +17,8 @@ use gearley_vec2d::Vec2d;
 
 use log::trace;
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(miniserde::Serialize, miniserde::Deserialize, Clone, Default, Debug)]
 struct Column {
     syms: Vec<Option<Symbol>>,
     events: Vec<EventAndDistance>,
@@ -27,7 +27,8 @@ struct Column {
 
 type Dot = u32;
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(miniserde::Serialize, miniserde::Deserialize, Clone, Default, Debug)]
 struct DotInfo {
     // For column 0: lhs.
     // For column 1 and 2: rhs.
@@ -36,7 +37,8 @@ struct DotInfo {
     tracing: Option<ExternalDottedRule>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(miniserde::Serialize, miniserde::Deserialize, Clone, Default, Debug)]
 pub struct DefaultGrammar {
     start_sym: Symbol,
     original_start_sym: Symbol,
@@ -60,6 +62,8 @@ pub struct DefaultGrammar {
     // Mapping between external and internal symbols.
     sym_maps: Mapping,
 
+    scan_prediction_matrix: BitMatrix,
+
     // For the forest
     forest_info: ForestInfo,
 }
@@ -69,7 +73,8 @@ struct CompletionTable {
     gen_completions: Vec<Option<PredictionTransition>>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(miniserde::Serialize, miniserde::Deserialize, Clone, Default, Debug)]
 pub struct DefaultGrammarSize {
     pub syms: usize,
     pub gensyms: usize,
@@ -93,6 +98,7 @@ impl DefaultGrammar {
         trace!("nulling: {:?}", nulling);
         let maps = Self::remap_symbols(&mut grammar);
         #[derive(Debug)]
+        #[allow(dead_code)]
         struct SymWithName {
             sym: Symbol,
             name: Option<SymbolName>,

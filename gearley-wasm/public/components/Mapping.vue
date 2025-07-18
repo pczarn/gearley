@@ -10,6 +10,6 @@
 
 <script>
 export default {
-    props: ['op', 'content']
+    props: ['op', 'content', 'names']
 }
 </script>

@@ -1,9 +1,3 @@
-#[macro_use]
-extern crate log;
-extern crate cfg;
-extern crate env_logger;
-extern crate gearley;
-
 use cfg::Cfg;
 
 use gearley::{DefaultGrammar, NullForest, Recognizer, RecognizerParseExt};

@@ -1,0 +1,7 @@
+sum ::= sum ~ "+" ~ product | sum ~ "-" ~ product | product;
+product ::= product ~ "*" ~ factor | product ~ "/" ~ factor | factor;
+factor ::= "(" ~ sum ~ ")" | number;
+
+lexer {
+    number ::= Regexp("[0-9]");
+}
