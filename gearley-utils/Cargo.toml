@@ -1,0 +1,23 @@
+[package]
+name = "gearley-utils"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+log = "0.4"
+gearley-forest = { path = "../gearley-forest/" }
+gearley-grammar = { path = "../gearley-grammar/" }
+gearley-recognizer = { path = "../gearley-recognizer/" }
+gearley-default-grammar = { path = "../gearley-default-grammar/" }
+cfg = { workspace = true }
+cfg-grammar = { version = "0.0.1", path = "../../cfg/cfg-grammar/" }
+cfg-sequence = { version = "0.0.1", path = "../../cfg/cfg-sequence/" }
+simple-bocage = { path = "../simple-bocage/", optional = true }
+cfg-load = { path = "../../cfg/cfg-load/", version = "0.0.1" }
+
+[dev-dependencies]
+gearley-default-grammar = { path = "../gearley-default-grammar/" }
+env_logger = "0.11"
+
+[features]
+default = ["simple-bocage"]

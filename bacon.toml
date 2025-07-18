@@ -1,0 +1,25 @@
+# This is a configuration file for the bacon tool
+#
+# Complete help on configuration: https://dystroy.org/bacon/config/
+# 
+# You may check the current default at
+#   https://github.com/Canop/bacon/blob/main/defaults/default-bacon.toml
+
+default_job = "check"
+
+[env]
+CARGO_TERM_COLOR = "always"
+
+[jobs.check]
+command = ["cargo", "check"]
+need_stdout = false
+
+# Run clippy on the default target
+[jobs.wasm]
+command = ["bash", "wasm.sh"]
+on_success = "job:wasm-server"
+need_stdout = true
+
+[jobs.wasm-server]
+command = ["python", "wasm-server.py"]
+need_stdout = true

@@ -1,33 +1,29 @@
-[package]
-name = "gearley"
-version = "0.0.5"
+[workspace]
 
-authors = [ "Piotr Czarnecki <pioczarn@gmail.com>" ]
-description = "An Earley parser engine."
-keywords = ["grammar", "parsing", "language", "forest", "intersection"]
-documentation = "http://pczarn.github.io/gearley/"
-repository = "https://github.com/pczarn/gearley"
-license = "MIT/Apache-2.0"
+members = [
+    "gearley",
+    "gearley-recognizer",
+    "gearley-grammar",
+    "gearley-default-grammar",
+    "gearley-forest",
+    "compact-bocage",
+    "simple-bocage",
+    "gearley-utils",
+    "gearley-example-grammars",
+]
 
+exclude = [
+    "gearley-wasm"
+]
+
+resolver = "2"
+
+# add debug info for profiling
 [profile.release]
 debug = true
 
-[lib]
-name = "gearley"
-
-[dependencies]
-cfg = { version = "0.6.1", features = ["serialize"] }
-bit-matrix = { version = "0.6", features = ["serialize"] }
-bit-vec = "0.6"
-optional = { version = "0.5", features = ["serde"] }
-ref_slice = "1.2"
-num = "0.2"
-num-traits = "0.2"
-num-derive = "0.3"
-log = "0.4"
-env_logger = "0.7"
-serde = "1.0"
-serde_derive = "1.0"
-
-[dev-dependencies]
-c_lexer_logos = "0.1.1"
+[workspace.dependencies]
+cfg-symbol = { path = "../cfg/cfg-symbol/" }
+cfg = { path = "../cfg/cfg/" }
+bit-matrix = { version = "0.9.0", features = ["miniserde", "serde"] }
+miniserde = { version = "0.1" }

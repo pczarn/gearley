@@ -1,0 +1,10 @@
+[package]
+name = "gearley-forest"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cfg-symbol = { workspace = true }
+memusage = { version = "0.2.0", optional = true }

@@ -1,0 +1,22 @@
+[package]
+name = "gearley-default-grammar"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+gearley-grammar = { path = "../gearley-grammar/" }
+gearley-vec2d = { path = "../gearley-vec2d/" }
+cfg = { path = "../../cfg/cfg/" }
+bit-matrix = { workspace = true }
+cfg-symbol = { workspace = true }
+miniserde = { workspace = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+log = { version = "0.4", optional = true }
+
+[features]
+default = ["log"]
+serde = ["dep:serde", "cfg/serde", "gearley-grammar/serde", "gearley-vec2d/serde"]
+# nanoserde = ["dep:nanoserde", "cfg/nanoserde"]

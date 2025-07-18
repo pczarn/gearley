@@ -8,7 +8,7 @@
 [![crates.io][crates.io shield]][crates.io link]
 [![Documentation][docs.rs badge]][docs.rs link]
 ![Rust CI][github ci badge]
-![MSRV][rustc 1.65+]
+![MSRV][rustc 1.80+]
 <br />
 <br />
 [![Dependency Status][deps.rs status]][deps.rs link]
@@ -22,7 +22,7 @@
 [docs.rs badge]: https://docs.rs/gearley/badge.svg?version=0.0.5
 [docs.rs link]: https://docs.rs/gearley/0.0.5/gearley/
 [github ci badge]: https://github.com/pczarn/gearley/workflows/CI/badge.svg?branch=master
-[rustc 1.65+]: https://img.shields.io/badge/rustc-1.65%2B-blue.svg
+[rustc 1.80+]: https://img.shields.io/badge/rustc-1.80%2B-blue.svg
 [deps.rs status]: https://deps.rs/crate/gearley/0.0.5/status.svg
 [deps.rs link]: https://deps.rs/crate/gearley/0.0.5
 [shields.io download count]: https://img.shields.io/crates/d/gearley.svg
@@ -30,10 +30,12 @@
 Work in progress.
 [You can check the documentation here](`https://docs.rs/gearley/latest/gearley/).
 
-This engine is meant to be a foundation of an optimized parser generator.
+This engine is meant to be the foundation of an industrial-grade parser generator.
 
-Gearley is inspired by the [Marpa parser](http://jeffreykegler.github.io/Marpa-web-site/)
+Gearley is based on the [Marpa parser](http://jeffreykegler.github.io/Marpa-web-site/)
 by Jeffrey Kegler.
+
+The goal of gearley is to provide an upgrade to Marpa within a modern language, whereas Marpa itself was intended to make the best results in the academic literature on Earley's algorithm available as a practical general parser.
 
 ## Properties
 
@@ -97,6 +99,30 @@ by Jeffrey Kegler.
 * open source
     * free is a fair price
 
+Made in Poland ❤️🤍.
+
+## Research
+
+While coding and optimizing the engine, we have discovered new optimizations for parsers in the Marpa/Earley lineage, and the result is a mathematically elegant algorithm called Panini:
+
+1. Optimization of partial parse completion for the recognizer and the parse result.
+    1.a) Application of a priority queue for orderly bottom-up completion of partial parses.
+        * We use a binary heap for online sorting by priority.
+        * This enables us to create a simpler parse result by building a directed acyclic graph with topological order.
+    1.b) Furthermore, in-order construction of the parse result, which is more efficient in runtime and memory use.
+    1.c) We had to forbid infinite cycles.
+2. Application of a 3D bit matrix of size N x |S| x 2 for top-down prediction of partial parses and for Leo optimization.
+    * We use a flat dynamic array of bits for the bit matrix.
+    * A `symbol` is predicted at `input_location` when predicted[input_location][symbol][0] is set.
+    * Leo optimization for LHS `symbol` at `input_location` is possible when predicted[input_location][symbol][1] is set.
+3. Removal of unreachable Earley sets for smaller memory use.
+4. Binarization of rules, as suggested in Jeffrey Kegler's Kollos documentation.
+5. TODO: Reconciling lookahead and custom events through the property of "minimal distance to the next event".
+
+Kudos to the Rust team for creating a language that easily enables research during coding itself without the need to roll out extensive notes and documentation.
+
+These have already been published in this repository, never to be patented.
+
 ## Extending gearley
 
 The grammar is stored in a byte string. You may [serialize or deserialize it](https://docs.rs/gearley/0.0.5/gearley/grammar/struct.InternalGrammar.html)
@@ -107,8 +133,10 @@ The recognizer provides [an interface](https://docs.rs/gearley/0.0.5/gearley/for
 may reuse the default parse forest algorithm, but write your own code for [controlling
 rule order](https://docs.rs/gearley/0.0.5/gearley/forest/order/trait.Order.html), and for storing evaluated values within each tree node.
 
-Yet another interface gives [control over rule completion](https://docs.rs/gearley/0.0.5/gearley/recognizer/struct.CompleteSum.html). You may reject certain
-completed rules or modify their parse forests as the parse progresses.
+Yet another interface gives
+[control over rule completion](https://docs.rs/gearley/0.0.5/gearley/recognizer/struct.CompleteSum.html).
+You may reject completed rules or modify their parse forests as the
+parse progresses.
 
 Gearley is perfectly extensible on every level.
 
@@ -135,7 +163,7 @@ Origin — the Earley set number where a rule was predicted. Always smaller than
 the current Earley set ID for non-predicted items.
 
 Rule history — a rule summary that contains an action number and other information
-about semantics and the rule's journey through transformations. Each rule carries
+about semantics and the rule's journey through grammar transformations. Each rule carries
 its own history.
 
 ### Parse forest
@@ -149,10 +177,11 @@ its own history.
 | leaf node          | bocage symbol          | leaf node                  |
 | root node          | peak glade             | top node                   |
 
-Bocage — a parse forest in the form of a Directed Acyclic Graph.
+Bocage — a parse forest in the form of a Directed Acyclic Graph with topological order.
 
-Depth-first bocage — a bocage that is traversed by evaluating one whole bocage
-node at a time.
+Compact bocage — a parse forest with the tradeoff of smaller memory footprint and slightly more computation.
+
+Depth-first bocage — a parse forest which allows evaluation one tree at a time.
 
 Sum node — a node that sums the number of trees in the forest.
 

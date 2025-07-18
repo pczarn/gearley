@@ -1,0 +1,3 @@
+[submodule "gearley-wasm/public/ace-builds"]
+	path = gearley-wasm/public/ace-builds
+	url = git@github.com:ajaxorg/ace-builds.git

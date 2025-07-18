@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>
+            A debugging-oriented visualization for gearley
+        </title>
+
+        <style type="text/css" media="screen">
+            html, body {
+                margin: 0;
+                padding: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app-view">
+            <app-view></app-view>
+        </div>
+        <script src="https://unpkg.com/vue@latest"></script>
+        <!-- <script src="https://unpkg.com/pinia@latest"></script> -->
+        <script src="https://cdn.jsdelivr.net/npm/vue3-sfc-loader/dist/vue3-sfc-loader.js"></script>
+        <script src="ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+        <script type="module">
+            import init, { parse, getGrammars, getExamples } from "/pkg/gearley_wasm.js";
+
+            window._parse = parse
+            window._getGrammars = getGrammars
+            window._getExamples = getExamples
+            await init().catch(console.error);
+
+            const options = {
+                moduleCache: {
+                    vue: Vue
+                },
+                async getFile(url) {
+                    const res = await fetch(url);
+                    if ( !res.ok )
+                    throw Object.assign(new Error(res.statusText + ' ' + url), { res });
+                    return {
+                        getContentData: asBinary => asBinary ? res.arrayBuffer() : res.text(),
+                    }
+                },
+                addStyle(textContent) {
+                    const style = Object.assign(document.createElement('style'), { textContent });
+                    const ref = document.head.getElementsByTagName('style')[0] || null;
+                    document.head.insertBefore(style, ref);
+                },
+            }
+
+            const { loadModule } = window['vue3-sfc-loader'];
+
+            const app = Vue.createApp({});
+
+            app.component('AppView', Vue.defineAsyncComponent( () => loadModule('./AppView.vue', options)))
+
+            app.mount('#app-view');
+        </script>
+    </body>
+</html>

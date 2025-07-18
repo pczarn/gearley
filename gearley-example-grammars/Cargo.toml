@@ -1,0 +1,10 @@
+[package]
+name = "gearley-example-grammars"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+gearley-forest = { path = "../gearley-forest/" }
+cfg-load = { path = "../../cfg/cfg-load/" }
+cfg = { path = "../../cfg/cfg/" }
+cfg-examples = { path = "../../cfg/cfg-examples/" }
