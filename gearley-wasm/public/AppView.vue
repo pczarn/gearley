@@ -64,7 +64,7 @@ export default {
     mounted() {
         if (typeof window.log_error === 'undefined') {
             window.log_error = function(text) {
-                this.result = text;
+                this.result = "Logged:\n" + text;
             }
         }
 
@@ -123,7 +123,8 @@ export default {
             try {
                 this.result = parseWithWasm(matchedInput[1], matchedGrammar[1], this.selectedMode);
             } catch (e) {
-                this.result = e.message;
+                console.error(e)
+                this.result = "Caught\n" + e.message;
             }
         },
     },

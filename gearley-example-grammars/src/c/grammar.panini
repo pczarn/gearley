@@ -3,26 +3,26 @@ start ::= translation_unit;
         identifier |
         constant |
         string_literal |
-        lparen ~ expression ~ rparen;
+        lparen expression rparen;
     postfix_expression ::= 
         primary_expression |
-        postfix_expression ~ lbracket ~ expression ~ rbracket |
-        postfix_expression ~ lparen ~ argument_expression_list_opt ~ rparen |
-        postfix_expression ~ dot ~ identifier |
-        postfix_expression ~ ptr_op ~ identifier |
-        postfix_expression ~ inc_op |
-        postfix_expression ~ dec_op |
-        lparen ~ type_name ~ rparen ~ lbrace ~ initializer_list ~ rbrace |
-        lparen ~ type_name ~ rparen ~ lbrace ~ initializer_list ~ comma ~ rbrace;
-    argument_expression_list_opt ::= | argument_expression_list;
-    argument_expression_list ::= assignment_expression | argument_expression_list ~ comma ~ assignment_expression;
+        postfix_expression lbracket expression rbracket |
+        postfix_expression lparen argument_expression_list_opt rparen |
+        postfix_expression dot identifier |
+        postfix_expression ptr_op identifier |
+        postfix_expression inc_op |
+        postfix_expression dec_op |
+        lparen type_name rparen lbrace initializer_list rbrace |
+        lparen type_name rparen lbrace initializer_list comma rbrace;
+    argument_expression_list_opt ::= () | argument_expression_list;
+    argument_expression_list ::= assignment_expression | argument_expression_list comma assignment_expression;
     unary_expression ::= 
         postfix_expression |
-        inc_op ~ unary_expression |
-        dec_op ~ unary_expression |
-        unary_operator ~ cast_expression |
-        sizeof_ ~ unary_expression |
-        sizeof_ ~ lparen ~ type_name ~ rparen;
+        inc_op unary_expression |
+        dec_op unary_expression |
+        unary_operator cast_expression |
+        sizeof_ unary_expression |
+        sizeof_ lparen type_name rparen;
     unary_operator ::= 
         ampersand |
         star |
@@ -31,55 +31,55 @@ start ::= translation_unit;
         tilde |
         exclamation;
     cast_expression ::= unary_expression |
-        lparen ~ type_name ~ rparen ~ cast_expression;
+        lparen type_name rparen cast_expression;
     multiplicative_expression ::= 
         cast_expression |
-        multiplicative_expression ~ star ~ cast_expression |
-        multiplicative_expression ~ slash ~ cast_expression |
-        multiplicative_expression ~ percent ~ cast_expression;
+        multiplicative_expression star cast_expression |
+        multiplicative_expression slash cast_expression |
+        multiplicative_expression percent cast_expression;
     additive_expression ::=
         multiplicative_expression |
-        additive_expression ~ plus ~ multiplicative_expression |
-        additive_expression ~ minus ~ multiplicative_expression;
+        additive_expression plus multiplicative_expression |
+        additive_expression minus multiplicative_expression;
     shift_expression ::= 
         additive_expression |
-        shift_expression ~ left_op ~ additive_expression |
-        shift_expression ~ right_op ~ additive_expression;
+        shift_expression left_op additive_expression |
+        shift_expression right_op additive_expression;
     relational_expression ::= 
         shift_expression |
-        relational_expression ~ langle ~ shift_expression |
-        relational_expression ~ rangle ~ shift_expression |
-        relational_expression ~ le_op ~ shift_expression |
-        relational_expression ~ ge_op ~ shift_expression;
+        relational_expression langle shift_expression |
+        relational_expression rangle shift_expression |
+        relational_expression le_op shift_expression |
+        relational_expression ge_op shift_expression;
     equality_expression ::= 
         relational_expression |
-        equality_expression ~ eq_op ~ relational_expression |
-        equality_expression ~ ne_op ~ relational_expression;
+        equality_expression eq_op relational_expression |
+        equality_expression ne_op relational_expression;
     AND_expression ::= 
         equality_expression |
-        AND_expression ~ ampersand ~ equality_expression;
+        AND_expression ampersand equality_expression;
     exclusive_OR_expression ::= 
         AND_expression |
-        exclusive_OR_expression ~ xor ~ AND_expression;
+        exclusive_OR_expression xor AND_expression;
     inclusive_OR_expression ::= 
         exclusive_OR_expression |
-        inclusive_OR_expression ~ pipe ~ exclusive_OR_expression;
+        inclusive_OR_expression pipe exclusive_OR_expression;
     logical_AND_expression ::= 
         inclusive_OR_expression |
-        logical_AND_expression ~ and_op ~ inclusive_OR_expression;
+        logical_AND_expression and_op inclusive_OR_expression;
     logical_OR_expression ::= 
         logical_AND_expression |
-        logical_OR_expression ~ or_op ~ logical_AND_expression;
+        logical_OR_expression or_op logical_AND_expression;
     conditional_expression ::= 
         logical_OR_expression |
-        logical_OR_expression ~
-        question ~
-        expression ~
-        colon ~
+        logical_OR_expression
+        question
+        expression
+        colon
         conditional_expression;
     assignment_expression ::= 
         conditional_expression |
-        unary_expression ~ assignment_operator ~ assignment_expression;
+        unary_expression assignment_operator assignment_expression;
     assignment_operator ::= 
         equal |
         mul_assign |
@@ -94,31 +94,31 @@ start ::= translation_unit;
         or_assign;
     expression ::= 
         assignment_expression |
-        expression ~ comma ~ assignment_expression |
+        expression comma assignment_expression |
         error;
     constant_expression ::= 
         conditional_expression;
 
     declaration ::= 
-        declaration_specifiers ~ init_declarator_list_opt ~ semicolon |
+        declaration_specifiers init_declarator_list_opt semicolon |
         error;
     init_declarator_list_opt ::= 
-         |
+        () |
         init_declarator_list;
     declaration_specifiers ::= 
-        storage_class_specifier ~ declaration_specifiers_opt |
-        type_specifier ~ declaration_specifiers_opt |
-        type_qualifier ~ declaration_specifiers_opt |
-        function_specifier ~ declaration_specifiers_opt;
+        storage_class_specifier declaration_specifiers_opt |
+        type_specifier declaration_specifiers_opt |
+        type_qualifier declaration_specifiers_opt |
+        function_specifier declaration_specifiers_opt;
     declaration_specifiers_opt ::= 
-         |
+        () |
         declaration_specifiers;
     init_declarator_list ::= 
         init_declarator |
-        init_declarator_list ~ comma ~ init_declarator;
+        init_declarator_list comma init_declarator;
     init_declarator ::= 
         declarator |
-        declarator ~ equal ~ initializer;
+        declarator equal initializer;
     storage_class_specifier ::= 
         typedef |
         extern_ |
@@ -142,49 +142,45 @@ start ::= translation_unit;
         enum_specifier |
         typedef_name;
     struct_or_union_specifier ::= 
-        struct_or_union ~
-        identifier_opt ~
-        lbrace ~
-        struct_declaration_list ~
-        rbrace |
-        struct_or_union ~ identifier;
-    identifier_opt ::= | identifier;
+        struct_or_union identifier_opt lbrace struct_declaration_list rbrace |
+        struct_or_union identifier;
+    identifier_opt ::= () | identifier;
     struct_or_union ::= struct_ | union;
     struct_declaration_list ::= 
         struct_declaration |
-        struct_declaration_list ~ struct_declaration;
+        struct_declaration_list struct_declaration;
     struct_declaration ::= 
-        specifier_qualifier_list ~
-        struct_declarator_list ~
+        specifier_qualifier_list
+        struct_declarator_list
         semicolon;
     specifier_qualifier_list ::= 
-        type_specifier ~ specifier_qualifier_list_opt |
-        type_qualifier ~ specifier_qualifier_list_opt;
+        type_specifier specifier_qualifier_list_opt |
+        type_qualifier specifier_qualifier_list_opt;
     specifier_qualifier_list_opt ::= 
-        |
+        () |
         specifier_qualifier_list;
     struct_declarator_list ::= 
         struct_declarator |
-        struct_declarator_list ~ comma ~ struct_declarator;
+        struct_declarator_list comma struct_declarator;
     struct_declarator ::= declarator |
-        declarator_opt ~
-        colon ~
+        declarator_opt
+        colon
         constant_expression;
-    declarator_opt ::= | declarator;
+    declarator_opt ::= () | declarator;
     enum_specifier ::= 
-        enum_ ~ identifier_opt ~ lbrace ~ enumerator_list ~ rbrace |
-            enum_ ~
-            identifier_opt ~
-            lbrace ~
-            enumerator_list ~
-            comma ~
+        enum_ identifier_opt lbrace enumerator_list rbrace |
+            enum_
+            identifier_opt
+            lbrace
+            enumerator_list
+            comma
             rbrace |
-        enum_ ~ identifier;
+        enum_ identifier;
     enumerator_list ::= 
         enumerator |
-        enumerator_list ~ comma ~ enumerator;enumerator ::= enumeration_constant |
-        enumeration_constant ~
-        equal ~
+        enumerator_list comma enumerator;enumerator ::= enumeration_constant |
+        enumeration_constant
+        equal
         constant_expression;
     type_qualifier ::= 
         const_ |
@@ -192,109 +188,108 @@ start ::= translation_unit;
         volatile;
     function_specifier ::= inline;
     declarator ::= 
-        pointer_opt ~ direct_declarator;
-    pointer_opt ::= | pointer;
+        pointer_opt direct_declarator;
+    pointer_opt ::= () | pointer;
     direct_declarator ::= 
         identifier |
-        lparen ~ declarator ~ rparen |
-        
-            direct_declarator ~
-            lbracket ~
-            type_qualifier_list_opt ~
-            assignment_expression_opt ~
+        lparen declarator rparen |
+            direct_declarator
+            lbracket
+            type_qualifier_list_opt
+            assignment_expression_opt
             rbracket
          |
-            direct_declarator ~
-            lbracket ~
-            static_ ~
-            type_qualifier_list_opt ~
-            assignment_expression ~
+            direct_declarator
+            lbracket
+            static_
+            type_qualifier_list_opt
+            assignment_expression
             rbracket
          |
-            direct_declarator ~
-            lbracket ~
-            type_qualifier_list ~
-            static_ ~
-            assignment_expression ~
+            direct_declarator
+            lbracket
+            type_qualifier_list
+            static_
+            assignment_expression
             rbracket
          |
-            direct_declarator ~
-            lbracket ~
-            type_qualifier_list_opt ~
-            star ~
+            direct_declarator
+            lbracket
+            type_qualifier_list_opt
+            star
             rbracket
          |
-        direct_declarator ~ lparen ~ parameter_type_list ~ rparen |
-        direct_declarator ~ lparen ~ identifier_list_opt ~ rparen;
+        direct_declarator lparen parameter_type_list rparen |
+        direct_declarator lparen identifier_list_opt rparen;
     type_qualifier_list_opt ::= 
-         |
+        () |
         type_qualifier_list;
     identifier_list_opt ::= 
-         |
+        () |
         identifier_list;
     pointer ::= 
-        star ~ type_qualifier_list_opt |
-        star ~ type_qualifier_list_opt ~ pointer;
+        star type_qualifier_list_opt |
+        star type_qualifier_list_opt pointer;
     type_qualifier_list ::= 
         type_qualifier |
-        type_qualifier_list ~ type_qualifier;
+        type_qualifier_list type_qualifier;
     parameter_type_list ::= 
         parameter_list |
-        parameter_list ~ comma ~ elipsis;
+        parameter_list comma elipsis;
     parameter_list ::= 
         parameter_declaration |
-        parameter_list ~ comma ~ parameter_declaration;
+        parameter_list comma parameter_declaration;
     parameter_declaration ::= 
-        declaration_specifiers ~ declarator |
-        declaration_specifiers ~ abstract_declarator_opt;
+        declaration_specifiers declarator |
+        declaration_specifiers abstract_declarator_opt;
     abstract_declarator_opt ::= 
-        |
+        () |
         abstract_declarator;
     identifier_list ::= 
         identifier |
-        identifier_list ~ comma ~ identifier;
+        identifier_list comma identifier;
     type_name ::= 
-        specifier_qualifier_list ~ abstract_declarator_opt;
+        specifier_qualifier_list abstract_declarator_opt;
     abstract_declarator ::= 
         pointer |
-        pointer_opt ~ direct_abstract_declarator;
+        pointer_opt direct_abstract_declarator;
     direct_abstract_declarator ::= 
-        lparen ~ abstract_declarator ~ rparen |
-            direct_abstract_declarator_opt ~
-            lbracket ~
-            assignment_expression_opt ~
+        lparen abstract_declarator rparen |
+            direct_abstract_declarator_opt
+            lbracket
+            assignment_expression_opt
             rbracket
         |
-        direct_abstract_declarator_opt ~ lbracket ~ star ~ rbracket |
-            direct_abstract_declarator_opt ~
-            lparen ~
-            parameter_type_list_opt ~
+        direct_abstract_declarator_opt lbracket star rbracket |
+            direct_abstract_declarator_opt
+            lparen
+            parameter_type_list_opt
             rparen;
     direct_abstract_declarator_opt ::= 
-         |
+        () |
         direct_abstract_declarator;
     assignment_expression_opt ::= 
-         |
+        () |
         assignment_expression;
     parameter_type_list_opt ::= 
-         |
+        () |
         parameter_type_list;
     typedef_name ::= identifier;
     initializer ::= 
         assignment_expression |
-        lbrace ~ initializer_list ~ rbrace |
-        lbrace ~ initializer_list ~ comma ~ rbrace;
+        lbrace initializer_list rbrace |
+        lbrace initializer_list comma rbrace;
     initializer_list ::= 
-        designation_opt ~ initializer |
-        initializer_list ~ comma ~ designation_opt ~ initializer;
-    designation_opt ::= | designation;
-    designation ::= designator_list ~ equal;
+        designation_opt initializer |
+        initializer_list comma designation_opt initializer;
+    designation_opt ::= () | designation;
+    designation ::= designator_list equal;
     designator_list ::= 
         designator |
-        designator_list ~ designator;
+        designator_list designator;
     designator ::= 
-        rbracket ~ constant_expression ~ rbracket |
-        dot ~ identifier;
+        rbracket constant_expression rbracket |
+        dot identifier;
     statement ::= 
         labeled_statement |
         compound_statement |
@@ -304,66 +299,68 @@ start ::= translation_unit;
         jump_statement |
         error;
     labeled_statement ::= 
-        identifier ~ colon ~ statement |
-        case ~ constant_expression ~ colon ~ statement |
-        default ~ colon ~ statement;
+        identifier colon statement |
+        case constant_expression colon statement |
+        default colon statement;
     compound_statement ::= 
-        lbrace ~ block_item_list_opt ~ rbrace;
+        lbrace block_item_list_opt rbrace;
     block_item_list_opt ::= 
-         |
+        () |
         block_item_list;
     block_item_list ::= 
         block_item |
-        block_item_list ~ block_item;block_item ::= declaration |statement;
+        block_item_list block_item;
+    block_item ::= declaration |statement;
     expression_statement ::= 
-        expression_opt ~ semicolon;expression_opt ::=  |expression;
+        expression_opt semicolon;
+    expression_opt ::= () | expression;
     selection_statement ::= 
-        if_ ~ lparen ~ expression ~ rparen ~ statement |
-        if_ ~ lparen ~ expression ~ rparen ~ statement ~ else_ ~ statement |
-        switch ~ lparen ~ expression ~ rparen ~ statement;
+        if_ lparen expression rparen statement |
+        if_ lparen expression rparen statement else_ statement |
+        switch lparen expression rparen statement;
     iteration_statement ::= 
-        while_ ~ lparen ~ expression ~ rparen ~ statement |
-            do_ ~ statement ~ while_ ~ lparen ~ expression ~ rparen ~ semicolon,
+        while_ lparen expression rparen statement |
+            do_ statement while_ lparen expression rparen semicolon
          |
-            for_ ~
-            lparen ~
-            expression_opt ~
-            semicolon ~
-            expression_opt ~
-            semicolon ~
-            expression_opt ~
-            rparen ~
+            for_
+            lparen
+            expression_opt
+            semicolon
+            expression_opt
+            semicolon
+            expression_opt
+            rparen
             statement
          |
-            for_ ~
-            lparen ~
-            declaration ~
-            expression_opt ~
-            semicolon ~
-            expression_opt ~
-            rparen ~
+            for_
+            lparen
+            declaration
+            expression_opt
+            semicolon
+            expression_opt
+            rparen
             statement
         ;
     jump_statement ::= 
-        goto ~ identifier ~ semicolon |
-        continue_ ~ semicolon |
-        break_ ~ semicolon |
-        return_ ~ expression_opt ~ semicolon;
+        goto identifier semicolon |
+        continue_ semicolon |
+        break_ semicolon |
+        return_ expression_opt semicolon;
     translation_unit ::= 
         external_declaration |
-        translation_unit ~ external_declaration;
+        translation_unit external_declaration;
     external_declaration ::= 
         function_definition |
         declaration;
     function_definition ::= 
-        declaration_specifiers ~
-        declarator ~
-        declaration_list_opt ~
+        declaration_specifiers
+        declarator
+        declaration_list_opt
         compound_statement;
     declaration_list_opt ::= 
-        |
+        () |
         declaration_list;
     declaration_list ::= 
         declaration |
-        declaration_list ~ declaration;
+        declaration_list declaration;
     enumeration_constant ::= identifier;

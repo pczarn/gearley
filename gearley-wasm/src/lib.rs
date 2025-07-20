@@ -19,7 +19,7 @@ use std::panic;
 use std::fmt::Write;
 use log::trace;
 
-static mut ARENA: [u8; 10000_000] = [0; 10000_000];
+static mut ARENA: [u8; 10_000_000] = [0; 10_000_000];
 
 #[global_allocator]
 static ALLOCATOR: Talck<spin::Mutex<()>, ClaimOnOom> = Talc::new(unsafe {
