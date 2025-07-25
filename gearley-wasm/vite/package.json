@@ -1,0 +1,26 @@
+{
+  "name": "vite",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@primeuix/themes": "^1.2.1",
+    "@primevue/themes": "^4.3.6",
+    "ace-code": "^1.43.2",
+    "axios": "^1.11.0",
+    "pinia": "^3.0.3",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.3.6",
+    "pug": "^3.0.3",
+    "vue": "^3.5.17"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.0",
+    "vite": "^7.0.4"
+  }
+}
