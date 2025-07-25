@@ -25,7 +25,7 @@
                 <div id="full-editor"></div>
             </div>
             <div class="right-box">
-                <Result :result="parseStore.result"></Result>
+                <Result />
             </div>
         </div>
     </div>
@@ -104,7 +104,7 @@ function processInput(input) {
     const matchedInput = input.match(/<input>([\s\S]+)<\/input>/m)
     const matchedGrammar = input.match(/<grammar>([\s\S]+)<\/grammar>/m)
     if (!matchedInput || !matchedGrammar || typeof(matchedInput[1]) !== 'string' || typeof(matchedGrammar[1]) !== 'string') {
-        result.value = 'Error: could not find <input> or <grammar>'
+        parseStore.setResult('Error: could not find <input> or <grammar>')
         return
     }
 

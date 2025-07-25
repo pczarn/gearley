@@ -55,7 +55,9 @@ import TabPanels from 'primevue/tabpanels';
 import TabPanel from 'primevue/tabpanel';
 import { computed } from 'vue'
 import { useTabs } from '@/stores/tabs'
+import { useParse } from '@/stores/parse'
 
+const parseStore = useParse()
 const tabs = useTabs()
 
 const children = {
@@ -68,18 +70,7 @@ const children = {
     Mapping,
 }
 
-const props = defineProps(['result'])
 const limit = 1000
-
-const rawLogs = computed(() => {
-    return this.result
-    const maybeError = this.result.split('\n', 1)[0]
-    if (maybeError === 'unreachable') {
-        return this.result
-    } else {
-        return maybeError
-    }
-})
 
 const logs = computed(() => {
     function wrappedEval(textExpression, contextData){
@@ -93,7 +84,7 @@ const logs = computed(() => {
         return (${textExpression})`)
         return fn.bind(contextData)();
     }
-    let lines = props.result.split("\n")
+    let lines = parseStore.result.split("\n")
     if (lines.length > limit.value) {
         lines = lines.slice(0, limit.value)
     }
