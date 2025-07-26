@@ -123,6 +123,19 @@ Kudos to the Rust team for creating a language that easily enables research duri
 
 These have already been published in this repository, never to be patented.
 
+## Running the wasm debugger
+
+This repository includes a debugger powered by Vue.js 3.
+
+To run the debugger on your local machine, you need `npm` and `wasm-pack`. Run the following commands:
+
+```bash
+sh gearley/wasm.sh
+cd gearley/gearley-wasm/vite/
+npm install
+npm run dev
+```
+
 ## Extending gearley
 
 The grammar is stored in a byte string. You may [serialize or deserialize it](https://docs.rs/gearley/0.0.5/gearley/grammar/struct.InternalGrammar.html)

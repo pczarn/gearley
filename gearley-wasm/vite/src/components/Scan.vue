@@ -1,11 +1,12 @@
 <template>
-    <p>{{ names[content.symbol.n - 1] }}, {{ content.node }}</p>
+    <p>{{ parseStore.names[props.content.symbol.n - 1] }}, {{ props.content.node }}</p>
 </template>
 
-<script>
-export default {
-    props: ['content', 'names', 'op']
-}
+<script setup>
+import { useParse } from '@/stores/parse'
+
+const props = defineProps(['content', 'op'])
+const parseStore = useParse()
 </script>
 
 <style>

@@ -70,11 +70,11 @@ where
         while let Some((i, &token)) = iter.next() {
             self.begin_earleme();
             if let Some((_i, t)) = iter.peek() {
-                trace!("lookahead_set_hint: {:?}", **t);
+                trace!("utils.lookahead_set_hint: {:?}", **t);
                 let s = self.grammar().to_internal(**t).unwrap();
                 self.lookahead().set_hint(s);
             } else {
-                trace!("lookahead_clear_hint: None null");
+                trace!("utils.lookahead_clear_hint: None null");
                 self.lookahead().clear_hint();
             }
             self.scan(self.grammar().to_internal(token).unwrap(), i as u32);
@@ -88,7 +88,7 @@ where
         //     return Err(ParseError::Parse { msg: "failed to read EOF", token: self.grammar().eof(), i: 0 });
         // }
 
-        trace!("finished: {:?}", &*self);
+        trace!("utils.finished: {:?}", &*self);
 
         Ok(self.is_finished())
     }
@@ -138,7 +138,7 @@ impl<G> RecognizerParseExt for Recognizer<G, NullForest> where
                 return Err(ParseError::Parse { msg: "failed to recognize", tokens: vec![token], i })
             }
         }
-        trace!("finished: {:?}", &*self);
+        trace!("utils.finished: {:?}", &*self);
 
         Ok(self.is_finished())
     }
@@ -157,11 +157,11 @@ pub fn parse_terminal_list<'a>(cfg: Cfg, grammar: DefaultGrammar, terminal_list:
     }
     let result = recognizer.parse(&tokens);
     if let Some(node) = recognizer.finished_node() {
-        trace!("finished_node: NodeHandle {{ handle: {:?} }}", node);
+        trace!("utils.finished_node: NodeHandle {{ handle: {:?} }}", node);
     } else {
         return Err(ParseError::Finish { msg: "failed to get finished node" });
     }
-    trace!("bocage: {:?}", recognizer.into_forest());
+    trace!("utils.bocage: {:?}", recognizer.into_forest());
     result
 }
 
@@ -183,7 +183,7 @@ pub fn parse_tokenizing(mut loaded: AdvancedGrammar, grammar: DefaultGrammar, in
             return Err(ParseError::Parse { msg: "failed to recognize", tokens: loaded.lexer_map.get(ch).to_vec(), i })
         }
     }
-    trace!("finished: {:?}", recognizer);
+    trace!("utils.finished: {:?}", recognizer);
 
     Ok(recognizer.is_finished())
 }

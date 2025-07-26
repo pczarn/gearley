@@ -19,8 +19,10 @@
     <Header id="d_g_p_m" title="prediction_matrix" :level="2">
         <table>
             <thead>
-                <th></th>
-                <th v-for="index in content.prediction_matrix.row_bits">{{ index - 1 }}</th>
+                <tr>
+                    <th></th>
+                    <th v-for="index in content.prediction_matrix.row_bits">{{ index - 1 }}</th>
+                </tr>
             </thead>
             <tbody>
                 <tr v-for="(val, index) in content.prediction_matrix.bit_vec.storage.split(' ')">
