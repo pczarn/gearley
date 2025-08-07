@@ -33,7 +33,15 @@
             </tbody>
         </table>
     </Header>
-    <Header title="" :level="2" :id="'rules_rhs' + (content.internal.n - 1)">
+    <Header title="Predicts" :level="2" :id="'pred' + (content.internal.n - 1)">
+        <ul>
+            <li v-for="sym in content.predicts"><Symbol :sym="sym" /></li>
+        </ul>
+    </Header>
+    <Header title="Predicted by" :level="2" :id="'pred_by' + (content.internal.n - 1)">
+        <ul>
+            <li v-for="sym in content.predicts_by"><Symbol :sym="sym" /></li>
+        </ul>
     </Header>
 </template>
 
@@ -41,6 +49,7 @@
 import { computed } from 'vue'
 import { useParse } from '@/stores/parse'
 import Header from './Header.vue'
+import Symbol from './Symbol.vue'
 
 const props = defineProps(['op', 'content'])
 const parseStore = useParse()
