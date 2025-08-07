@@ -7,7 +7,7 @@ use crate::completed_item::CompletedItem;
 pub trait Forest<S = Symbol> {
     /// Reference to a node.
     type NodeRef: Copy + fmt::Debug;
-    type LeafValue;
+    type LeafValue: fmt::Debug;
 
     const FOREST_BYTES_PER_RECOGNIZER_BYTE: usize;
 

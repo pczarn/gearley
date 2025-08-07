@@ -1,60 +1,47 @@
 <template>
     <Header title="Grammar Info" :level="2" :id="'cfg' + op">
-        <table>
-            <tbody>
-                <tr>
-                    <td>After</td>
-                    <td>{{ op }}</td>
-                </tr>
-                <tr>
-                    <td>Num syms</td>
-                    <td>{{ content.sym_source.next_symbol.n - 1 }}</td>
-                </tr>
-                <tr>
-                    <td>Num rules</td>
-                    <td>{{ content.rules.length }}</td>
-                </tr>
-            </tbody>
-        </table>
+        <DataTable :value="cfgInfo">
+            <Column field="op" header="After"></Column>
+            <Column field="numSyms" header="Number of symbols"></Column>
+            <Column field="numRules" header="Number of rules"></Column>
+        </DataTable>
     </Header>
     <Header title="Rules" :level="2" :id="'rules' + op">
-        <table>
-            <thead>
-                <th>LHS</th>
-                <th>RHS</th>
-            </thead>
-            <tbody>
-                <tr v-for="rule in content.rules">
-                    <td>{{ name_of(rule.lhs) }}</td>
-                    <td>
-                        <span v-for="sym in rule.rhs">
-                            {{ name_of(sym) }},
-                        </span>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <DataTable :value="rules">
+            <Column field="lhs" header="LHS">
+                <template #body="{ data }">
+                    <Symbol :sym="data.lhs" />
+                </template>
+            </Column>
+            <Column field="rhs" header="RHS">
+                <template #body="{ data }">
+                    <Symbol v-for="sym in data.rhs" :sym="sym" />
+                </template>
+            </Column>
+        </DataTable>
     </Header>
 </template>
 
-<script>
+<script setup>
+import { computed } from 'vue'
+
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+
 import Header from './Header.vue'
+import Symbol from './Symbol.vue'
 
-export default {
-    props: ['op', 'content', 'names'],
-    components: {
-        Header
-    },
-    methods: {
-        name_of(sym) {
-            let name = this.content.sym_source && this.content.sym_source.names[sym.n - 1]
-            if (name === undefined || name == null) {
-                return `g(${sym.n - 1})`
-            } else {
-                return `${name.name} (${sym.n - 1})`
-            } 
-        },
-    }
-}
+const props = defineProps(['op', 'content'])
 
+const cfgInfo = computed(() => {
+    return [{
+        op: props.op,
+        numSyms: props.content.sym_source.next_symbol.n - 1,
+        numRules: props.content.rules.length,
+    }]
+})
+
+const rules = computed(() => {
+    return props.content.rules
+})
 </script>

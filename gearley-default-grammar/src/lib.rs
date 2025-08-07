@@ -3,6 +3,7 @@
 use std::{cmp, iter};
 
 use bit_matrix::row::BitSlice;
+use bit_matrix::submatrix::BitSubMatrix;
 use bit_matrix::BitMatrix;
 use cfg::classify::CfgClassifyExt;
 use cfg::predict_sets::{FirstSets, FollowSets, PredictSets};
@@ -10,7 +11,7 @@ use cfg::symbol_bit_matrix::{CfgSymbolBitMatrixExt, Remap};
 use cfg_symbol::intern::Mapping;
 
 use cfg::history::earley::{EventAndDistance, EventId, ExternalDottedRule, ExternalOrigin, MinimalDistance, NullingEliminated};
-use cfg::{Cfg, CfgRule, Symbol, SymbolBitSet, SymbolName};
+use cfg::{Cfg, CfgRule, Symbol, SymbolBitSet, SymbolName, SymbolSource};
 
 use gearley_grammar::{ForestInfo, Grammar, MaybePostdot, NullingIntermediateRule, PredictionTransition};
 use gearley_vec2d::Vec2d;
@@ -108,6 +109,49 @@ impl DefaultGrammar {
         trace!("remap_symbols: {:?}", grammar);
         Self::sort_rules_by_lhs(&mut grammar);
         trace!("sort_rules_by_lhs: {:?}", grammar);
+        let mut has_predicts = DefaultGrammar::new();
+        let num_gensyms = DefaultGrammar::find_gensyms(&grammar).bit_vec().iter().rev().filter(|is_gensym| *is_gensym).count();
+        has_predicts.size = DefaultGrammarSize {
+            rules: grammar.rules().count(),
+            syms: grammar.num_syms() - num_gensyms,
+            gensyms: num_gensyms,
+            external_syms: 0,
+            internal_syms: 0,
+        };
+        let rules_by_rhs0 = has_predicts.compute_rules_by_rhs0(&grammar);
+        has_predicts.populate_prediction_matrix(&grammar, &rules_by_rhs0[..]);
+        #[derive(Debug)]
+        #[allow(dead_code)]
+        struct Rule {
+            lhs: Symbol,
+            rhs0: Symbol,
+            rhs1: Option<Symbol>,
+        }
+        #[derive(Debug)]
+        #[allow(dead_code)]
+        struct SymInfo {
+            external: Symbol,
+            internal: Symbol,
+            name: Option<SymbolName>,
+            rules_lhs: Vec<Rule>,
+            rules_rhs: Vec<Rule>,
+            predicts: Vec<Symbol>,
+            predicts_by: Vec<Symbol>,
+        }
+        let sym_and_name_to_sym_info = |external, name, internal| {
+            let rules_lhs = grammar.rules().filter_map(|r| if r.lhs == internal { Some(Rule { lhs: r.lhs, rhs0: r.rhs[0], rhs1: r.rhs.get(1).copied() }) } else { None }).collect();
+            let rules_rhs = grammar.rules().filter_map(|r| if r.rhs[0] == internal || r.rhs.get(1).copied() == Some(internal) { Some(Rule { lhs: r.lhs, rhs0: r.rhs[0], rhs1: r.rhs.get(1).copied() }) } else { None }).collect();
+            let mut predicts = vec![];
+            let mut predicts_by = vec![];
+            if internal.usize() < grammar.num_syms() - num_gensyms {
+                predicts = has_predicts.prediction_matrix.iter_row(internal.usize()).zip(SymbolSource::generate_fresh().take(grammar.num_syms() - num_gensyms)).filter_map(|(bit, sym)| if bit { Some(sym) } else { None }).collect();
+                predicts_by = SymbolSource::generate_fresh().take(grammar.num_syms() - num_gensyms).filter(|&sym| has_predicts.prediction_matrix[(sym.usize(), internal.usize())]).collect();
+            }
+            SymInfo { internal, external, name, rules_lhs, rules_rhs, predicts, predicts_by }
+        };
+        for ((external, name), internal) in maps.to_external.iter().copied().take(grammar.num_syms() - num_gensyms).zip(grammar.sym_source().names()).zip(SymbolSource::generate_fresh()) {
+            trace!("symbols.sym: {:?}", sym_and_name_to_sym_info(external, name, internal));
+        }
         Self::from_processed_grammars(grammar, maps, &nulling)
     }
 
@@ -199,7 +243,6 @@ impl DefaultGrammar {
     }
 
     fn populate_sizes(&mut self, grammar: &Cfg, maps: &Mapping) {
-        println!("{:?}", Self::find_gensyms(grammar));
         let num_gensyms = Self::find_gensyms(grammar).bit_vec().iter().rev().filter(|is_gensym| *is_gensym).count();
         self.size = DefaultGrammarSize {
             rules: grammar.rules().count(),

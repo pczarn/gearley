@@ -46,7 +46,6 @@ export const useParse = defineStore('parse', {
                 .replace(/(\w+):/g, replacer)
             const evaled = wrappedEval(replaced, {})
             const pathList = path.split(".")
-            console.log(pathList)
             if (typeof logs[pathList[0]] === 'undefined') {
                 logs[pathList[0]] = []
             }

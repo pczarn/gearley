@@ -130,8 +130,9 @@ where
         // This method is a part of the scan pass.
         let earleme = self.earleme() as Origin;
         // Add a leaf node to the forest with the given value.
+        let trace_value = format!("{:?}", value);
         let node = self.forest.leaf(symbol, earleme + 1, value);
-        trace!("recognizer.scan: Scan {{ symbol: {:?}, node: {:?} }}", symbol, node);
+        trace!("recognizer.scan: Scan {{ symbol: {:?}, node: {:?}, value: {} }}", symbol, node, trace_value);
         self.complete(earleme, symbol, node);
     }
 

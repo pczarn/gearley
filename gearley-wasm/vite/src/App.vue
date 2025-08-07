@@ -60,7 +60,7 @@ const loadExamples = computed(() => {
 onMounted(() => {
     if (typeof window.log_error === 'undefined') {
         window.log_error = function(text) {
-            result.value = "Logged:\n" + text;
+            parseStore.setResult("Logged:\n" + text)
         }
     }
 

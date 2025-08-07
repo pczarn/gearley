@@ -27,6 +27,8 @@ import DefaultGrammar from '@/components/DefaultGrammar.vue'
 import DefaultGrammarSize from '@/components/DefaultGrammarSize.vue'
 import Mapping from '@/components/Mapping.vue'
 import Header from '@/components/Header.vue'
+import SymInfo from '@/components/SymInfo.vue'
+
 import Tabs from 'primevue/tabs';
 import TabList from 'primevue/tablist';
 import Tab from 'primevue/tab';
@@ -45,7 +47,8 @@ const children = {
     Scan,
     DefaultGrammar,
     DefaultGrammarSize,
-    Mapping,
+    mapping: Mapping,
+    SymInfo,
 }
 </script>
 

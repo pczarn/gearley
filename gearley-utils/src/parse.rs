@@ -184,6 +184,14 @@ pub fn parse_tokenizing(mut loaded: AdvancedGrammar, grammar: DefaultGrammar, in
         }
     }
     trace!("utils.finished: {:?}", recognizer);
+    let result = recognizer.is_finished();
 
-    Ok(recognizer.is_finished())
+    if let Some(node) = recognizer.finished_node() {
+        trace!("utils.finished_node: NodeHandle {{ handle: {:?} }}", node);
+    } else {
+        return Err(ParseError::Finish { msg: "failed to get finished node" });
+    }
+    trace!("utils.bocage: {:?}", recognizer.into_forest());
+
+    Ok(result)
 }

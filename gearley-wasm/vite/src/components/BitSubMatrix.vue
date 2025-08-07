@@ -3,22 +3,19 @@
         <ul>
             <template v-for="(ch, index) of content.row.trim()">
                 <li v-if="ch === '1'">
-                    {{ names[index] }}
+                    <Symbol :sym="{ 'n': index + 1 }" />
                 </li>
             </template>
         </ul>
     </Header>
 </template>
 
-<script>
+<script setup>
 import Header from './Header.vue'
+import Symbol from './Symbol.vue'
+// import { useParse } from '@/stores/parse'
 
-export default {
-    props: ['op', 'content', 'names'],
-    components: {
-        Header
-    }
-}
+const props = defineProps(['op', 'content'])
 </script>
 
 <style>
