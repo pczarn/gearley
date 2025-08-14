@@ -28,6 +28,10 @@
                     <img src="/images/github-128.png" alt="See the source on GitHub" class="github-icon" />
                     gearley v0.0.1
                 </a>
+                <a href="https://github.com/pczarn/gearley/tree/51028b448a8231d1a43546459de39b23e029059b/gearley-wasm/vite" target="_blank">
+                    <img src="/images/github-128.png" alt="See the source on GitHub" class="github-icon" />
+                    gearley-wasm v0.0.1
+                </a>
                 <Button label="Help" @click="helpVisible = true" />
             </div>
         </div>

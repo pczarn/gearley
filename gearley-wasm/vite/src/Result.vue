@@ -5,7 +5,7 @@
         </TabList>
         <TabPanels class="panel-box">
             <TabPanel v-for="(list, key, index) of parseStore.logs" :key="key" :value="key" ref="printable">
-                <Header v-for="[op, kind, content, logs] in list" :title="op" :id="op" help-button print-button @print="print(index)" @help="showHelp">
+                <Header v-for="([op, kind, content, logs], indexJ) of list" :title="op" :id="op" :help-button="indexJ === 0" :print-button="indexJ === 0" @print="print(index)" @help="showHelp">
                     <component :is="children[kind]" :op="op" :content="content" />
                     <Header title="logs" :level="2" :defaultCollapse="true">
                         <pre class="logs">
