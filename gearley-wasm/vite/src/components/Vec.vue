@@ -1,24 +1,19 @@
 <template>
-    <Header :level="2" title="medial items">
-        <ul>
-            <template v-for="(item, index) of content">
-                <li>
-                    (origin: {{ item.origin }}, dot: {{ item.dot }})
-                </li>
-            </template>
-        </ul>
-    </Header>
+    <ul>
+        <template v-for="(item, index) of props.content">
+            <li>
+                origin={{ item.origin }}, <Symbol :sym="parseStore.rules[item.dot].lhs" /> ::= <Symbol v-for="(sym, i) of parseStore.rules[item.dot].rhs" :sym="sym" :separate="i !== 0" />
+            </li>
+        </template>
+    </ul>
 </template>
 
-<script>
-import Header from './Header.vue'
+<script setup>
+import Symbol from './Symbol.vue'
+import { useParse } from '@/stores/parse'
 
-export default {
-    props: ['op', 'content', 'names'],
-    components: {
-        Header
-    }
-}
+const props = defineProps(['op', 'content'])
+const parseStore = useParse()
 </script>
 
 <style>

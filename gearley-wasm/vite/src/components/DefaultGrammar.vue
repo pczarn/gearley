@@ -70,7 +70,7 @@
     <Header id="d_g_g_c" title="gen_completions" :level="2">
         <ol :start="content.size.syms">
             <li v-for="gen in content.gen_completions">
-                <Symbol :sym="gen.symbol" :names="names" />
+                <Symbol :sym="gen.symbol" />
                 <!-- <Rule :dot="gen.dot" /> -->
             </li>
         </ol>
@@ -83,7 +83,7 @@ import Header from './Header.vue';
 import Symbol from './Symbol.vue';
 
 export default {
-    props: ['op', 'content', 'names'],
+    props: ['op', 'content'],
     components: {
         Header,
         Symbol,

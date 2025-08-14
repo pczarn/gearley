@@ -1,17 +1,15 @@
 <template>
-    <Header :level="2" title="predicted symbols">
-        <ul>
-            <template v-for="(ch, index) of content.row.trim()">
-                <li v-if="ch === '1'">
-                    <Symbol :sym="{ 'n': index + 1 }" />
-                </li>
-            </template>
-        </ul>
-    </Header>
+    <ul>
+        <template v-for="(ch, index) of content.row.trim()">
+            <li v-if="ch === '1'">
+                <Symbol :sym="{ 'n': index + 1 }" />
+            </li>
+        </template>
+    </ul>
 </template>
 
 <script setup>
-import Header from './Header.vue'
+// import Header from './Header.vue'
 import Symbol from './Symbol.vue'
 // import { useParse } from '@/stores/parse'
 

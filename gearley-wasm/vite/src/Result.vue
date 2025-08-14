@@ -4,8 +4,8 @@
             <Tab v-for="(_list, op) of parseStore.logs" :key="op" :value="op"> {{ op }} </Tab>
         </TabList>
         <TabPanels class="panel-box">
-            <TabPanel v-for="(list, key) of parseStore.logs" :key="key" :value="key">
-                <Header v-for="[op, kind, content, logs] in list" :title="op" :id="op">
+            <TabPanel v-for="(list, key, index) of parseStore.logs" :key="key" :value="key" ref="printable">
+                <Header v-for="[op, kind, content, logs] in list" :title="op" :id="op" help-button print-button @print="print(index)" @help="showHelp">
                     <component :is="children[kind]" :op="op" :content="content" />
                     <Header title="logs" :level="2" :defaultCollapse="true">
                         <pre class="logs">
@@ -16,9 +16,16 @@
             </TabPanel>
         </TabPanels>
     </Tabs>
+    <Dialog v-model:visible="helpVisible" modal header="Help" :style="{ width: '30rem' }">
+        (TODO)
+    </Dialog>
 </template>
 
 <script setup>
+import { ref } from 'vue'
+
+import { useVueToPrint } from "vue-to-print";
+
 import Cfg from '@/components/Cfg.vue'
 import Vec from '@/components/Vec.vue'
 import BitSubMatrix from '@/components/BitSubMatrix.vue'
@@ -28,7 +35,11 @@ import DefaultGrammarSize from '@/components/DefaultGrammarSize.vue'
 import Mapping from '@/components/Mapping.vue'
 import Header from '@/components/Header.vue'
 import SymInfo from '@/components/SymInfo.vue'
+import SymbolBitSet from '@/components/SymbolBitSet.vue'
+import Complete from '@/components/Complete.vue'
+import Item from '@/components/Item.vue'
 
+import Dialog from 'primevue/dialog'
 import Tabs from 'primevue/tabs';
 import TabList from 'primevue/tablist';
 import Tab from 'primevue/tab';
@@ -40,6 +51,8 @@ import { useParse } from '@/stores/parse'
 const parseStore = useParse()
 const tabs = useTabs()
 
+const helpVisible = ref(false)
+
 const children = {
     Cfg,
     Vec,
@@ -49,6 +62,25 @@ const children = {
     DefaultGrammarSize,
     mapping: Mapping,
     SymInfo,
+    SymbolBitSet,
+    Complete,
+    Item
+}
+
+const printable = ref([])
+
+function print(key) {
+    console.log('print')
+    const { handlePrint } = useVueToPrint({
+        content: printable.value[key],
+        documentTitle: "Gearley Tab",
+    })
+    handlePrint()
+}
+
+function showHelp() {
+    console.log('help')
+    helpVisible.value = true
 }
 </script>
 

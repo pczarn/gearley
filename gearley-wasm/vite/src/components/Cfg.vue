@@ -10,12 +10,12 @@
         <DataTable :value="rules">
             <Column field="lhs" header="LHS">
                 <template #body="{ data }">
-                    <Symbol :sym="data.lhs" />
+                    <Symbol :sym="data.lhs" :name="nameOf(data.lhs)" :active="active" />
                 </template>
             </Column>
             <Column field="rhs" header="RHS">
                 <template #body="{ data }">
-                    <Symbol v-for="sym in data.rhs" :sym="sym" />
+                    <Symbol v-for="(sym, i) of data.rhs" :sym="sym" :name="nameOf(sym)" :active="active" :separate="i !== 0" />
                 </template>
             </Column>
         </DataTable>
@@ -43,5 +43,18 @@ const cfgInfo = computed(() => {
 
 const rules = computed(() => {
     return props.content.rules
+})
+
+function nameOf(sym) {
+    let name = props.content.sym_source && props.content.sym_source.names[sym.n - 1]
+    if (name === undefined || name == null) {
+        return `g(${sym.n - 1})`
+    } else {
+        return `${name.name} (${sym.n - 1})`
+    } 
+}
+
+const active = computed(() => {
+    return props.op === 'remap_symbols' || props.op === 'sort_rules_by_lhs'
 })
 </script>

@@ -6,6 +6,8 @@
         <span v-if="isCollapsed">&#x25B6;</span>
       </a>
       <span class="card-header-title">{{title}}</span>
+      <Button v-if="helpButton" label="Help" class="help-btn" @click="$emit('help')" />
+      <Button v-if="printButton" label="Print" class="print-btn" @click="$emit('print')" />
     </header>
     <div class="card-content" :class="{'is-hidden':isCollapsed }">
       <slot v-if="!isCollapsed"></slot>
@@ -16,7 +18,10 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import Button from 'primevue/button'
+import { onMounted, watch, ref } from 'vue';
+
 Storage.prototype.setObject = function (key, value) {
   this.setItem(key, JSON.stringify(value));
 };
@@ -26,19 +31,7 @@ Storage.prototype.getObject = function (key) {
   return value && JSON.parse(value);
 };
 
-export default {
-  mounted() {
-    if (this.defaultCollapse !== null && this.id) {
-        this.saveCollapsedState(this.default)
-    }
-    if (this.id) {
-      const state = this.getCollapseState();
-      if (state) {
-        this.isCollapsed = state[this.id];
-      }
-    }
-  },
-  props: {
+const props = defineProps({
     id: {
       type: String
     },
@@ -53,38 +46,63 @@ export default {
     defaultCollapse: {
       type: Boolean,
       default: null
-    }
-  },
-  data() {
-    return {
-      isCollapsed: this.defaultCollapse === null ? true : this.defaultCollapse
-    };
-  },
-  methods: {
-    getCollapseState() {
-      return localStorage.getObject("collapsibles") || {};
     },
-    saveCollapsedState(value) {
-      const state = this.getCollapseState();
-      state[this.id] = value;
-      localStorage.setObject("collapsibles", state);
+    helpButton: {
+      type: Boolean,
+      default: false
+    },
+    printButton: {
+      type: Boolean,
+      default: false
     }
-  },
-  watch: {
-    isCollapsed(newValue) {
-      if (this.id) {
-        this.saveCollapsedState(newValue);
+  });
+
+const emit = defineEmits(['collapseChanged', 'print', 'help'])
+
+function getCollapseState() {
+  return localStorage.getObject("collapsibles") || {};
+}
+
+const isCollapsed = ref(props.defaultCollapse === null ? true : props.defaultCollapse)
+
+onMounted(() => {
+    if (props.defaultCollapse !== null && props.id) {
+        saveCollapsedState(props.default)
+    }
+    if (props.id) {
+      const state = getCollapseState();
+      if (state) {
+        isCollapsed.value = state[props.id];
       }
-      this.$emit("collapseChanged", newValue);
     }
+})
+
+function saveCollapsedState(value) {
+  const state = getCollapseState();
+  state[props.id] = value;
+  localStorage.setObject("collapsibles", state);
+}
+
+watch(isCollapsed, (newValue) => {
+  if (props.id) {
+    saveCollapsedState(newValue);
   }
-};
+  emit("collapseChanged", newValue);
+})
 </script>
 
 <style scoped>
 .card-header {
   display: flex;
   align-items: center;
+}
+
+.help-btn {
+  margin-left: auto;
+}
+
+.print-btn {
+  margin-left: 15px;
 }
 
 .level-1 {

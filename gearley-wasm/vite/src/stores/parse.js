@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 export const useParse = defineStore('parse', {
   state: () => ({
     result: '',
-    limit: 1000
+    limit: 10000
   }),
   actions: {
     setResult(result) {
@@ -70,6 +70,14 @@ export const useParse = defineStore('parse', {
             return []
         }
         return mapping.map(sym_with_name => sym_with_name.name && sym_with_name.name.name)
+    },
+    rules() {
+        let cfg = this.logs['sort_rules_by_lhs']
+        cfg = cfg && cfg[0] && cfg[0][2]
+        if (typeof cfg !== 'object') {
+            return []
+        }
+        return cfg.rules
     }
   }
 })
