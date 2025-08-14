@@ -137,4 +137,11 @@ watch(isCollapsed, (newValue) => {
   margin-left: 1.25rem;
   margin-top: 0.75rem;
 }
+
+.card-header-title {
+  display: inline-block;
+  text-overflow: ellipsis;
+  flex: 1 0;
+  overflow: hidden;
+}
 </style>
