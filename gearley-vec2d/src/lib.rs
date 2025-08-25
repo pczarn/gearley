@@ -6,7 +6,6 @@ use std::ops;
 pub struct Vec2d<I> {
     chart: Vec<I>,
     indices: Vec<usize>,
-    current_start: usize,
 }
 
 #[derive(Default)]
@@ -17,11 +16,7 @@ pub struct Vec2dCapacity {
 
 impl<I> Vec2d<I> {
     pub fn new() -> Self {
-        Self {
-            chart: Vec::new(),
-            indices: vec![0],
-            current_start: 0,
-        }
+        Default::default()
     }
 
     pub fn with_capacity(capacity: Vec2dCapacity) -> Self {
@@ -31,7 +26,6 @@ impl<I> Vec2d<I> {
         Self {
             chart: Vec::with_capacity(capacity.chart_capacity),
             indices,
-            current_start: 0,
         }
     }
 
@@ -40,29 +34,28 @@ impl<I> Vec2d<I> {
         // Indices reset to [0, 0].
         self.indices.clear();
         self.indices.push(0);
-        // Current medial start reset to 0.
-        self.current_start = 0;
+        // // Current medial start reset to 0.
+        // self.current_start = 0;
     }
 
     /// Truncates the sets such that `new_len` sets remain,
     /// and the set at `self[new_len]` becomes the in-progress set.
     pub fn truncate(&mut self, new_len: usize) where I: Copy {
         let new_medial_start = self.indices[new_len];
-        self.chart.copy_within(self.current_start.., new_medial_start as usize);
+        self.chart.copy_within(self.indices.last().unwrap().., new_medial_start as usize);
         self.chart
-            .truncate(new_medial_start as usize + self.chart.len() - self.current_start);
-        self.current_start = new_medial_start as usize;
-        self.indices.truncate(new_len);
+            .truncate(self.chart.len() + new_medial_start as usize - self.indices.last().unwrap());
+        self.indices.truncate(new_len + 1);
     }
 
     #[inline]
     pub fn last(&self) -> &[I] {
-        &self.chart[self.current_start..]
+        &self.chart[self.indices.last().copied().unwrap()..]
     }
 
     #[inline]
     pub fn last_mut(&mut self) -> &mut [I] {
-        &mut self.chart[self.current_start..]
+        &mut self.chart[self.indices.last().copied().unwrap()..]
     }
 
     #[inline]
@@ -100,12 +93,11 @@ impl<I> Vec2d<I> {
     }
 
     pub fn next_set(&mut self) {
-        self.current_start = self.chart.len();
-        self.indices.push(self.current_start);
+        self.indices.push(self.chart.len());
     }
 
     pub fn len(&self) -> usize {
-        self.indices.len() - 1
+        self.indices.len()
     }
 }
 
@@ -130,7 +122,6 @@ impl<I> Default for Vec2d<I> {
         Self {
             chart: vec![],
             indices: vec![0],
-            current_start: 0,
         }
     }
 }

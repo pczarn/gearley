@@ -112,16 +112,25 @@ where
             forest,
             policy: PhantomData,
         };
-        recognizer.medial.next_set();
-        recognizer.predict(recognizer.grammar.start_sym());
+        recognizer.predicted[0].predict(recognizer.grammar.start_sym(), recognizer.grammar.prediction_row(recognizer.grammar.start_sym()));
         recognizer
         // TODO: symbols start_of_input and end_of_input first set scan start_of_input
     }
 
     pub fn begin_earleme(&mut self) {
-        // nothing to do
-        let rows = format!("{:?}", self.predicted.sub_matrix(self.earleme() .. self.earleme() + 1));
+        self.medial.next_set();
+        let earleme = self.earleme();
+        let rows = format!("{:?}", self.predicted.sub_matrix(earleme .. earleme + 1));
         trace!("recognizer.predicted: BitSubMatrix {{ row: {:?} }}", rows.replace('\n', " "));
+        // from now on, the `earleme` points to the last fully done set
+        // ----------
+        // new
+        // earleme == -1 ?
+        // begin_earleme
+        // earleme == 0
+        // medial.indices.len() == 2
+        // predicted[0] = predict(start_sym)
+        // 
     }
 
     /// Reads an internal token. Creates a leaf bocage node with the given value. After reading one or more
@@ -152,7 +161,7 @@ where
             self.complete_all_sums_entirely();
             trace!("recognizer.medial_after_completion: {:?}", self.medial.last());
             // Do the rest.
-            self.advance_without_completion();
+            self.advance_after_completion();
             trace!("recognizer.prediction_result: {:?}", self.predicted.sub_matrix(self.earleme() .. self.earleme() + 1));
             true
         }
@@ -161,16 +170,14 @@ where
     /// Advances the parse. Omits the completion pass, which should be done through
     /// the `completions` method. Keep in mind that calling this method may not set
     /// the finished node, which should be tracked externally.
-    pub fn advance_without_completion(&mut self) {
+    pub fn advance_after_completion(&mut self) {
         self.sort_medial_items();
         self.remove_unary_medial_items();
-        self.remove_unreachable_sets();
+        // self.remove_unreachable_sets();
         trace!("recognizer.medial: Vec {:?}", self.medial.last());
         // `earleme` is now at least 1.
         // Prediction pass.
         self.prediction_pass();
-        // Medial processing.
-        self.medial.next_set();
     }
 
     /// Checks whether the recognizer is exhausted. The recognizer is exhausted when it can't accept
@@ -206,22 +213,39 @@ where
             .map(origin)
             .max()
             .unwrap_or(self.earleme());
-        let new_earleme = max_origin + 1;
-        if self.earleme() > new_earleme && new_earleme > 1 {
+        let new_earleme = max_origin;
+        if self.earleme() > new_earleme {
             trace!("remove_unreachable_sets {:?} > {:?}", self.earleme(), new_earleme);
-            // | 0 | 1 | 2 | 3 |
-            //               ^ current_medial_start
-            //   _________diff = 2
-            //       ____drop = 1
-            //           ^ self.earleme = 2
-            // 
-            //   ^ new_earleme = 0
-            // | 0 | 1 | 2 |
-            self.predicted[new_earleme + 1].clear();
-            self.predicted.truncate(new_earleme);
-            self.medial.truncate(new_earleme);
-            debug_assert_eq!(self.medial.len(), new_earleme - 1);
-            debug_assert_eq!(self.earleme(), new_earleme - 2);
+            // ------------------------------
+            //         earleme = 0
+            // | A B | C D
+            //   P0
+            //
+            // new_earleme = 0 - do nothing
+            // ------------------------------
+            //               earleme = 2
+            // | A B | C D | E F | G H
+            //   P0    P1    P3
+            //
+            // max_origin = 1
+            // new_earleme = 1
+            // copy from last to 2
+            // truncate to 3
+            // | A B | C D | G H
+            //   P0    P1
+            //                    earleme = 2
+            // | A B | C D | G H |
+            //   P0    P1    Px
+            // ------------------------------
+            // let (mut body, mut tail) = self.predicted.split_at_mut(self.earleme());
+            // for (dst, src) in body[new_earleme].iter_blocks_mut().zip(tail[0].iter_blocks_mut()) {
+            //     *dst = *src;
+            // }
+            // self.predicted[new_earleme].clear()
+            self.predicted.truncate(new_earleme + 1);
+            self.medial.truncate(new_earleme + 1);
+            debug_assert_eq!(self.medial.len(), new_earleme + 2);
+            debug_assert_eq!(self.earleme(), new_earleme);
             // earleme == new_earleme - 2
         }
     }
@@ -246,12 +270,12 @@ where
     pub fn reset(&mut self) {
         // Remove items.
         self.medial.clear();
-        self.medial.next_set();
         self.complete.clear();
         // Earleme is now equal 0.
         // Reset predictions.
         self.predicted[0].clear();
-        self.predict(self.grammar.start_sym());
+        self.predicted[0].predict(self.grammar.start_sym(), self.grammar.prediction_row(self.grammar.start_sym()));
+
     }
 
     // Finished node access.
@@ -274,7 +298,7 @@ where
         } else {
             let has_dot_before_eof = |item: &&Item<_>| item.dot == self.grammar.dot_before_eof();
             let item_node = |item: &Item<_>| item.node;
-            self.medial[self.medial.len() - 1].first().filter(has_dot_before_eof).map(item_node)
+            self.medial.last().first().filter(has_dot_before_eof).map(item_node)
         }
     }
 
@@ -295,7 +319,7 @@ where
 
     /// Returns the current location number.
     pub fn earleme(&self) -> usize {
-        self.medial.len() - 1
+        self.medial.len().saturating_sub(2)
     }
 
     pub fn into_forest(self) -> F {
