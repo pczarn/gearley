@@ -38,3 +38,25 @@ fn test_recognize_reset() {
         rec.reset();
     }
 }
+
+#[test]
+fn test_recognize_gensym() {
+    let _ = env_logger::try_init();
+    let mut external = Cfg::new();
+    let [start, a, b, c, d, e] = external.sym();
+    external
+        .rule(start)
+        .rhs([a, b, c, d])
+        .rule(c)
+        .rhs([])
+        .rhs([e])
+        .rule(b).rhs([e]);
+    external.set_roots([start]);
+    let cfg = DefaultGrammar::from_grammar(external);
+    let mut rec = Recognizer::with_forest(&cfg, NullForest);
+    for _ in 0..1000 {
+        let finished = rec.parse(&[a, e, d]).unwrap();
+        assert!(finished);
+        rec.reset();
+    }
+}

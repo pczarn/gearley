@@ -51,7 +51,7 @@ pub struct DefaultGrammar {
     prediction_matrix: BitMatrix,
     // Inverse prediction lookup.
     completions: Vec2d<PredictionTransition>,
-    gen_completions: Vec<PredictionTransition>,
+    gen_completions: Vec<[Option<PredictionTransition>; 2]>,
 
     lr_sets: BitMatrix,
 
@@ -70,7 +70,7 @@ pub struct DefaultGrammar {
 
 struct CompletionTable {
     completions: Vec<Vec<PredictionTransition>>,
-    gen_completions: Vec<Option<PredictionTransition>>,
+    gen_completions: Vec<[Option<PredictionTransition>; 2]>,
 }
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -94,6 +94,7 @@ impl DefaultGrammar {
         grammar.wrap_input();
         trace!("wrap_input: {:?}", grammar);
         let nulling = grammar.binarize_and_eliminate_nulling_rules();
+        println!("{:?}", grammar.rules().map(|rule| rule.history.nullable()).collect::<Vec<_>>());
         trace!("binarize_and_eliminate_nulling_rules: {:?}", grammar);
         trace!("nulling: {:?}", nulling);
         let maps = Self::remap_symbols(&mut grammar);
@@ -269,6 +270,8 @@ impl DefaultGrammar {
         self.eof_sym = wrapped_root.end_of_input;
         self.dot_before_eof = grammar.rules().position(|rule| rule.rhs.get(1) == Some(&wrapped_root.end_of_input)).unwrap() as u32;
         self.original_start_sym = wrapped_root.inner_root;
+        self.forest_info.sof = wrapped_root.start_of_input;
+        self.forest_info.eof = wrapped_root.end_of_input;
     }
 
     fn populate_grammar_with_lhs(&mut self, grammar: &Cfg) {
@@ -278,12 +281,13 @@ impl DefaultGrammar {
 
     fn populate_grammar_with_rhs(&mut self, grammar: &Cfg) {
         self.columns[1].syms = grammar.column(1).map(|dot| dot.postdot).collect();
-        self.columns[2].syms = grammar.column(1).map(|dot| dot.postdot).collect();
+        self.columns[2].syms = grammar.column(2).map(|dot| dot.postdot).collect();
     }
 
     fn populate_grammar_with_history(&mut self, grammar: &Cfg) {
         self.forest_info.eval
             .extend(grammar.rules().map(|rule| rule.history.origin()));
+        println!("{:?}", grammar.rules().map(|rule| rule.history.origin()).collect::<Vec<_>>());
         self.forest_info.nulling_eliminated
             .extend(grammar.rules().map(|rule| rule.history.nullable()));
 
@@ -382,7 +386,7 @@ impl DefaultGrammar {
     fn populate_completion_tables(&mut self, grammar: &Cfg, rules_by_rhs0: &[CfgRule]) {
         let table = self.compute_completion_table(grammar, rules_by_rhs0);
         self.completions.extend(table.completions.into_iter().map(|v| v.into_iter()));
-        self.gen_completions.extend(table.gen_completions.into_iter().map(|maybe_pt| maybe_pt.expect("missing gen completion")));
+        self.gen_completions.extend(table.gen_completions.into_iter());
     }
  
     fn compute_completion_table(&self, grammar: &Cfg, rules_by_rhs0: &[CfgRule]) -> CompletionTable {
@@ -391,7 +395,7 @@ impl DefaultGrammar {
                 iter::repeat(vec![])
                     .take(self.size.syms)
                     .collect(),
-            gen_completions: vec![None; self.size.gensyms],
+            gen_completions: vec![[None; 2]; self.size.gensyms],
         };
 
         let mut unary_rules = vec![];
@@ -422,7 +426,7 @@ impl DefaultGrammar {
         // order is very important: first all binary, then all unary
         for (rhs0_sym, transition) in binary_rules.into_iter().chain(unary_rules.into_iter()) {
             if rhs0_sym >= self.size.syms {
-                table.gen_completions[rhs0_sym - self.size.syms] = Some(transition);
+                table.gen_completions[rhs0_sym - self.size.syms][transition.is_unary as usize] = Some(transition);
             } else {
                 table.completions[rhs0_sym].push(transition);
             }
@@ -449,11 +453,11 @@ impl DefaultGrammar {
         self.has_trivial_derivation = !nulling.is_empty();
         let iter_nulling_intermediate = nulling.rules().filter_map(|rule| {
             if rule.history.origin().is_null() && rule.rhs.len() == 2 {
-                Some([rule.lhs, rule.rhs[0], rule.rhs[1]])
+                Some([self.to_internal(rule.lhs).unwrap(), self.to_internal(rule.rhs[0]).unwrap(), self.to_internal(rule.rhs[1]).unwrap()])
             } else {
                 None
             }
-        });
+        }).collect::<Vec<_>>();
         self.forest_info.nulling_intermediate_rules
             .extend(iter_nulling_intermediate);
     }
@@ -576,7 +580,7 @@ impl Grammar for DefaultGrammar {
         &self.completions[sym.usize()]
     }
 
-    fn gen_completion(&self, sym: Symbol) -> PredictionTransition {
+    fn gen_completion(&self, sym: Symbol) -> [Option<PredictionTransition>; 2] {
         self.gen_completions[sym.usize() - self.size.syms]
     }
 

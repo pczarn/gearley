@@ -63,7 +63,7 @@ pub trait Grammar {
 
     fn completions(&self, sym: Symbol) -> &[PredictionTransition];
 
-    fn gen_completion(&self, sym: Symbol) -> PredictionTransition;
+    fn gen_completion(&self, sym: Symbol) -> [Option<PredictionTransition>; 2];
 
     fn to_internal(&self, symbol: Symbol) -> Option<Symbol>;
 
@@ -157,7 +157,7 @@ impl<'a, G> Grammar for &'a G where G: Grammar {
         (**self).completions(sym)
     }
 
-    fn gen_completion(&self, sym: Symbol) -> PredictionTransition {
+    fn gen_completion(&self, sym: Symbol) -> [Option<PredictionTransition>; 2] {
         (**self).gen_completion(sym)
     }
 
@@ -190,6 +190,8 @@ pub struct ForestInfo {
     pub nulling_intermediate_rules: Vec<NullingIntermediateRule>,
     // Each rule can have only one eliminated nulling symbol.
     pub nulling_eliminated: Vec<NullingEliminated>,
+    pub sof: Symbol,
+    pub eof: Symbol,
 }
 
 impl ForestInfo {
@@ -198,7 +200,7 @@ impl ForestInfo {
             .chain(
                 self.nulling_intermediate_rules
                     .iter()
-                    .flat_map(|&[lhs, rhs0, _rhs1]| [lhs.usize(), rhs0.usize()]),
+                    .flat_map(|&[lhs, rhs0, rhs1]| [lhs.usize(), rhs0.usize(), rhs1.usize()]),
             )
             .max()
     }

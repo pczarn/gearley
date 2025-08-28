@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-log = "0.4"
+log = { version = "0.4", optional = true }
 gearley-forest = { path = "../gearley-forest/" }
 gearley-grammar = { path = "../gearley-grammar/" }
 gearley-recognizer = { path = "../gearley-recognizer/" }

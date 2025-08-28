@@ -42,6 +42,7 @@ impl Bocage {
             }
         }));
         for &[lhs, rhs0, rhs1] in &self.forest_info.nulling_intermediate_rules {
+            println!("RULE_NULLING at {:?}", lhs);
             self.graph[NodeHandle::nulling(lhs).usize()] = Node::Product {
                     left_factor: NodeHandle::nulling(rhs0),
                     right_factor: Some(NodeHandle::nulling(rhs1)),
@@ -73,6 +74,7 @@ impl Bocage {
 
     #[inline]
     pub(crate) fn postprocess_product_tree_node(&self, node: &Node) -> Node {
+        println!("POSTPROCESS {:?} {:?}", node, self.forest_info);
         if let &Node::Product {
             left_factor: factor,
             right_factor: None,
@@ -81,6 +83,7 @@ impl Bocage {
         {
             // Add omitted phantom syms here.
             if let Some((sym, dir)) = self.forest_info.nulling_eliminated[action as usize] {
+                println!("NODE {:?}", self[NodeHandle::nulling(sym)]);
                 let (left, right) = if dir {
                     (factor, NodeHandle::nulling(sym))
                 } else {
@@ -97,11 +100,6 @@ impl Bocage {
         } else {
             *node
         }
-    }
-
-    #[inline]
-    pub(crate) fn is_transparent(&self, action: u32) -> bool {
-        action == NULL_ACTION || self.forest_info.external_origin(action).is_none()
     }
 }
 

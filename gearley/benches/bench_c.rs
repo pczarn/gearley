@@ -1068,11 +1068,13 @@ fn bench_parse_c(b: &mut test::Bencher, contents: &str) {
         })
         .collect();
     let mut first = true;
+    let default_grammar = DefaultGrammar::from_grammar(external.clone());
+    b.bytes = tokens.len() as u64;
     b.iter(|| {
-        let default_grammar = DefaultGrammar::from_grammar(external.clone());
         let bocage = Bocage::new(&default_grammar);
         let mut rec: Recognizer<DefaultGrammar, Bocage> =
-            Recognizer::with_forest(default_grammar, bocage);
+            Recognizer::with_forest(default_grammar.clone(), bocage);
+        // panic!("{}", tokens.len());
         let finished = rec.parse(&tokens[..]);
         assert!(finished.expect("parse failed"));
         if first {

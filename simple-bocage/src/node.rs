@@ -27,11 +27,6 @@ pub enum Node {
         /// 4 bytes.
         symbol: Symbol,
     },
-    Evaluated {
-        /// 8 bytes.
-        symbol: Symbol,
-        values: u32,
-    },
 }
 
 pub const NULL_ACTION: u32 = u32::MAX;

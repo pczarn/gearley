@@ -3,7 +3,7 @@ use cfg::Cfg;
 use cfg::sequence::Separator::Trailing;
 use cfg::Symbol;
 
-use gearley::{Bocage, DefaultGrammar, Recognizer, RecognizerParseExt};
+use gearley::{Bocage, DefaultGrammar, Grammar, Recognizer, RecognizerParseExt};
 use gearley_forest::Evaluate;
 
 struct Eval;
@@ -13,18 +13,15 @@ impl Evaluate for Eval {
 
     fn leaf(&self, terminal: Symbol, _values: u32) -> Self::Elem {
         match terminal.usize() {
-            1 => 1,
-            2 => -1,
+            2 => 1,
+            3 => -1,
             _ => unreachable!(),
         }
     }
 
     fn product<'a>(&self, action: u32, args: impl Iterator<Item = &'a Self::Elem>) -> Self::Elem where Self::Elem: 'a {
-        if action == 0 {
-            args.count() as i32
-        } else {
-            unreachable!()
-        }
+        println!("ACTION {}", action);
+        args.count() as i32
     }
 
     fn nulling<'r>(&self, _symbol: Symbol, _results: &'r mut Vec<Self::Elem>) {
@@ -46,6 +43,8 @@ fn test_sequence() {
     let cfg = DefaultGrammar::from_grammar(external);
     let tokens = &[plus, minus, plus, minus, plus, minus];
     let bocage = Bocage::new(&cfg);
+    assert_eq!(cfg.to_internal(plus).map(|s| s.usize()), Some(2));
+    assert_eq!(cfg.to_internal(minus).map(|s| s.usize()), Some(3));
     let mut recognizer = Recognizer::with_forest(&cfg, bocage);
     assert!(recognizer.parse(tokens).unwrap());
 

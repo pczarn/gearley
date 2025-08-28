@@ -3,5 +3,5 @@ product ::= product ~ "*" ~ factor | product ~ "/" ~ factor | factor;
 factor ::= "(" ~ sum ~ ")" | number;
 
 lexer {
-    number ::= Regexp("[0-9]");
+    number ::= Regexp("[0-9]+");
 }

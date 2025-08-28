@@ -4,7 +4,7 @@ use cfg::Symbol;
 use gearley_forest::Evaluate;
 use simple_bocage::Bocage;
 
-use gearley::{DefaultGrammar, Recognizer, RecognizerParseExt};
+use gearley::{DefaultGrammar, Grammar, Recognizer, RecognizerParseExt};
 
 struct NullingEval(Symbol);
 
@@ -51,8 +51,8 @@ fn test_trivial_grammar() {
 //     test_trivial_grammar!(CompactBocage, SimpleCompactEvaluator);
 // }
 
-macro_rules! test_grammar_with_nulling_intermediate {
-    ($Bocage:ident, $SimpleEvaluator:ident) => {
+#[test]
+fn test_grammar_with_nulling_intermediate() {
         struct NullingIntermediateEval {
             a: Symbol,
             foo: Symbol,
@@ -62,22 +62,25 @@ macro_rules! test_grammar_with_nulling_intermediate {
             type Elem = i32;
 
             fn leaf(&self, terminal: Symbol, _values: u32) -> Self::Elem {
+                println!("LEAF {:?}", terminal);
                 if terminal == self.foo {
                     3
                 } else {
-                    unreachable!()
+                    panic!("terminal {:?} is not {:?}", terminal, self.foo)
                 }
             }
         
             fn nulling<'r>(&self, symbol: Symbol, results: &'r mut Vec<Self::Elem>) {
-                results.push(if symbol == self.a { 1 } else { 2 });
+                println!("NULLING {:?}", symbol);
+                results.push(if symbol == self.a { 10 } else { 100 });
             }
         
             fn product<'a>(&self, action: u32, args: impl Iterator<Item = &'a Self::Elem>) -> Self::Elem where Self::Elem: 'a {
+                print!("PRODUCT {:?}", action);
                 if action == 0 {
                     args.cloned().fold(0, |a, e| a + e)
                 } else {
-                    unreachable!()
+                    panic!("action {}", action)
                 }
             }
         }
@@ -98,18 +101,12 @@ macro_rules! test_grammar_with_nulling_intermediate {
             .rhs([]);
         external.set_roots([start]);
         let cfg = DefaultGrammar::from_grammar(external);
-        let bocage = $Bocage::new(&cfg);
+        let bocage = Bocage::new(&cfg);
         let mut rec = Recognizer::with_forest(&cfg, bocage);
         assert!(rec.parse(&[foo]).unwrap());
         let finished_node = rec.finished_node().expect("exhausted");
-        let results = rec.into_forest().evaluate(NullingIntermediateEval { a, foo }, finished_node);
-        assert_eq!(results, &[10]);
-    };
-}
-
-#[test]
-fn test_grammar_with_nulling_intermediate() {
-    test_grammar_with_nulling_intermediate!(Bocage, SimpleEvaluator);
+        let results = rec.into_forest().evaluate(NullingIntermediateEval { a: cfg.to_internal(a).unwrap(), foo: cfg.to_internal(foo).unwrap() }, finished_node);
+        assert_eq!(results, &[313]);
 }
 
 // #[test]

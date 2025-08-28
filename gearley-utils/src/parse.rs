@@ -3,7 +3,6 @@ use std::fmt::{Debug, Display};
 use cfg::{Cfg, Symbol, SymbolBitSet};
 use cfg_load::advanced::{AdvancedGrammar, LexerMap};
 use gearley_default_grammar::DefaultGrammar;
-use log::trace;
 
 #[cfg(feature = "simple-bocage")]
 use simple_bocage::Bocage;
@@ -13,6 +12,14 @@ use gearley_recognizer::{Recognizer, lookahead::Lookahead};
 
 pub trait RecognizerParseExt {
     fn parse(&mut self, tokens: &[Symbol]) -> Result<bool, ParseError>;
+}
+
+#[cfg(feature = "log")]
+use log::trace;
+#[cfg(not(feature = "log"))]
+macro_rules! trace {
+    ($($tts:tt)*) => {
+    };
 }
 
 #[derive(Debug)]
