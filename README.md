@@ -69,7 +69,7 @@ The goal of gearley is to provide an upgrade to Marpa within a modern programmin
 * elegant
     * the recognizer has a simple design
         * tiny core
-            * only 470 lines of code implementing the core algorithm
+            * only 600 lines of code implementing the core algorithm
         * mathematically elegant
             * uses simple data structures
         * three separate per-token passes

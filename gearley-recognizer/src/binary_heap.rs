@@ -17,13 +17,12 @@ use std::mem::swap;
 
 use gearley_forest::Forest;
 use gearley_grammar::Grammar;
-use gearley_forest::completed_item::CompletedItem;
-use gearley_vec2d::Vec2d;
+use gearley_forest::item::Item;
 
 use crate::local_prelude::*;
 
 #[derive(Debug)]
-pub(super) struct BinaryHeap<T>(pub(super) Vec<T>);
+pub struct BinaryHeap<T>(pub Vec<T>);
 
 impl<G, F, P> Recognizer<G, F, P>
 where
@@ -33,50 +32,33 @@ where
 {
     /// Returns the greatest item in the binary heap, or `None` if it is empty.
     #[inline]
-    pub fn heap_peek(&self) -> Option<CompletedItem<F::NodeRef>> {
-        self.complete.0.get(0).and_then(|&right_item| {
-            self.medial
-                .get_item(right_item.idx as usize)
-                .map(|left_item| CompletedItem {
-                    origin: left_item.origin,
-                    dot: left_item.dot,
-                    left_node: left_item.node,
-                    right_node: right_item.node,
-                })
-        })
+    pub fn heap_peek(&self) -> Option<Item<F::NodeRef>> {
+        self.complete.0.get(0).copied()
     }
 
     #[inline(always)]
-    fn heap_get(&self, idx_idx: usize) -> Option<&Item<F::NodeRef>> {
+    fn heap_get(&self, idx: usize) -> Option<&Item<F::NodeRef>> {
         self.complete.0
-            .get(idx_idx)
-            .and_then(|&item| self.medial.get_item(item.idx as usize))
+            .get(idx)
     }
 
     /// Removes the greatest item from the binary heap and returns it, or `None` if it
     /// is empty.
-    pub fn heap_pop(&mut self) -> Option<CompletedItem<F::NodeRef>> {
-        self.complete.0.pop().and_then(move |mut right_item| {
+    pub fn heap_pop(&mut self) -> Option<Item<F::NodeRef>> {
+        let mut item = self.complete.0.pop();
+        if let Some(ir) = item.as_mut() {
             if !self.complete.0.is_empty() {
-                swap(&mut right_item, &mut self.complete.0[0]);
+                swap(ir, &mut self.complete.0[0]);
                 self.sift_down(0);
             }
-            self.medial
-                .get_item(right_item.idx as usize)
-                .map(|left_item| CompletedItem {
-                    origin: left_item.origin,
-                    dot: left_item.dot,
-                    left_node: left_item.node,
-                    right_node: right_item.node,
-                })
-        })
+        }
+        item
     }
 
     /// Take an element at `pos` and move it down the heap,
     /// while its children are larger.
     fn sift_down_range(&mut self, mut pos: usize, end: usize) {
-        let element_idx = self.complete.0[pos];
-        let element = self.medial.get_item(element_idx.idx as usize).expect("invalid Item index");
+        let element = self.complete.0[pos];
         let mut child = 2 * pos + 1;
         while child < end {
             let right = child + 1;
@@ -85,14 +67,14 @@ where
                 child = right;
             }
             // if we are already in order, stop.
-            if element >= self.heap_get(child).unwrap() {
+            if &element >= self.heap_get(child).unwrap() {
                 break;
             }
             self.complete.0[pos] = self.complete.0[child];
             pos = child;
             child = 2 * pos + 1;
         }
-        self.complete.0[pos] = element_idx;
+        self.complete.0[pos] = element;
     }
 
     fn sift_down(&mut self, pos: usize) {
@@ -177,7 +159,7 @@ where
 //     }
 // }
 
-impl<R> BinaryHeap<CompletedItemLinked<R>> where R: Clone + Copy {
+impl<R> BinaryHeap<Item<R>> where R: Clone + Copy {
     pub(super) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -187,26 +169,25 @@ impl<R> BinaryHeap<CompletedItemLinked<R>> where R: Clone + Copy {
     }
 
     /// Pushes an item onto the binary heap.
-    pub(super) fn heap_push_linked(&mut self, item: CompletedItemLinked<R>, medial: &Vec2d<Item<R>>) {
+    pub(super) fn heap_push(&mut self, item: Item<R>) {
         let old_indices_len = self.0.len();
         self.0.push(item);
-        self.sift_up(0, old_indices_len, medial);
+        self.sift_up(0, old_indices_len);
     }
 
     /// Consumes the `BinaryHeap` and returns a vector in sorted
     /// (ascending) order.
-    fn sift_up(&mut self, start: usize, mut pos: usize, medial: &Vec2d<Item<R>>) {
-        let element_idx = self.0[pos];
-        let element = medial.get_item(element_idx.idx as usize).expect("invalid Item index");
+    fn sift_up(&mut self, start: usize, mut pos: usize) {
+        let element = self.0[pos];
         while pos > start {
             let parent = (pos - 1) / 2;
-            let parent_idx = self.0[parent];
-            if *element <= *medial.get_item(parent_idx.idx as usize).expect("invalid Item index") {
+            let parent_item = self.0[parent];
+            if element <= parent_item {
                 break;
             }
-            self.0[pos] = parent_idx;
+            self.0[pos] = parent_item;
             pos = parent;
         }
-        self.0[pos] = element_idx;
+        self.0[pos] = element;
     }
 }

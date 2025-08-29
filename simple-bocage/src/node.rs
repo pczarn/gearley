@@ -13,10 +13,14 @@ pub enum Node {
         count: u32,
     },
     Product {
-        /// 12+ bytes.
+        /// 8 bytes.
         action: u32,
+        factors: NodeHandle,
+    },
+    Rule {
+        // 8 bytes.
         left_factor: NodeHandle,
-        right_factor: Option<NodeHandle>,
+        right_factor: NodeHandle,
     },
     Leaf {
         /// 8 bytes.

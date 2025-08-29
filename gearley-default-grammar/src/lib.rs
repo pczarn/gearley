@@ -12,7 +12,7 @@ use cfg_symbol::intern::Mapping;
 use cfg::history::earley::{EventAndDistance, EventId, ExternalDottedRule, ExternalOrigin, MinimalDistance, NullingEliminated};
 use cfg::{Cfg, CfgRule, Symbol, SymbolBitSet, SymbolName, SymbolSource};
 
-use gearley_grammar::{ForestInfo, Grammar, MaybePostdot, NullingIntermediateRule, PredictionTransition};
+use gearley_grammar::{ForestInfo, Grammar, NullingIntermediateRule, PredictionTransition};
 use gearley_vec2d::Vec2d;
 
 use log::trace;
@@ -546,14 +546,6 @@ impl Grammar for DefaultGrammar {
     #[inline]
     fn get_rhs1(&self, dot: Dot) -> Option<Symbol> {
         self.columns[1].syms[dot as usize]
-    }
-
-    #[inline]
-    fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot {
-        match self.get_rhs1(dot) {
-            None => MaybePostdot::Unary,
-            Some(rhs1) => MaybePostdot::Binary(rhs1),
-        }
     }
 
     #[inline]

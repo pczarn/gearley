@@ -1,9 +1,5 @@
 use bit_matrix::row::BitSlice;
 
-use cfg_symbol::Symbol;
-use gearley_forest::Forest;
-use gearley_grammar::Grammar;
-
 use crate::local_prelude::*;
 
 pub(super) trait Predict {
@@ -11,18 +7,6 @@ pub(super) trait Predict {
 
     fn clear(&mut self);
 }
-
-// impl<F, G, P> TokenizingRecognizer<G, F, P>
-//     where F: Forest,
-//     G: Grammar,
-//     P: PerfHint,
-// {
-//     /// Makes the current Earley set predict a given symbol.
-//     pub fn predict(&mut self, symbol: Symbol) {
-//         let earleme = self.earleme();
-//         self.main_predicted[earleme].predict(symbol, self.grammar.prediction_row(symbol));
-//     }
-// }
 
 impl Predict for BitSlice {
     fn predict(&mut self, sym: Symbol, source: &BitSlice) {

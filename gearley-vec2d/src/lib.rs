@@ -48,6 +48,10 @@ impl<I> Vec2d<I> {
         self.indices.truncate(new_len + 1);
     }
 
+    pub fn truncate_chart(&mut self, new_len: usize) {
+        self.chart.truncate(new_len);
+    }
+
     #[inline]
     pub fn last(&self) -> &[I] {
         &self.chart[self.indices.last().copied().unwrap()..]

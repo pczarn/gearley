@@ -2,7 +2,7 @@
 use memusage::MemoryReport;
 
 use crate::forest::Forest;
-use crate::completed_item::CompletedItem;
+use crate::item::Item;
 
 /// An empty forest.
 pub struct NullForest;
@@ -20,7 +20,9 @@ impl<S: Copy> Forest<S> for NullForest {
     #[inline(always)]
     fn begin_sum(&mut self) {}
     #[inline(always)]
-    fn push_summand(&mut self, _item: CompletedItem<Self::NodeRef>) {}
+    fn push_summand(&mut self, _item: Item<Self::NodeRef>) {}
+    #[inline(always)]
+    fn product(&mut self, _left_factor: Self::NodeRef, _right_factor: Self::NodeRef) -> Self::NodeRef {}
     #[inline(always)]
     fn sum(&mut self, _lhs_sym: S, _origin: u32) -> Self::NodeRef {
         ()

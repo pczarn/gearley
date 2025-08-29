@@ -24,21 +24,25 @@ impl Bocage {
     pub fn evaluate<E: Evaluate>(&mut self, eval: E, root_node: NodeHandle) -> Vec<E::Elem> {
         // handle sof and eof
         let root_node = match &self[root_node] {
-            Node::Product { left_factor, right_factor, .. } => {
-                match &self[*left_factor] {
-                    &Node::Leaf { symbol, .. } => {
-                        assert_eq!(symbol, self.forest_info.sof);
+            Node::Product { factors, .. } => {
+                match &self[*factors] {
+                    &Node::Rule { left_factor, right_factor } => {
+                        match &self[left_factor] {
+                            &Node::Leaf { symbol, .. } => {
+                                assert_eq!(symbol, self.forest_info.sof);
+                            }
+                            other => panic!("unexpected sof non-leaf node {:?}", other)
+                        }
+                        right_factor
                     }
                     other => {
-                        panic!("unexpected sof non-leaf node {:?}", other)
+                        panic!("unexpected sof non-rule node {:?}", other)
                     }
                 }
-                right_factor.expect("expected inner root")
             }
             _ => root_node
         };
 
-        // let mut all_nodes = vec![];
         let alloc = Bump::new();
         let mut results: Vec<E::Elem> = vec![];
         let mut work_stack = vec![WorkNode { node: NULL_HANDLE, child: 0, parent: 0, results: AVec::new_in(&alloc) }, WorkNode { node: root_node, child: 0, parent: 0, results: AVec::new_in(&alloc) }];
@@ -47,7 +51,7 @@ impl Bocage {
             let mut work = work_stack.pop().unwrap();
             let node = work.node;
             if work.child == 0 {
-                self[work.node] = self.postprocess_product_tree_node(&self[work.node]);
+                self[work.node] = self.postprocess_product_tree_node(self[work.node]);
             }
             match (self[work.node], work.child) {
                 (Node::Sum { count, .. }, n) if n < count => {
@@ -56,19 +60,21 @@ impl Bocage {
                     work_stack.push(work);
                     work_stack.push(WorkNode { node: NodeHandle(node.0 + n + 1), child: 0, parent, results: AVec::new_in(&alloc) });
                 }
-                (Node::Product { left_factor, .. }, 0) => {
+                (Node::Rule {  left_factor, .. }, 0) => {
                     work.child += 1;
+                    let parent = work.parent;
                     work_stack.push(work);
-                    work_stack.push(WorkNode { node: left_factor, child: 0, parent: work_stack.len() - 1, results: AVec::new_in(&alloc) });
+                    work_stack.push(WorkNode { node: left_factor, child: 0, parent, results: AVec::new_in(&alloc) });
                 }
-                (Node::Product { right_factor: Some(right), .. }, 1) => {
+                (Node::Rule { right_factor, .. }, 1) => {
                     work.child += 1;
+                    let parent = work.parent;
                     work_stack.push(work);
-                    work_stack.push(WorkNode { node: right, child: 0, parent: work_stack.len() - 1, results: AVec::new_in(&alloc) });
+                    work_stack.push(WorkNode { node: right_factor, child: 0, parent, results: AVec::new_in(&alloc) });
                 }
-                // (Node::Evaluated { values, .. }, _) => {
-                //     work_stack[work.parent].results.push(values);
-                // }
+                (Node::Rule { .. }, _) => {
+                    // nothing to do
+                }
                 (Node::Sum { .. }, _) => {
                     // nothing to do
                 }
@@ -76,7 +82,11 @@ impl Bocage {
                     let result = eval.leaf(symbol, values);
                     results.push(result);
                     work_stack[work.parent].results.push(results.len() as u32 - 1);
-                    // self[work.node] = Node::Evaluated { symbol, values: results.len() as u32 - 1 }
+                }
+                (Node::Product { factors, .. }, 0) => {
+                    work.child += 1;
+                    work_stack.push(work);
+                    work_stack.push(WorkNode { node: factors, child: 0, parent: work_stack.len() - 1, results: AVec::new_in(&alloc) });
                 }
                 (Node::Product { action, .. }, _) => {
                     let external_origin_opt = if action == NULL_ACTION { None } else { self.forest_info.external_origin(action) };
@@ -95,7 +105,6 @@ impl Bocage {
                     let values = results.len() as u32;
                     eval.nulling(symbol, &mut results);
                     work_stack[work.parent].results.push(values);
-                    // self[work.node] = Node::Evaluated { symbol, values }
                 }
             }
         }

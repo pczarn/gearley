@@ -14,12 +14,6 @@ pub struct PredictionTransition {
     pub is_unary: bool,
 }
 
-#[derive(Eq, PartialEq, Ord, PartialOrd)]
-pub enum MaybePostdot {
-    Binary(Symbol),
-    Unary,
-}
-
 pub type NullingIntermediateRule = [Symbol; 3];
 
 pub trait Grammar {
@@ -50,8 +44,6 @@ pub trait Grammar {
     fn trace(&self) -> [&[ExternalDottedRule]; 3];
 
     fn get_rhs1(&self, dot: Dot) -> Option<Symbol>;
-
-    fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot;
 
     fn rhs1(&self) -> &[Option<Symbol>];
 
@@ -131,10 +123,6 @@ impl<'a, G> Grammar for &'a G where G: Grammar {
 
     fn get_rhs1(&self, dot: Dot) -> Option<Symbol> {
         (**self).get_rhs1(dot)
-    }
-
-    fn get_rhs1_cmp(&self, dot: Dot) -> MaybePostdot {
-        (**self).get_rhs1_cmp(dot)
     }
 
     fn rhs1(&self) -> &[Option<Symbol>] {

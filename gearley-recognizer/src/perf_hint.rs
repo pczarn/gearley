@@ -1,11 +1,7 @@
 use std::{cmp, mem};
 
-use cfg_symbol::Symbol;
+use crate::local_prelude::*;
 use gearley_vec2d::Vec2dCapacity;
-
-use gearley_forest::completed_item::CompletedItem;
-
-use super::item::Item;
 
 const ITEMS_PER_SET: usize = 16;
 const DEFAULT_TOKEN_LIMIT: usize = 64;
@@ -70,7 +66,7 @@ impl DefaultPerfHint {
         self.memory_limit as isize
             - self.forest_use() as isize
             - (self.indices_capacity() * mem::size_of::<usize>()) as isize
-            - (self.completion_capacity() * mem::size_of::<CompletedItem<usize>>()) as isize
+            - (self.completion_capacity() * mem::size_of::<Item<usize>>()) as isize
     }
 
     fn set_use(&self) -> usize {

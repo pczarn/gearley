@@ -11,7 +11,7 @@ where
     P: PerfHint,
 {
     pub fn trace(&self) -> impl Iterator<Item = (ExternalDottedRule, usize)> + use<'_, F, G, P> {
-        let [trace_predict, trace0, trace1] = self.grammar.trace();
+        let [trace_predict, trace0, _trace1] = self.grammar.trace();
         self.predicted_symbols().map(|sym| (trace_predict[sym.usize()], self.earleme())).chain(self.medial_items().map(|item| (trace0[item.dot as usize], item.origin as usize)))
     }
 

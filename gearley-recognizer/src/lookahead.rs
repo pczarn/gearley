@@ -1,5 +1,4 @@
-use cfg_symbol::Symbol;
-use gearley_grammar::Grammar;
+use crate::local_prelude::*;
 
 pub trait Lookahead {
     fn sym(&self) -> Option<Symbol>;
