@@ -357,7 +357,7 @@ impl DefaultGrammar {
 
     fn populate_lr_sets(&mut self, grammar: &Cfg) {
         let syms = self.size.syms + self.size.gensyms;
-        let mut follow_matrix = BitMatrix::new(syms * 2, syms);
+        let mut follow_matrix = BitMatrix::new(syms, syms);
         let mut first_matrix = BitMatrix::new(syms, syms);
         let first_sets = FirstSets::new(grammar);
         for (outer, inner) in first_sets.predict_sets() {
@@ -474,14 +474,15 @@ impl Grammar for DefaultGrammar {
         self.eof_sym
     }
 
-    fn lr_set(&self, dot: Dot) -> &BitSlice {
-        match self.get_rhs1(dot) {
-            Some(rhs1) => {
-                &self.lr_sets[rhs1.usize() * 2]
-            }
-            None => {
-                &self.lr_sets[self.get_lhs(dot).usize() * 2 + 1]
-            }
+    fn lhs_lr_set(&self, dot: Dot) -> &BitSlice {
+        &self.lr_sets[self.get_lhs(dot).usize() * 2 + 1]
+    }
+
+    fn lookahead_set(&self, dot: Dot) -> &BitSlice {
+        if let Some(rhs1) = self.get_rhs1(dot) {
+            &self.lr_sets[rhs1.usize() * 2]
+        } else {
+            &self.lr_sets[self.get_lhs(dot).usize() * 2 + 1]
         }
     }
 

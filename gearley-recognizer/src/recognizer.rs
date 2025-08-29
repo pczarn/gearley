@@ -218,16 +218,10 @@ where
             // | A B | C D | G H |
             //   P0    P1    Px
             // ------------------------------
-            // let (mut body, mut tail) = self.predicted.split_at_mut(self.earleme());
-            // for (dst, src) in body[new_earleme].iter_blocks_mut().zip(tail[0].iter_blocks_mut()) {
-            //     *dst = *src;
-            // }
-            // self.predicted[new_earleme].clear()
             self.predicted.truncate(new_earleme + 1);
             self.medial.truncate(new_earleme + 1);
             debug_assert_eq!(self.medial.len(), new_earleme + 2);
             debug_assert_eq!(self.earleme(), new_earleme);
-            // earleme == new_earleme - 2
         }
     }
 
@@ -387,10 +381,8 @@ impl<G, F, P> Recognizer<G, F, P>
             // from A ::= B • C
             // to   A ::= B   C •
             let mut item = self.medial[set_id as usize][idx];
-            // let will_be_useful = self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lr_set(dot)[sym.usize()]);
+            // let will_be_useful = self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lhs_lr_set(item.dot)[sym.usize()]);
             let will_be_useful = true;
-            // trace!("dot: {:?}", dot);
-            // trace!("will_be_useful: {:?}", will_be_useful);
             if will_be_useful {
                 item.node = self.forest.product(item.node, rhs_link);
                 self.complete.heap_push(item);
@@ -403,7 +395,8 @@ impl<G, F, P> Recognizer<G, F, P>
         let mut binary = self.medial.last().len();
         for trans in self.grammar.completions(sym) {
             let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
-            let will_be_useful = true;//self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lr_set(trans.dot)[sym.usize()]);
+            // let will_be_useful = self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lookahead_set(trans.dot)[sym.usize()]);
+            let will_be_useful = true;
             if was_predicted && will_be_useful {
                 // No checks for uniqueness, because completions are deduplicated.
                 // --- UNARY
