@@ -4,8 +4,6 @@ use cfg::{Cfg, Symbol, SymbolBitSet};
 use cfg_load::advanced::{AdvancedGrammar, LexerMap};
 use gearley_default_grammar::DefaultGrammar;
 
-#[cfg(feature = "simple-bocage")]
-use simple_bocage::Bocage;
 use gearley_forest::NullForest;
 use gearley_grammar::Grammar;
 use gearley_recognizer::{Recognizer, lookahead::Lookahead};
@@ -61,7 +59,48 @@ impl Display for ParseError {
 }
 
 #[cfg(feature = "simple-bocage")]
-impl<G> RecognizerParseExt for Recognizer<G, Bocage>
+impl<G> RecognizerParseExt for Recognizer<G, simple_bocage::Bocage>
+where
+    Self: Debug,
+    G: Grammar,
+{
+    #[inline]
+    fn parse(&mut self, tokens: &[Symbol]) -> Result<bool, ParseError> {
+        self.begin_earleme();
+        self.scan(self.grammar().sof(), 0);
+        if !self.end_earleme() {
+            return Err(ParseError::Parse { msg: "failed to read SOF", tokens: vec![self.grammar().sof()], i: 0 });
+        }
+        let mut iter = tokens.iter().enumerate().peekable();
+        while let Some((i, &token)) = iter.next() {
+            self.begin_earleme();
+            if let Some((_i, t)) = iter.peek() {
+                trace!("utils.lookahead_set_hint: {:?}", **t);
+                let s = self.grammar().to_internal(**t).unwrap();
+                self.lookahead().set_hint(s);
+            } else {
+                trace!("utils.lookahead_clear_hint: None null");
+                self.lookahead().clear_hint();
+            }
+            self.scan(self.grammar().to_internal(token).unwrap(), i as u32);
+            if !self.end_earleme() {
+                return Err(ParseError::Parse { msg: "failed to parse", tokens: vec![token], i })
+            }
+        }
+        // self.begin_earleme();
+        // self.scan(self.grammar().eof(), 0);
+        // if !self.end_earleme() {
+        //     return Err(ParseError::Parse { msg: "failed to read EOF", token: self.grammar().eof(), i: 0 });
+        // }
+
+        trace!("utils.finished: {:?}", &*self);
+
+        Ok(self.is_finished())
+    }
+}
+
+#[cfg(feature = "compact-bocage")]
+impl<G> RecognizerParseExt for Recognizer<G, compact_bocage::Bocage>
 where
     Self: Debug,
     G: Grammar,
@@ -152,7 +191,7 @@ impl<G> RecognizerParseExt for Recognizer<G, NullForest> where
 }
 
 pub fn parse_terminal_list<'a>(cfg: Cfg, grammar: DefaultGrammar, terminal_list: impl Iterator<Item = &'a str>) -> Result<bool, ParseError> {
-    let mut recognizer = Recognizer::with_forest(&grammar, Bocage::new(&grammar));
+    let mut recognizer = Recognizer::with_forest(&grammar, simple_bocage::Bocage::new(&grammar));
     let name_map = cfg.sym_source().name_map();
     let mut tokens = vec![];
     for word in terminal_list {
@@ -174,7 +213,7 @@ pub fn parse_terminal_list<'a>(cfg: Cfg, grammar: DefaultGrammar, terminal_list:
 
 pub fn parse_tokenizing(mut loaded: AdvancedGrammar, grammar: DefaultGrammar, input: &str) -> Result<bool, ParseError> {
     loaded.lexer_map.compute();
-    let mut recognizer = Recognizer::with_forest(&grammar, Bocage::new(&grammar));
+    let mut recognizer = Recognizer::with_forest(&grammar, simple_bocage::Bocage::new(&grammar));
 
     recognizer.begin_earleme();
     recognizer.scan(recognizer.grammar().sof(), 0);

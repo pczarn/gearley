@@ -11,6 +11,10 @@ impl NodeHandle {
         NodeHandle(symbol.usize() as u32)
     }
 
+    pub fn mul(self) -> Self {
+        NodeHandle(self.0 * 9)
+    }
+
     #[inline]
     pub fn usize(self) -> usize {
         self.0 as usize

@@ -1,10 +1,10 @@
-use std::cell::Cell;
+use cfg_symbol::Symbol;
 
-use cfg::symbol::Symbol;
+use crate::node::Node;
 
-pub trait Order {
+pub trait Order<S> {
     /// Apply the order to sum node alternatives.
-    fn sum<'b>(&mut self, alternatives: &'b [Cell<u16>]) -> &'b [Cell<u16>] {
+    fn sum<'b>(&mut self, alternatives: &'b [Node]) -> &'b [Node] {
         alternatives
     }
 
@@ -17,7 +17,7 @@ pub trait Order {
 #[derive(Default)]
 pub struct NullOrder;
 
-impl Order for NullOrder {}
+impl<S> Order<S> for NullOrder {}
 
 impl NullOrder {
     pub fn new() -> Self {

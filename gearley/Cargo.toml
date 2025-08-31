@@ -16,12 +16,13 @@ name = "gearley"
 [dependencies]
 cfg-symbol = { workspace = true }
 bit-matrix = { workspace = true }
-bit-vec = "0.6"
+bit-vec = "0.8"
 gearley-forest = { path = "../gearley-forest/" }
 gearley-grammar = { path = "../gearley-grammar/" }
 gearley-recognizer = { path = "../gearley-recognizer/" }
 gearley-default-grammar = { path = "../gearley-default-grammar/", optional = true }
 simple-bocage = { path = "../simple-bocage/", optional = true }
+compact-bocage = { path = "../compact-bocage/", optional = true }
 gearley-utils = { path = "../gearley-utils/" }
 cap = { version = "0.1", optional = true }
 
@@ -38,9 +39,10 @@ serde = "1.0"
 serde_json = "1.0"
 
 [features]
-default = ["gearley-default-grammar", "simple-bocage"]
+default = ["gearley-default-grammar", "simple-bocage", "compact-bocage"]
 test-serde = ["gearley-default-grammar/serde"]
 simple-bocage = ["dep:simple-bocage"]
+compact-bocage = ["dep:compact-bocage", "gearley-utils/compact-bocage"]
 gearley-default-grammar = ["dep:gearley-default-grammar"]
 log = ["gearley-recognizer/log"]
 nightly = []

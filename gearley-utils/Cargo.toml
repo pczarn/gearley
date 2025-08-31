@@ -13,6 +13,7 @@ cfg = { workspace = true }
 cfg-grammar = { version = "0.0.1", path = "../../cfg/cfg-grammar/" }
 cfg-sequence = { version = "0.0.1", path = "../../cfg/cfg-sequence/" }
 simple-bocage = { path = "../simple-bocage/", optional = true }
+compact-bocage = { path = "../compact-bocage/", optional = true }
 cfg-load = { path = "../../cfg/cfg-load/", version = "0.0.1" }
 
 [dev-dependencies]

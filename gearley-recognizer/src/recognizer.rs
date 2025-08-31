@@ -129,6 +129,7 @@ where
     /// tokens, the parse can be advanced.
     pub fn scan(&mut self, symbol: Symbol, value: F::LeafValue) {
         // This method is a part of the scan pass.
+        debug_assert_ne!(self.earleme(), !0);
         let earleme = self.earleme() as Origin;
         let value_cp = value.clone();
         // Add a leaf node to the forest with the given value.
@@ -268,7 +269,7 @@ where
     ///
     /// Panics when the parse has not finished at the current location.
     pub fn finished_node(&self) -> Option<F::NodeRef> {
-        if self.grammar.has_trivial_derivation() && self.earleme() == 0 {
+        if self.grammar.has_trivial_derivation() && self.earleme() == !0 {
             Some(self.forest.nulling(self.grammar.externalized_start_sym()))
         } else {
             let has_dot_before_eof = |item: &&Item<_>| item.dot == self.grammar.dot_before_eof();
@@ -294,7 +295,7 @@ where
 
     /// Returns the current location number.
     pub fn earleme(&self) -> usize {
-        self.medial.len().saturating_sub(2)
+        self.medial.len().wrapping_sub(2)
     }
 
     pub fn into_forest(self) -> F {
@@ -372,15 +373,14 @@ impl<G, F, P> Recognizer<G, F, P>
         };
 
         // The range contains items that have the same RHS1 symbol.
-        let inner_end = specific_set[inner_start..]
+        let item_iter = specific_set[inner_start..]
             .iter()
             .take_while(|ei| self.grammar.get_rhs1(ei.dot) == Some(sym))
-            .count();
-        for idx in inner_start .. inner_start + inner_end {
+            .copied();
+        for mut item in item_iter {
             // New completed item.
             // from A ::= B • C
             // to   A ::= B   C •
-            let mut item = self.medial[set_id as usize][idx];
             // let will_be_useful = self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lhs_lr_set(item.dot)[sym.usize()]);
             let will_be_useful = true;
             if will_be_useful {
