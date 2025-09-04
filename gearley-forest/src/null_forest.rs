@@ -21,7 +21,12 @@ impl<S: Copy> Forest<S> for NullForest {
     #[inline(always)]
     fn push_summand(&mut self, _item: Item<Self::NodeRef>) {}
     #[inline(always)]
-    fn product(&mut self, _left_factor: Self::NodeRef, _right_factor: Self::NodeRef) -> Self::NodeRef {}
+    fn product(
+        &mut self,
+        _left_factor: Self::NodeRef,
+        _right_factor: Self::NodeRef,
+    ) -> Self::NodeRef {
+    }
     #[inline(always)]
     fn sum(&mut self, _lhs_sym: S, _origin: u32) -> Self::NodeRef {
         ()

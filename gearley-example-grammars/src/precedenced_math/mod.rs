@@ -6,14 +6,23 @@ use cfg::SymbolSource;
 use gearley_forest::Evaluate;
 
 pub(crate) static BNF: &'static str = include_str!("grammar.panini");
-pub(crate) static INPUTS: &'static [&'static str] = &[
-    include_str!("example.txt"),
-    include_str!("example2.txt")
-];
+pub(crate) static INPUTS: &'static [&'static str] =
+    &[include_str!("example.txt"), include_str!("example2.txt")];
 
 pub fn grammar() -> Cfg {
     let mut bnf = Cfg::new();
-    let [sum, product, factor, number, plus, minus, mul, div, lparen, rparen] = bnf.sym();
+    let [
+        sum,
+        product,
+        factor,
+        number,
+        plus,
+        minus,
+        mul,
+        div,
+        lparen,
+        rparen,
+    ] = bnf.sym();
     bnf.rule(sum)
         .rhs([sum, plus, product])
         .rhs([sum, minus, product])
@@ -42,11 +51,15 @@ impl Evaluate for Evaluator {
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9][terminal.usize()]
     }
 
-    fn product<'a>(&self, action: u32, mut args: impl Iterator<Item = &'a Self::Elem>) -> Self::Elem {
+    fn product<'a>(
+        &self,
+        action: u32,
+        mut args: impl Iterator<Item = &'a Self::Elem>,
+    ) -> Self::Elem {
         let a0 = args.next().copied().unwrap_or(!0);
         let a1 = args.next().copied().unwrap_or(!0);
         let a2 = args.next().copied().unwrap_or(!0);
-    
+
         match action {
             0 => a0 + a2,
             1 => a0 - a2,
@@ -72,14 +85,16 @@ impl Evaluate for Evaluator {
 
 pub fn tokenize(input: &str) -> Vec<Symbol> {
     const CHARS: &'static str = "+-*/()0123456789";
-    let syms = SymbolSource::<NonZero<u32>>::generate_fresh().take(CHARS.len()).collect::<Vec<_>>();
+    let syms = SymbolSource::<NonZero<u32>>::generate_fresh()
+        .take(CHARS.len())
+        .collect::<Vec<_>>();
     let mut result = vec![];
     for input_ch in input.chars() {
         match CHARS.find(input_ch) {
             Some(pos) => {
                 result.push(syms[pos + 4]);
             }
-            None => panic!()
+            None => panic!(),
         }
     }
     result

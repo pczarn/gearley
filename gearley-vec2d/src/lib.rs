@@ -1,7 +1,10 @@
 use std::ops;
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "miniserde", derive(miniserde::Serialize, miniserde::Deserialize))]
+#[cfg_attr(
+    feature = "miniserde",
+    derive(miniserde::Serialize, miniserde::Deserialize)
+)]
 #[derive(Clone, Debug)]
 pub struct Vec2d<I> {
     chart: Vec<I>,
@@ -40,9 +43,13 @@ impl<I> Vec2d<I> {
 
     /// Truncates the sets such that `new_len` sets remain,
     /// and the set at `self[new_len]` becomes the in-progress set.
-    pub fn truncate(&mut self, new_len: usize) where I: Copy {
+    pub fn truncate(&mut self, new_len: usize)
+    where
+        I: Copy,
+    {
         let new_medial_start = self.indices[new_len];
-        self.chart.copy_within(self.indices.last().unwrap().., new_medial_start as usize);
+        self.chart
+            .copy_within(self.indices.last().unwrap().., new_medial_start as usize);
         self.chart
             .truncate(self.chart.len() + new_medial_start as usize - self.indices.last().unwrap());
         self.indices.truncate(new_len + 1);
@@ -109,7 +116,7 @@ impl<I> ops::Index<usize> for Vec2d<I> {
     type Output = [I];
 
     fn index(&self, index: usize) -> &Self::Output {
-        &self.chart[self.indices[index] .. self.indices[index + 1]]
+        &self.chart[self.indices[index]..self.indices[index + 1]]
     }
 }
 

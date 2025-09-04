@@ -11,6 +11,7 @@ const FOREST_BYTES_PER_RECOGNIZER_BYTE: usize = 2;
 // TODO: rename (to PerformanceHint??)
 
 pub trait PerfHint {
+    const LOOKAHEAD: bool;
     type Symbol;
     fn completion_capacity(&self) -> usize;
     fn medial_capacity(&self) -> Vec2dCapacity;
@@ -41,7 +42,11 @@ impl DefaultPerfHint {
         }
     }
 
-    pub fn with_token_count_and_num_syms(memory_limit: usize, token_count: usize, num_syms: usize) -> Self {
+    pub fn with_token_count_and_num_syms(
+        memory_limit: usize,
+        token_count: usize,
+        num_syms: usize,
+    ) -> Self {
         Self {
             memory_limit,
             token_limit: Some(token_count),
@@ -59,7 +64,8 @@ impl DefaultPerfHint {
     }
 
     fn forest_use(&self) -> usize {
-        self.memory_limit * FOREST_BYTES_PER_RECOGNIZER_BYTE / (FOREST_BYTES_PER_RECOGNIZER_BYTE + 1)
+        self.memory_limit * FOREST_BYTES_PER_RECOGNIZER_BYTE
+            / (FOREST_BYTES_PER_RECOGNIZER_BYTE + 1)
     }
 
     fn chart_use(&self) -> isize {
@@ -75,6 +81,7 @@ impl DefaultPerfHint {
 }
 
 impl PerfHint for DefaultPerfHint {
+    const LOOKAHEAD: bool = false;
     type Symbol = Symbol;
 
     fn completion_capacity(&self) -> usize {
@@ -93,5 +100,3 @@ impl PerfHint for DefaultPerfHint {
         }
     }
 }
-
-

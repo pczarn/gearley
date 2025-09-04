@@ -192,7 +192,7 @@
 //             //   _________diff = 2
 //             //       ____drop = 1
 //             //           ^ self.earleme = 2
-//             // 
+//             //
 //             //   ^ new_earleme = 0
 //             // | 0 | 1 | 2 |
 //             self.predicted[new_earleme + 1].clear();

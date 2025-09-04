@@ -16,7 +16,8 @@ pub trait Forest<S = Symbol> {
 
     fn sum(&mut self, lhs_sym: S, origin: u32) -> Self::NodeRef;
 
-    fn product(&mut self, left_factor: Self::NodeRef, right_factor: Self::NodeRef) -> Self::NodeRef;
+    fn product(&mut self, left_factor: Self::NodeRef, right_factor: Self::NodeRef)
+        -> Self::NodeRef;
 
     fn leaf(&mut self, token: S, pos: u32, value: u32) -> Self::NodeRef;
 

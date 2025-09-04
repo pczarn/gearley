@@ -1,8 +1,8 @@
 use std::ops::{Index, IndexMut};
 
 use cfg_symbol::{Symbol, SymbolSource};
-use gearley_forest::{item::Item, node_handle::NodeHandle};
 use gearley_forest::Forest;
+use gearley_forest::{item::Item, node_handle::NodeHandle};
 use gearley_grammar::{ForestInfo, Grammar};
 
 use crate::node::{Node, NULL_ACTION};
@@ -35,19 +35,21 @@ impl Bocage {
         let nulling_leaf_count = self.nulling_symbol_count();
         // Ensure that `max` is not ridiculously large.
         assert!(nulling_leaf_count < (1 << 20), "invalid nullable symbol");
-        self.graph.extend(SymbolSource::generate_fresh().take(nulling_leaf_count + 1).map(|symbol| {
-            Node::NullingLeaf {
-                symbol,
-            }
-        }));
+        self.graph.extend(
+            SymbolSource::generate_fresh()
+                .take(nulling_leaf_count + 1)
+                .map(|symbol| Node::NullingLeaf { symbol }),
+        );
         for &[lhs, rhs0, rhs1] in &self.forest_info.nulling_intermediate_rules {
             println!("RULE_NULLING at {:?}", lhs);
-            self.graph.push(Node::Rule { left_factor: NodeHandle::nulling(rhs0),
-                    right_factor: NodeHandle::nulling(rhs1) });
+            self.graph.push(Node::Rule {
+                left_factor: NodeHandle::nulling(rhs0),
+                right_factor: NodeHandle::nulling(rhs1),
+            });
             let factors = NodeHandle(self.graph.len() as u32 - 1);
             self.graph[NodeHandle::nulling(lhs).usize()] = Node::Product {
-                    factors,
-                    action: NULL_ACTION,
+                factors,
+                action: NULL_ACTION,
             };
         }
     }
@@ -76,12 +78,12 @@ impl Bocage {
     #[inline]
     pub(crate) fn postprocess_product_tree_node(&mut self, node: Node) -> Node {
         println!("POSTPROCESS {:?} {:?}", node, self.forest_info);
-        if let Node::Product {
-            factors,
-            action,
-        } = node
-        {
-            if let Node::Rule { left_factor, right_factor } = self[factors] {
+        if let Node::Product { factors, action } = node {
+            if let Node::Rule {
+                left_factor,
+                right_factor,
+            } = self[factors]
+            {
                 return node;
             }
             if action == NULL_ACTION {
@@ -121,18 +123,23 @@ impl Forest for Bocage {
 
     #[inline]
     fn push_summand(&mut self, item: Item<Self::NodeRef>) {
-        self.graph.push(
-            Node::Product {
-                action: item.dot,
-                factors: item.node,
-            }
-        );
+        self.graph.push(Node::Product {
+            action: item.dot,
+            factors: item.node,
+        });
         self.summand_count += 1;
     }
 
     #[inline]
-    fn product(&mut self, left_factor: Self::NodeRef, right_factor: Self::NodeRef) -> Self::NodeRef {
-        self.graph.push(Node::Rule { left_factor, right_factor });
+    fn product(
+        &mut self,
+        left_factor: Self::NodeRef,
+        right_factor: Self::NodeRef,
+    ) -> Self::NodeRef {
+        self.graph.push(Node::Rule {
+            left_factor,
+            right_factor,
+        });
         NodeHandle(self.graph.len() as u32 - 1)
     }
 
@@ -162,12 +169,10 @@ impl Forest for Bocage {
     #[inline]
     fn leaf(&mut self, token: Symbol, _pos: u32, value: u32) -> Self::NodeRef {
         let result = NodeHandle(self.graph.len() as u32);
-        self.graph.push(
-            Node::Leaf {
-                symbol: token,
-                values: value,
-            }
-        );
+        self.graph.push(Node::Leaf {
+            symbol: token,
+            values: value,
+        });
         result
     }
 

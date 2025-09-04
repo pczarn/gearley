@@ -1,8 +1,10 @@
 use bit_matrix::row::BitSlice;
 use cfg_symbol::Symbol;
-use miniserde::{Serialize, Deserialize};
+use miniserde::{Deserialize, Serialize};
 
-pub use cfg_history::earley::{EventAndDistance, ExternalDottedRule, NullingEliminated, ExternalOrigin};
+pub use cfg_history::earley::{
+    EventAndDistance, ExternalDottedRule, ExternalOrigin, NullingEliminated,
+};
 
 type Dot = u32;
 
@@ -23,7 +25,7 @@ pub trait Grammar {
 
     fn lhs_lr_set(&self, symbol: Symbol) -> &BitSlice;
 
-    fn lookahead_set(&self, symbol: Symbol) -> &BitSlice;
+    fn lookahead_set(&self, dot: Dot) -> &BitSlice;
 
     fn rhs1_or_lhs(&self, dot: Dot) -> Symbol;
 
@@ -72,7 +74,10 @@ pub trait Grammar {
     fn forest_info(&self) -> ForestInfo;
 }
 
-impl<'a, G> Grammar for &'a G where G: Grammar {
+impl<'a, G> Grammar for &'a G
+where
+    G: Grammar,
+{
     fn sof(&self) -> Symbol {
         (**self).sof()
     }
@@ -85,8 +90,8 @@ impl<'a, G> Grammar for &'a G where G: Grammar {
         (**self).lhs_lr_set(symbol)
     }
 
-    fn lookahead_set(&self, symbol: Symbol) -> &BitSlice {
-        (**self).lookahead_set(symbol)   
+    fn lookahead_set(&self, dot: Dot) -> &BitSlice {
+        (**self).lookahead_set(dot)
     }
 
     fn rhs1_or_lhs(&self, dot: Dot) -> Symbol {
@@ -182,7 +187,6 @@ impl<'a, G> Grammar for &'a G where G: Grammar {
     }
 }
 
-
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Serialize, Deserialize, Clone, Default, Debug)]
 pub struct ForestInfo {
@@ -196,7 +200,10 @@ pub struct ForestInfo {
 
 impl ForestInfo {
     pub fn max_nulling_symbol(&self) -> Option<usize> {
-        self.nulling_eliminated.iter().flatten().map(|&(sym, _dir)| sym.usize())
+        self.nulling_eliminated
+            .iter()
+            .flatten()
+            .map(|&(sym, _dir)| sym.usize())
             .chain(
                 self.nulling_intermediate_rules
                     .iter()

@@ -50,7 +50,8 @@ fn test_recognize_gensym() {
         .rule(c)
         .rhs([])
         .rhs([e])
-        .rule(b).rhs([e]);
+        .rule(b)
+        .rhs([e]);
     external.set_roots([start]);
     let cfg = DefaultGrammar::from_grammar(external);
     let mut rec = Recognizer::with_forest(&cfg, NullForest);

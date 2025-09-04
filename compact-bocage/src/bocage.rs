@@ -1,6 +1,6 @@
 use cfg_symbol::{Symbol, SymbolSource};
-use gearley_forest::{item::Item, node_handle::NodeHandle};
 use gearley_forest::Forest;
+use gearley_forest::{item::Item, node_handle::NodeHandle};
 use gearley_grammar::{ForestInfo, Grammar};
 
 use crate::graph::Graph;
@@ -38,33 +38,43 @@ impl Bocage {
         let nulling_leaf_count = self.nulling_symbol_count();
         // Ensure that `max` is not ridiculously large.
         assert!(nulling_leaf_count < (1 << 20), "invalid nullable symbol");
-        let mut nulling: Vec<_> = SymbolSource::generate_fresh().take(nulling_leaf_count + 1).map(|symbol| {
-            Node::NullingLeaf {
-                symbol,
-            }
-        }).collect();
+        let mut nulling: Vec<_> = SymbolSource::generate_fresh()
+            .take(nulling_leaf_count + 1)
+            .map(|symbol| Node::NullingLeaf { symbol })
+            .collect();
         for &[lhs, rhs0, rhs1] in &self.forest_info.nulling_intermediate_rules {
             println!("RULE_NULLING at {:?}", lhs);
-            nulling.push(Node::Rule { left_factor: NodeHandle::nulling(rhs0),
-                    right_factor: NodeHandle::nulling(rhs1) });
+            nulling.push(Node::Rule {
+                left_factor: NodeHandle::nulling(rhs0),
+                right_factor: NodeHandle::nulling(rhs1),
+            });
             let factors = NodeHandle(nulling.len() as u32 - 1);
             nulling[NodeHandle::nulling(lhs).usize()] = Node::Product {
-                    factors,
-                    action: NULL_ACTION,
+                factors,
+                action: NULL_ACTION,
             };
         }
         for node in nulling {
             match node {
                 Node::Product { action, factors } => {
-                    self.graph.push_expanded(Node::Product { action, factors: factors.mul() });
+                    self.graph.push_expanded(Node::Product {
+                        action,
+                        factors: factors.mul(),
+                    });
                 }
-                Node::Rule { left_factor, right_factor } => {
-                    self.graph.push_expanded(Node::Rule { left_factor: left_factor.mul(), right_factor: right_factor.mul() });
+                Node::Rule {
+                    left_factor,
+                    right_factor,
+                } => {
+                    self.graph.push_expanded(Node::Rule {
+                        left_factor: left_factor.mul(),
+                        right_factor: right_factor.mul(),
+                    });
                 }
                 Node::NullingLeaf { .. } => {
                     self.graph.push_expanded(node);
                 }
-                _ => unreachable!()
+                _ => unreachable!(),
             }
         }
         self.nulling_limit = self.graph.len();
@@ -93,12 +103,12 @@ impl Bocage {
 
     #[inline]
     pub(crate) fn postprocess_product_tree_node(&mut self, node: Node) -> Node {
-        if let Node::Product {
-            factors,
-            action,
-        } = node
-        {
-            if let Node::Rule { left_factor, right_factor } = self.get(factors) {
+        if let Node::Product { factors, action } = node {
+            if let Node::Rule {
+                left_factor,
+                right_factor,
+            } = self.get(factors)
+            {
                 return node;
             }
             if action == NULL_ACTION {
@@ -144,19 +154,24 @@ impl Forest for Bocage {
 
     #[inline]
     fn push_summand(&mut self, item: Item<Self::NodeRef>) {
-        self.graph.push(
-            Node::Product {
-                action: item.dot,
-                factors: item.node,
-            }
-        );
+        self.graph.push(Node::Product {
+            action: item.dot,
+            factors: item.node,
+        });
         self.num_summands += 1;
     }
 
     #[inline]
-    fn product(&mut self, left_factor: Self::NodeRef, right_factor: Self::NodeRef) -> Self::NodeRef {
+    fn product(
+        &mut self,
+        left_factor: Self::NodeRef,
+        right_factor: Self::NodeRef,
+    ) -> Self::NodeRef {
         let result = NodeHandle(self.graph.len());
-        self.graph.push(Node::Rule { left_factor, right_factor });
+        self.graph.push(Node::Rule {
+            left_factor,
+            right_factor,
+        });
         result
     }
 
@@ -175,12 +190,10 @@ impl Forest for Bocage {
     #[inline]
     fn leaf(&mut self, token: Symbol, _pos: u32, value: u32) -> Self::NodeRef {
         let result = NodeHandle(self.graph.len());
-        self.graph.push(
-            Node::Leaf {
-                symbol: token,
-                values: value,
-            }
-        );
+        self.graph.push(Node::Leaf {
+            symbol: token,
+            values: value,
+        });
         result
     }
 

@@ -1,8 +1,8 @@
 use core::panic;
 
 use cfg::Cfg;
-use gearley::{DefaultGrammar, Forest, Recognizer};
 use gearley::utils::RecognizerParseExt;
+use gearley::{DefaultGrammar, Forest, Recognizer};
 
 #[test]
 fn test_leo() {
@@ -19,7 +19,15 @@ fn test_leo() {
     let cfg = DefaultGrammar::from_grammar(external);
     let mut rec = Recognizer::with_forest(&cfg, InstrBocage::new());
     assert!(rec.parse(&[rep, rep, rep, rep]).unwrap());
-    assert_eq!(rec.into_forest(), InstrBocage { num_sums: 18, num_leaves: 5, num_products: 10, num_summands: 18 });
+    assert_eq!(
+        rec.into_forest(),
+        InstrBocage {
+            num_sums: 18,
+            num_leaves: 5,
+            num_products: 10,
+            num_summands: 18
+        }
+    );
 }
 
 #[derive(Default, Debug, Eq, PartialEq)]
@@ -52,7 +60,11 @@ impl Forest for InstrBocage {
         //
     }
 
-    fn product(&mut self, left_factor: Self::NodeRef, right_factor: Self::NodeRef) -> Self::NodeRef {
+    fn product(
+        &mut self,
+        left_factor: Self::NodeRef,
+        right_factor: Self::NodeRef,
+    ) -> Self::NodeRef {
         self.num_products += 1;
     }
 

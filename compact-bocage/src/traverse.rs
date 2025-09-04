@@ -7,8 +7,8 @@ use gearley_forest::node_handle::{NodeHandle, NULL_HANDLE};
 
 use allocator_api2::vec::Vec as AVec;
 
-use crate::node::{Node, NULL_ACTION};
 use crate::bocage::Bocage;
+use crate::node::{Node, NULL_ACTION};
 
 struct WorkNode<'a> {
     node: NodeHandle,
@@ -32,51 +32,68 @@ impl Bocage {
         // }
         // handle sof and eof
         let root_node = match self.get(root_node) {
-            Node::Product { factors, .. } => {
-                match self.get(factors) {
-                    Node::Rule { left_factor, right_factor } => {
-                        match self.get(left_factor) {
-                            Node::Leaf { symbol, .. } => {
-                                assert_eq!(symbol, self.forest_info.sof);
-                            }
-                            other => panic!("unexpected sof non-leaf node {:?}", other)
+            Node::Product { factors, .. } => match self.get(factors) {
+                Node::Rule {
+                    left_factor,
+                    right_factor,
+                } => {
+                    match self.get(left_factor) {
+                        Node::Leaf { symbol, .. } => {
+                            assert_eq!(symbol, self.forest_info.sof);
                         }
-                        right_factor
+                        other => panic!("unexpected sof non-leaf node {:?}", other),
                     }
-                    other => {
-                        panic!("unexpected sof non-rule node {:?}", other)
-                    }
+                    right_factor
                 }
-            }
+                other => {
+                    panic!("unexpected sof non-rule node {:?}", other)
+                }
+            },
             Node::BeginSum => {
-                match self.get(NodeHandle(root_node.0 + self.graph.get_node_size(root_node.0 as usize))) {
-                    Node::Product { factors, .. } => {
-                        match self.get(factors) {
-                            Node::Rule { left_factor, right_factor } => {
-                                match self.get(left_factor) {
-                                    Node::Leaf { symbol, .. } => {
-                                        assert_eq!(symbol, self.forest_info.sof);
-                                    }
-                                    other => panic!("unexpected sof non-leaf node {:?}", other)
+                match self.get(NodeHandle(
+                    root_node.0 + self.graph.get_node_size(root_node.0 as usize),
+                )) {
+                    Node::Product { factors, .. } => match self.get(factors) {
+                        Node::Rule {
+                            left_factor,
+                            right_factor,
+                        } => {
+                            match self.get(left_factor) {
+                                Node::Leaf { symbol, .. } => {
+                                    assert_eq!(symbol, self.forest_info.sof);
                                 }
-                                right_factor
+                                other => panic!("unexpected sof non-leaf node {:?}", other),
                             }
-                            other => {
-                                panic!("unexpected sof non-rule node {:?}", other)
-                            }
+                            right_factor
                         }
-                    }
-                    _ => panic!("not found")
+                        other => {
+                            panic!("unexpected sof non-rule node {:?}", other)
+                        }
+                    },
+                    _ => panic!("not found"),
                 }
             }
-            _ => panic!("not found")
+            _ => panic!("not found"),
         };
 
         // println!("ROOT {:?}", root_node);
 
         let alloc = Bump::new();
         let mut results: Vec<E::Elem> = vec![];
-        let mut work_stack = vec![WorkNode { node: NULL_HANDLE, child: 0, parent: 0, results: AVec::new_in(&alloc) }, WorkNode { node: root_node, child: 0, parent: 0, results: AVec::new_in(&alloc) }];
+        let mut work_stack = vec![
+            WorkNode {
+                node: NULL_HANDLE,
+                child: 0,
+                parent: 0,
+                results: AVec::new_in(&alloc),
+            },
+            WorkNode {
+                node: root_node,
+                child: 0,
+                parent: 0,
+                results: AVec::new_in(&alloc),
+            },
+        ];
 
         while work_stack.len() > 1 {
             let mut work = work_stack.pop().unwrap();
@@ -87,22 +104,37 @@ impl Bocage {
             }
             match (node, work.child) {
                 (Node::BeginSum, _) => {
-                    work_stack.push(WorkNode { node: NodeHandle(work.node.0 + 1), child: 0, parent: work.parent, results: AVec::new_in(&alloc) });
+                    work_stack.push(WorkNode {
+                        node: NodeHandle(work.node.0 + 1),
+                        child: 0,
+                        parent: work.parent,
+                        results: AVec::new_in(&alloc),
+                    });
                 }
                 (Node::EndSum, _) => {
                     // nothing to do
                 }
-                (Node::Rule {  left_factor, .. }, 0) => {
+                (Node::Rule { left_factor, .. }, 0) => {
                     work.child += 1;
                     let parent = work.parent;
                     work_stack.push(work);
-                    work_stack.push(WorkNode { node: left_factor, child: 0, parent, results: AVec::new_in(&alloc) });
+                    work_stack.push(WorkNode {
+                        node: left_factor,
+                        child: 0,
+                        parent,
+                        results: AVec::new_in(&alloc),
+                    });
                 }
                 (Node::Rule { right_factor, .. }, 1) => {
                     work.child += 1;
                     let parent = work.parent;
                     work_stack.push(work);
-                    work_stack.push(WorkNode { node: right_factor, child: 0, parent, results: AVec::new_in(&alloc) });
+                    work_stack.push(WorkNode {
+                        node: right_factor,
+                        child: 0,
+                        parent,
+                        results: AVec::new_in(&alloc),
+                    });
                 }
                 (Node::Rule { .. }, _) => {
                     // nothing to do
@@ -110,20 +142,36 @@ impl Bocage {
                 (Node::Leaf { symbol, values }, _) => {
                     let result = eval.leaf(symbol, values);
                     results.push(result);
-                    work_stack[work.parent].results.push(results.len() as u32 - 1);
+                    work_stack[work.parent]
+                        .results
+                        .push(results.len() as u32 - 1);
                 }
                 (Node::Product { factors, .. }, 0) => {
                     work.child += 1;
                     work_stack.push(work);
-                    work_stack.push(WorkNode { node: factors, child: 0, parent: work_stack.len() - 1, results: AVec::new_in(&alloc) });
+                    work_stack.push(WorkNode {
+                        node: factors,
+                        child: 0,
+                        parent: work_stack.len() - 1,
+                        results: AVec::new_in(&alloc),
+                    });
                 }
                 (Node::Product { action, .. }, _) => {
-                    let external_origin_opt = if action == NULL_ACTION { None } else { self.forest_info.external_origin(action) };
+                    let external_origin_opt = if action == NULL_ACTION {
+                        None
+                    } else {
+                        self.forest_info.external_origin(action)
+                    };
                     match external_origin_opt {
                         Some(external_origin) if external_origin.id != !0 => {
-                            let result = eval.product(external_origin.id, work.results.iter().copied().map(|v| &results[v as usize]));
+                            let result = eval.product(
+                                external_origin.id,
+                                work.results.iter().copied().map(|v| &results[v as usize]),
+                            );
                             results.push(result);
-                            work_stack[work.parent].results.push(results.len() as u32 - 1);
+                            work_stack[work.parent]
+                                .results
+                                .push(results.len() as u32 - 1);
                         }
                         _ => {
                             work_stack[work.parent].results.extend(work.results);
@@ -131,7 +179,12 @@ impl Bocage {
                     }
                     if work.node.0 >= self.nulling_limit {
                         let size = self.graph.get_node_size(work.node.0 as usize);
-                        work_stack.push(WorkNode { node: NodeHandle(work.node.0 + size), child: 0, parent: work.parent, results: AVec::new_in(&alloc) });
+                        work_stack.push(WorkNode {
+                            node: NodeHandle(work.node.0 + size),
+                            child: 0,
+                            parent: work.parent,
+                            results: AVec::new_in(&alloc),
+                        });
                     }
                 }
                 (Node::NullingLeaf { symbol }, _) => {
@@ -141,6 +194,11 @@ impl Bocage {
                 }
             }
         }
-        work_stack[0].results.iter().copied().map(|v| mem::replace(&mut results[v as usize], Default::default())).collect()
+        work_stack[0]
+            .results
+            .iter()
+            .copied()
+            .map(|v| mem::replace(&mut results[v as usize], Default::default()))
+            .collect()
     }
 }

@@ -6,8 +6,8 @@ extern crate test;
 use std::hint::black_box;
 
 use cfg::sequence::CfgSequenceExt;
-use cfg::{Cfg, SymbolSource};
 use cfg::sequence::Separator::Proper;
+use cfg::{Cfg, SymbolSource};
 use gearley::*;
 use gearley_utils::RecognizerParseExt;
 
@@ -180,7 +180,9 @@ fn grammar() -> Cfg {
 #[bench]
 fn bench_recognize_decl_use(b: &mut test::bench::Bencher) {
     let external = grammar();
-    let syms: Vec<_> = SymbolSource::generate_fresh().take(external.num_syms()).collect();
+    let syms: Vec<_> = SymbolSource::generate_fresh()
+        .take(external.num_syms())
+        .collect();
     let tokens: Vec<_> = TOKENS.iter().map(|&t| syms[t as usize]).collect();
     let grammar = DefaultGrammar::from_grammar(external);
 
@@ -195,7 +197,9 @@ fn bench_recognize_decl_use(b: &mut test::bench::Bencher) {
 #[bench]
 fn bench_parse_decl_use(b: &mut test::bench::Bencher) {
     let external = grammar();
-    let syms: Vec<_> = SymbolSource::generate_fresh().take(external.num_syms()).collect();
+    let syms: Vec<_> = SymbolSource::generate_fresh()
+        .take(external.num_syms())
+        .collect();
     let tokens: Vec<_> = TOKENS.iter().map(|&t| syms[t as usize]).collect();
     let grammar = DefaultGrammar::from_grammar(external);
 

@@ -33,12 +33,13 @@ impl<'a, 'b, G: Grammar> Lookahead for LookaheadWithGrammar<'a, 'b, G, DefaultLo
 
 impl DefaultLookahead {
     pub(crate) fn new<G: Grammar>(_grammar: &G) -> Self {
-        DefaultLookahead {
-            next_symbol: None,
-        }
+        DefaultLookahead { next_symbol: None }
     }
 
-    pub(crate) fn mut_with_grammar<'a, 'b, G: Grammar>(&'b mut self, grammar: &'a G) -> LookaheadWithGrammar<'a, 'b, G, Self> {
+    pub(crate) fn mut_with_grammar<'a, 'b, G: Grammar>(
+        &'b mut self,
+        grammar: &'a G,
+    ) -> LookaheadWithGrammar<'a, 'b, G, Self> {
         LookaheadWithGrammar {
             lookahead: self,
             grammar,

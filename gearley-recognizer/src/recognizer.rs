@@ -50,6 +50,8 @@ where
     // Has the index that points to the beginning of the latest set in the chart.
     // Equivalent to the last element of `indices`.
     pub(crate) medial: Vec2d<Item<F::NodeRef>>,
+    // Leo items.
+    pub(crate) leo: Vec2d<Item<F::NodeRef>>,
     // Gearley's secret sauce: we have a binary heap for online sorting.
     //
     // Completed items are stored only for the Earley set which is under
@@ -95,6 +97,7 @@ where
         // Reserve the right capacity for vectors.
         let mut recognizer = Recognizer {
             medial: Vec2d::with_capacity(policy.medial_capacity()),
+            leo: Vec2d::new(),
             predicted: BitMatrix::new(8, grammar.num_syms()),
             complete: BinaryHeap(Vec::with_capacity(policy.completion_capacity())),
             lookahead: DefaultLookahead::new(&grammar),
@@ -102,17 +105,26 @@ where
             forest,
             policy: PhantomData,
         };
-        recognizer.predicted[0].predict(recognizer.grammar.start_sym(), recognizer.grammar.prediction_row(recognizer.grammar.start_sym()));
+        recognizer.predicted[0].predict(
+            recognizer.grammar.start_sym(),
+            recognizer
+                .grammar
+                .prediction_row(recognizer.grammar.start_sym()),
+        );
         recognizer
         // TODO: symbols start_of_input and end_of_input first set scan start_of_input
     }
 
     pub fn begin_earleme(&mut self) {
         self.medial.next_set();
+        self.leo.next_set();
         if cfg!(feature = "log") {
             let earleme = self.earleme();
-            let rows = format!("{:?}", self.predicted.sub_matrix(earleme .. earleme + 1));
-            trace!("recognizer.predicted: BitSubMatrix {{ row: {:?} }}", rows.replace('\n', " "));
+            let rows = format!("{:?}", self.predicted.sub_matrix(earleme..earleme + 1));
+            trace!(
+                "recognizer.predicted: BitSubMatrix {{ row: {:?} }}",
+                rows.replace('\n', " ")
+            );
         }
         // from now on, the `earleme` points to the last fully done set
         // ----------
@@ -122,19 +134,24 @@ where
         // earleme == 0
         // medial.indices.len() == 2
         // predicted[0] = predict(start_sym)
-        // 
+        //
     }
 
     /// Reads an internal token. Creates a leaf bocage node with the given value. After reading one or more
     /// tokens, the parse can be advanced.
-    pub fn scan(&mut self, symbol: Symbol, value: F::LeafValue) {
+    pub fn scan(&mut self, symbol: Symbol, value: u32) {
         // This method is a part of the scan pass.
         debug_assert_ne!(self.earleme(), !0);
         let earleme = self.earleme() as Origin;
         let value_cp = value.clone();
         // Add a leaf node to the forest with the given value.
         let node = self.forest.leaf(symbol, earleme + 1, value);
-        trace!("recognizer.scan: Scan {{ symbol: {:?}, node: {:?}, value: {:?} }}", symbol, node, value_cp);
+        trace!(
+            "recognizer.scan: Scan {{ symbol: {:?}, node: {:?}, value: {:?} }}",
+            symbol,
+            node,
+            value_cp
+        );
         self.complete(earleme, symbol, node);
     }
 
@@ -152,10 +169,17 @@ where
             trace!("recognizer.completions_after_scan: {:?}", self.complete);
             // Completion pass, which saves successful parses.
             self.complete_all_sums_entirely();
-            trace!("recognizer.medial_after_completion: {:?}", self.medial.last());
+            trace!(
+                "recognizer.medial_after_completion: {:?}",
+                self.medial.last()
+            );
             // Do the rest.
             self.advance_after_completion();
-            trace!("recognizer.prediction_result: {:?}", self.predicted.sub_matrix(self.earleme() .. self.earleme() + 1));
+            trace!(
+                "recognizer.prediction_result: {:?}",
+                self.predicted
+                    .sub_matrix(self.earleme()..self.earleme() + 1)
+            );
             true
         }
     }
@@ -183,21 +207,33 @@ where
     fn sort_medial_items(&mut self) {
         // Build index by postdot
         // These medial positions themselves are sorted by postdot symbol.
-        self.medial.last_mut().sort_unstable_by_key(|item: &Item<F::NodeRef>| {
-            (self.grammar.get_rhs1(item.dot).unwrap(), item.dot, item.origin)
-        });
+        self.medial
+            .last_mut()
+            .sort_unstable_by_key(|item: &Item<F::NodeRef>| {
+                (
+                    self.grammar.get_rhs1(item.dot).unwrap(),
+                    item.dot,
+                    item.origin,
+                )
+            });
     }
 
     fn remove_unreachable_sets(&mut self) {
         let origin = |item: &Item<F::NodeRef>| item.origin as usize;
-        let max_origin = self.medial.last()
+        let max_origin = self
+            .medial
+            .last()
             .iter()
             .map(origin)
             .max()
             .unwrap_or(self.earleme());
         let new_earleme = max_origin;
         if self.earleme() > new_earleme && new_earleme > 0 {
-            trace!("remove_unreachable_sets {:?} > {:?}", self.earleme(), new_earleme);
+            trace!(
+                "remove_unreachable_sets {:?} > {:?}",
+                self.earleme(),
+                new_earleme
+            );
             // ------------------------------
             //         earleme = 0
             // | A B | C D
@@ -250,8 +286,10 @@ where
         // Earleme is now equal 0.
         // Reset predictions.
         self.predicted[0].clear();
-        self.predicted[0].predict(self.grammar.start_sym(), self.grammar.prediction_row(self.grammar.start_sym()));
-
+        self.predicted[0].predict(
+            self.grammar.start_sym(),
+            self.grammar.prediction_row(self.grammar.start_sym()),
+        );
     }
 
     // Finished node access.
@@ -274,7 +312,11 @@ where
         } else {
             let has_dot_before_eof = |item: &&Item<_>| item.dot == self.grammar.dot_before_eof();
             let item_node = |item: &Item<_>| item.node;
-            self.medial.last().first().filter(has_dot_before_eof).map(item_node)
+            self.medial
+                .last()
+                .first()
+                .filter(has_dot_before_eof)
+                .map(item_node)
         }
     }
 
@@ -283,7 +325,10 @@ where
     /// Accesses predicted symbols.
     pub fn predicted_symbols(&self) -> impl Iterator<Item = Symbol> + use<'_, F, G, P> {
         let earleme = self.earleme();
-        self.predicted.iter_row(earleme).zip(SymbolSource::generate_fresh()).filter_map(|(is_present, sym)| if is_present { Some(sym) } else { None })
+        self.predicted
+            .iter_row(earleme)
+            .zip(SymbolSource::generate_fresh())
+            .filter_map(|(is_present, sym)| if is_present { Some(sym) } else { None })
     }
 
     /// Accesses medial items.
@@ -324,17 +369,25 @@ where
 }
 
 impl<G, F, P> Recognizer<G, F, P>
-    where F: Forest,
+where
+    F: Forest,
     G: Grammar,
     P: PerfHint,
 {
     /// Complete items.
     pub fn complete(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
         // debug_assert!(sym != self.grammar.eof());
-        trace!("complete_predicted: {:?}", self.predicted.sub_matrix(set_id as usize .. set_id as usize + 1));
+        trace!(
+            "complete_predicted: {:?}",
+            self.predicted
+                .sub_matrix(set_id as usize..set_id as usize + 1)
+        );
         #[derive(Debug)]
         #[allow(dead_code)]
-        struct Complete { set_id: Origin, sym: Symbol }
+        struct Complete {
+            set_id: Origin,
+            sym: Symbol,
+        }
         trace!("recognizer.complete: {:?}", Complete { set_id, sym });
         if sym.usize() >= self.grammar.num_syms() {
             // New item after a generated symbol, either completed or medial.
@@ -366,7 +419,8 @@ impl<G, F, P> Recognizer<G, F, P>
         // items.
         // todo branchless binary search
         let set_idx = specific_set.binary_search_by(|ei| {
-            (self.grammar.get_rhs1(ei.dot), cmp::Ordering::Greater).cmp(&(Some(sym), cmp::Ordering::Less))
+            (self.grammar.get_rhs1(ei.dot), cmp::Ordering::Greater)
+                .cmp(&(Some(sym), cmp::Ordering::Less))
         });
         let inner_start = match set_idx {
             Ok(idx) | Err(idx) => idx,
@@ -381,8 +435,14 @@ impl<G, F, P> Recognizer<G, F, P>
             // New completed item.
             // from A ::= B • C
             // to   A ::= B   C •
-            // let will_be_useful = self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lhs_lr_set(item.dot)[sym.usize()]);
-            let will_be_useful = true;
+            let will_be_useful = !P::LOOKAHEAD
+                || self
+                    .lookahead
+                    .mut_with_grammar(&self.grammar)
+                    .sym()
+                    .map_or(true, |sym| {
+                        self.grammar.lhs_lr_set(self.grammar.get_lhs(item.dot))[sym.usize()]
+                    });
             if will_be_useful {
                 item.node = self.forest.product(item.node, rhs_link);
                 self.complete.heap_push(item);
@@ -395,8 +455,35 @@ impl<G, F, P> Recognizer<G, F, P>
         let mut binary = self.medial.last().len();
         for trans in self.grammar.completions(sym) {
             let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
-            // let will_be_useful = self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lookahead_set(trans.dot)[sym.usize()]);
-            let will_be_useful = true;
+            let will_be_useful = !P::LOOKAHEAD
+                || self
+                    .lookahead
+                    .mut_with_grammar(&self.grammar)
+                    .sym()
+                    .map_or(true, |sym| {
+                        self.grammar.lookahead_set(trans.dot)[sym.usize()]
+                    });
+            if was_predicted && !will_be_useful {
+                #[derive(Debug)]
+                #[allow(dead_code)]
+                struct LookaheadRejected {
+                    lookahead: Symbol,
+                    trans: Symbol,
+                    sym: Symbol,
+                }
+                trace!(
+                    "recognizer.lookahead_rejected: {:?}",
+                    LookaheadRejected {
+                        lookahead: self
+                            .lookahead
+                            .mut_with_grammar(&self.grammar)
+                            .sym()
+                            .unwrap(),
+                        trans: trans.symbol,
+                        sym: self.grammar.rhs1_or_lhs(trans.dot)
+                    }
+                );
+            }
             if was_predicted && will_be_useful {
                 // No checks for uniqueness, because completions are deduplicated.
                 // --- UNARY
@@ -405,8 +492,12 @@ impl<G, F, P> Recognizer<G, F, P>
                 // --- BINARY
                 // from A ::= • B   C
                 // to   A ::=   B • C
-                // Where C is terminal or nonterminal.
-                // trace!("recognizer.new_medial_item: Item {{ origin: {}, dot: {} }}", set_id, trans.dot);
+                // Where B is trans.symbol, and C is terminal or nonterminal.
+                trace!(
+                    "recognizer.new_medial_item: Item {{ origin: {}, dot: {} }}",
+                    set_id,
+                    trans.dot
+                );
                 self.medial.push_item(Item {
                     origin: set_id,
                     dot: trans.dot,
@@ -418,11 +509,17 @@ impl<G, F, P> Recognizer<G, F, P>
         for item in self.medial.last().iter().skip(binary).copied() {
             self.complete.heap_push(item);
         }
-        self.medial.truncate_chart(self.medial.item_count() - (self.medial.last().len() - binary));
+        self.medial
+            .truncate_chart(self.medial.item_count() - (self.medial.last().len() - binary));
     }
 
     /// Attempt to complete a predicted item with a postdot gensym.
-    fn complete_generated_binary_predictions(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
+    fn complete_generated_binary_predictions(
+        &mut self,
+        set_id: Origin,
+        sym: Symbol,
+        rhs_link: F::NodeRef,
+    ) {
         let [binary_opt, unary_opt] = self.grammar.gen_completion(sym);
         if let Some(trans) = unary_opt {
             let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
@@ -433,7 +530,6 @@ impl<G, F, P> Recognizer<G, F, P>
                 // from A ::= • g42
                 // to   A ::=   g42 •
                 // Where g42 is a gensym, and C is terminal or nonterminal.
-                // trace!("recognizer.new_medial_item: Item {{ origin: {}, dot: {} }}", set_id, trans.dot);
                 self.complete.heap_push(Item {
                     origin: set_id,
                     dot: trans.dot,
@@ -450,7 +546,11 @@ impl<G, F, P> Recognizer<G, F, P>
                 // from A ::= • g42   C
                 // to   A ::=   g42 • C
                 // Where g42 is a gensym, and C is terminal or nonterminal.
-                // trace!("recognizer.new_medial_item: Item {{ origin: {}, dot: {} }}", set_id, trans.dot);
+                trace!(
+                    "recognizer.new_medial_item: Item {{ origin: {}, dot: {} }}",
+                    set_id,
+                    trans.dot
+                );
                 self.medial.push_item(Item {
                     origin: set_id,
                     dot: trans.dot,

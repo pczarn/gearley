@@ -1,5 +1,5 @@
-use gearley_example_grammars::{ambiguous_math, precedenced_math};
 use gearley::{Bocage, DefaultGrammar, Recognizer, RecognizerParseExt};
+use gearley_example_grammars::{ambiguous_math, precedenced_math};
 
 #[test]
 fn test_precedenced_arith() {

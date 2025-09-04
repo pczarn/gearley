@@ -15,9 +15,9 @@
 
 use std::mem::swap;
 
+use gearley_forest::item::Item;
 use gearley_forest::Forest;
 use gearley_grammar::Grammar;
-use gearley_forest::item::Item;
 
 use crate::local_prelude::*;
 
@@ -38,8 +38,7 @@ where
 
     #[inline(always)]
     fn heap_get(&self, idx: usize) -> Option<&Item<F::NodeRef>> {
-        self.complete.0
-            .get(idx)
+        self.complete.0.get(idx)
     }
 
     /// Removes the greatest item from the binary heap and returns it, or `None` if it
@@ -159,7 +158,10 @@ where
 //     }
 // }
 
-impl<R> BinaryHeap<Item<R>> where R: Clone + Copy {
+impl<R> BinaryHeap<Item<R>>
+where
+    R: Clone + Copy,
+{
     pub(super) fn is_empty(&self) -> bool {
         self.0.is_empty()
     }

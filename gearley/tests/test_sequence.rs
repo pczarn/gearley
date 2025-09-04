@@ -1,6 +1,6 @@
 use cfg::sequence::CfgSequenceExt;
-use cfg::Cfg;
 use cfg::sequence::Separator::Trailing;
+use cfg::Cfg;
 use cfg::Symbol;
 
 use gearley::{Bocage, DefaultGrammar, Grammar, Recognizer, RecognizerParseExt};
@@ -19,7 +19,10 @@ impl Evaluate for Eval {
         }
     }
 
-    fn product<'a>(&self, action: u32, args: impl Iterator<Item = &'a Self::Elem>) -> Self::Elem where Self::Elem: 'a {
+    fn product<'a>(&self, action: u32, args: impl Iterator<Item = &'a Self::Elem>) -> Self::Elem
+    where
+        Self::Elem: 'a,
+    {
         println!("ACTION {}", action);
         args.count() as i32
     }
@@ -34,7 +37,8 @@ fn test_sequence() {
     let _ = env_logger::try_init();
     let mut external = Cfg::new();
     let [start, plus, minus] = external.sym();
-    external.sequence(start)
+    external
+        .sequence(start)
         .separator(Trailing(minus))
         .inclusive(3, Some(3))
         .rhs(plus);

@@ -35,7 +35,7 @@ fn bench_evaluate_precedenced_arith(b: &mut test::Bencher) {
     b.iter(|| {
         let evaluator = precedenced_math::Evaluator;
         let bocage = Bocage::new(&cfg);
-        let mut recognizer = Recognizer::with_forest (&cfg, bocage);
+        let mut recognizer = Recognizer::with_forest(&cfg, bocage);
         assert!(recognizer.parse(&sum_tokens).unwrap());
         let finished_node = recognizer.finished_node().expect("exhausted");
         let results = recognizer.into_forest().evaluate(evaluator, finished_node);
@@ -69,7 +69,8 @@ fn bench_recognize_precedenced_arith(b: &mut test::Bencher) {
     let sum_tokens = test::black_box(tokens);
 
     b.iter(|| {
-        let mut recognizer: Recognizer<&DefaultGrammar, NullForest> = Recognizer::with_forest(&cfg, NullForest);
+        let mut recognizer: Recognizer<&DefaultGrammar, NullForest> =
+            Recognizer::with_forest(&cfg, NullForest);
         test::black_box(&recognizer.parse(&sum_tokens));
     })
 }
