@@ -1,5 +1,3 @@
-use std::iter;
-
 use bytemuck::{bytes_of, from_bytes};
 use cfg_symbol::Symbol;
 use gearley_forest::node_handle::NodeHandle;

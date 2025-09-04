@@ -111,7 +111,6 @@ impl Bocage {
 
 impl Forest for Bocage {
     type NodeRef = NodeHandle;
-    type LeafValue = u32;
 
     const FOREST_BYTES_PER_RECOGNIZER_BYTE: usize = 2;
 
@@ -161,7 +160,7 @@ impl Forest for Bocage {
     }
 
     #[inline]
-    fn leaf(&mut self, token: Symbol, _pos: u32, value: Self::LeafValue) -> Self::NodeRef {
+    fn leaf(&mut self, token: Symbol, _pos: u32, value: u32) -> Self::NodeRef {
         let result = NodeHandle(self.graph.len() as u32);
         self.graph.push(
             Node::Leaf {

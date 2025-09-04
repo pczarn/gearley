@@ -486,6 +486,14 @@ impl Grammar for DefaultGrammar {
         }
     }
 
+    fn rhs1_or_lhs(&self, dot: Dot) -> Symbol {
+        if let Some(rhs1) = self.get_rhs1(dot) {
+            rhs1
+        } else {
+            self.get_lhs(dot)
+        }
+    }
+
     fn useless_symbol(&self) -> Symbol {
         self.start_sym
     }

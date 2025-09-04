@@ -9,12 +9,11 @@ pub struct NullForest;
 
 impl<S: Copy> Forest<S> for NullForest {
     type NodeRef = ();
-    type LeafValue = ();
 
     const FOREST_BYTES_PER_RECOGNIZER_BYTE: usize = 0;
 
     #[inline(always)]
-    fn leaf(&mut self, _: S, _: u32, _: ()) {}
+    fn leaf(&mut self, _: S, _: u32, _: u32) {}
     #[inline(always)]
     fn nulling(&self, _: S) {}
     #[inline(always)]

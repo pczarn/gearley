@@ -7,7 +7,6 @@ use crate::item::Item;
 pub trait Forest<S = Symbol> {
     /// Reference to a node.
     type NodeRef: Copy + fmt::Debug;
-    type LeafValue: Clone + fmt::Debug;
 
     const FOREST_BYTES_PER_RECOGNIZER_BYTE: usize;
 
@@ -19,7 +18,7 @@ pub trait Forest<S = Symbol> {
 
     fn product(&mut self, left_factor: Self::NodeRef, right_factor: Self::NodeRef) -> Self::NodeRef;
 
-    fn leaf(&mut self, token: S, pos: u32, value: Self::LeafValue) -> Self::NodeRef;
+    fn leaf(&mut self, token: S, pos: u32, value: u32) -> Self::NodeRef;
 
     fn nulling(&self, token: S) -> Self::NodeRef;
 }

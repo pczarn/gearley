@@ -24,32 +24,21 @@ impl Evaluate for NullingEval {
     }
 }
 
-macro_rules! test_trivial_grammar {
-    ($Bocage:ident, $SimpleEvaluator:ident) => {
-        let _ = env_logger::try_init();
-        let mut external = Cfg::new();
-        let [start] = external.sym();
-        external.rule(start).rhs([]);
-        external.set_roots([start]);
-        let cfg = DefaultGrammar::from_grammar(external);
-        let bocage = $Bocage::new(&cfg);
-        let mut rec = Recognizer::with_forest(&cfg, bocage);
-        assert!(rec.parse(&[]).unwrap());
-        let finished_node = rec.finished_node().unwrap();
-        let results = rec.into_forest().evaluate(NullingEval(start), finished_node);
-        assert_eq!(results, &[true]);
-    };
-}
-
 #[test]
 fn test_trivial_grammar() {
-    test_trivial_grammar!(Bocage, SimpleEvaluator);
+    let _ = env_logger::try_init();
+    let mut external = Cfg::new();
+    let [start] = external.sym();
+    external.rule(start).rhs([]);
+    external.set_roots([start]);
+    let cfg = DefaultGrammar::from_grammar(external);
+    let bocage = Bocage::new(&cfg);
+    let mut rec = Recognizer::with_forest(&cfg, bocage);
+    assert!(rec.parse(&[]).unwrap());
+    let finished_node = rec.finished_node().unwrap();
+    let results = rec.into_forest().evaluate(NullingEval(start), finished_node);
+    assert_eq!(results, &[true]);
 }
-
-// #[test]
-// fn test_trivial_grammar_compact() {
-//     test_trivial_grammar!(CompactBocage, SimpleCompactEvaluator);
-// }
 
 #[test]
 fn test_grammar_with_nulling_intermediate() {
@@ -166,8 +155,3 @@ fn test_grammar_with_nulling_intermediate_compact() {
         let results = rec.into_forest().evaluate(NullingIntermediateEval { a: cfg.to_internal(a).unwrap(), foo: cfg.to_internal(foo).unwrap() }, finished_node);
         assert_eq!(results, &[313]);
 }
-
-// #[test]
-// fn test_grammar_with_nulling_intermediate_compact() {
-//     test_grammar_with_nulling_intermediate!(CompactBocage, SimpleCompactEvaluator);
-// }

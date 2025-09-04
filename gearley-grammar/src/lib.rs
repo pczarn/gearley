@@ -21,8 +21,11 @@ pub trait Grammar {
 
     fn eof(&self) -> Symbol;
 
-    fn lhs_lr_set(&self, dot: Dot) -> &BitSlice;
-    fn lookahead_set(&self, dot: Dot) -> &BitSlice;
+    fn lhs_lr_set(&self, symbol: Symbol) -> &BitSlice;
+
+    fn lookahead_set(&self, symbol: Symbol) -> &BitSlice;
+
+    fn rhs1_or_lhs(&self, dot: Dot) -> Symbol;
 
     fn prediction_row(&self, sym: Symbol) -> &BitSlice;
 
@@ -78,12 +81,16 @@ impl<'a, G> Grammar for &'a G where G: Grammar {
         (**self).eof()
     }
 
-    fn lhs_lr_set(&self, dot: Dot) -> &BitSlice {
-        (**self).lhs_lr_set(dot)
+    fn lhs_lr_set(&self, symbol: Symbol) -> &BitSlice {
+        (**self).lhs_lr_set(symbol)
     }
 
-    fn lookahead_set(&self, dot: Dot) -> &BitSlice {
-        (**self).lookahead_set(dot)   
+    fn lookahead_set(&self, symbol: Symbol) -> &BitSlice {
+        (**self).lookahead_set(symbol)   
+    }
+
+    fn rhs1_or_lhs(&self, dot: Dot) -> Symbol {
+        (**self).rhs1_or_lhs(dot)
     }
 
     fn prediction_row(&self, sym: Symbol) -> &BitSlice {

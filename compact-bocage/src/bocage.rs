@@ -11,6 +11,7 @@ pub struct Bocage {
     pub(crate) graph: Graph,
     pub(crate) forest_info: ForestInfo,
     sum: Option<u32>,
+    num_summands: usize,
     pub(crate) nulling_limit: u32,
 }
 
@@ -24,6 +25,7 @@ impl Bocage {
             graph: Graph::with_capacity(graph_cap),
             forest_info: grammar.forest_info(),
             sum: None,
+            num_summands: 0,
             nulling_limit: 0,
         };
         result.initialize_nulling();
@@ -130,13 +132,13 @@ impl Bocage {
 
 impl Forest for Bocage {
     type NodeRef = NodeHandle;
-    type LeafValue = u32;
 
     const FOREST_BYTES_PER_RECOGNIZER_BYTE: usize = 2;
 
     #[inline]
     fn begin_sum(&mut self) {
         self.sum = Some(self.graph.len());
+        self.num_summands = 0;
         self.graph.push(Node::BeginSum);
     }
 
@@ -148,6 +150,7 @@ impl Forest for Bocage {
                 factors: item.node,
             }
         );
+        self.num_summands += 1;
     }
 
     #[inline]
@@ -161,12 +164,16 @@ impl Forest for Bocage {
     fn sum(&mut self, _lhs_sym: Symbol, _origin: u32) -> Self::NodeRef {
         let result = self.sum.unwrap();
         self.sum = None;
-        self.graph.push(Node::EndSum);
-        NodeHandle(result)
+        if self.num_summands == 1 {
+            NodeHandle(result + 1)
+        } else {
+            self.graph.push(Node::EndSum);
+            NodeHandle(result)
+        }
     }
 
     #[inline]
-    fn leaf(&mut self, token: Symbol, _pos: u32, value: Self::LeafValue) -> Self::NodeRef {
+    fn leaf(&mut self, token: Symbol, _pos: u32, value: u32) -> Self::NodeRef {
         let result = NodeHandle(self.graph.len());
         self.graph.push(
             Node::Leaf {
