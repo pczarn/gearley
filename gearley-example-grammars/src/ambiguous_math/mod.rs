@@ -29,6 +29,7 @@ impl Evaluate for Evaluator {
     type Elem = i32;
 
     fn leaf(&self, terminal: Symbol, _values: u32) -> Self::Elem {
+        println!("LEAF {}", terminal.usize());
         [0, 0, 0, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9][terminal.usize()]
     }
 
@@ -40,6 +41,8 @@ impl Evaluate for Evaluator {
         let a0 = args.next().copied().unwrap_or(!0);
         let a1 = args.next().copied().unwrap_or(!0);
         let a2 = args.next().copied().unwrap_or(!0);
+
+        println!("ACTION {} a0 {} a1 {} a2 {}", action, a0, a1, a2);
 
         match action {
             0 => match a1 {

@@ -357,6 +357,7 @@ impl DefaultGrammar {
         self.original_start_sym = wrapped_root.inner_root;
         self.forest_info.sof = wrapped_root.start_of_input;
         self.forest_info.eof = wrapped_root.end_of_input;
+        self.forest_info.start = wrapped_root.inner_root;
     }
 
     fn populate_grammar_with_lhs(&mut self, grammar: &Cfg) {
@@ -463,20 +464,33 @@ impl DefaultGrammar {
     }
 
     fn populate_lr_sets(&mut self, grammar: &Cfg) {
-        let syms = self.size.syms + self.size.gensyms;
+        // A ::= gen0 B
+        // gen0 ::= gen1 C
+        // gen0 ::= gen1
+        // gen1 ::= D E
+        // input: D E C B
+        // gens never have FIRST because they do not appear on RHS
+        // gens only have FOLLOW
+        // FOLLOW(gen1) = {FIRST(C), FOLLOW(gen0)}
+        // FOLLOW(gen0) = {FIRST(B)}
+        let syms = self.size.syms;
         let mut follow_matrix = BitMatrix::new(syms, syms);
         let mut first_matrix = BitMatrix::new(syms, syms);
         let first_sets = FirstSets::new(grammar);
         for (outer, inner) in first_sets.predict_sets() {
             for inner_sym in inner.iter().copied() {
-                first_matrix.set(outer.usize(), inner_sym.usize(), true);
+                if outer.usize() < syms && inner_sym.usize() < syms {
+                    first_matrix.set(outer.usize(), inner_sym.usize(), true);
+                }
             }
         }
         first_matrix.reflexive_closure();
         let follow_sets = FollowSets::new(grammar, first_sets.predict_sets());
         for (before, after) in follow_sets.predict_sets().into_iter() {
             for after_sym in after.iter().copied() {
-                follow_matrix.set(before.usize(), after_sym.usize(), true);
+                if before.usize() < syms && after_sym.usize() < syms {
+                    follow_matrix.set(before.usize(), after_sym.usize(), true);
+                }
             }
         }
         self.lr_sets = BitMatrix::new(syms * 2, syms);

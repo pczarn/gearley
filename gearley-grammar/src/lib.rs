@@ -196,6 +196,7 @@ pub struct ForestInfo {
     pub nulling_eliminated: Vec<NullingEliminated>,
     pub sof: Symbol,
     pub eof: Symbol,
+    pub start: Symbol,
 }
 
 impl ForestInfo {

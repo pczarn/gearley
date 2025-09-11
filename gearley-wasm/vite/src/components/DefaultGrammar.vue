@@ -70,7 +70,11 @@
     <Header id="d_g_g_c" title="gen_completions" :level="2">
         <ol :start="content.size.syms">
             <li v-for="gen in content.gen_completions">
-                <Symbol :sym="gen.symbol" />
+                <Symbol v-if="gen[0] !== null" :sym="gen[0].symbol" />
+                <span v-else>null</span>
+                ,
+                <Symbol v-if="gen[1] !== null" :sym="gen[1].symbol" />
+                <span v-else>null</span>
                 <!-- <Rule :dot="gen.dot" /> -->
             </li>
         </ol>

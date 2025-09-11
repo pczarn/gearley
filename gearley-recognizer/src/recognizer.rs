@@ -377,11 +377,11 @@ where
     /// Complete items.
     pub fn complete(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) {
         // debug_assert!(sym != self.grammar.eof());
-        trace!(
-            "complete_predicted: {:?}",
-            self.predicted
-                .sub_matrix(set_id as usize..set_id as usize + 1)
-        );
+        // trace!(
+        //     "complete_predicted: {:?}",
+        //     self.predicted
+        //         .sub_matrix(set_id as usize..set_id as usize + 1)
+        // );
         #[derive(Debug)]
         #[allow(dead_code)]
         struct Complete {
@@ -435,15 +435,21 @@ where
             // New completed item.
             // from A ::= B • C
             // to   A ::= B   C •
-            let will_be_useful = !P::LOOKAHEAD
-                || self
-                    .lookahead
-                    .mut_with_grammar(&self.grammar)
-                    .sym()
-                    .map_or(true, |sym| {
-                        self.grammar.lhs_lr_set(self.grammar.get_lhs(item.dot))[sym.usize()]
-                    });
-            if will_be_useful {
+            let will_be_useful = self
+                .lookahead
+                .mut_with_grammar(&self.grammar)
+                .sym()
+                .map_or(true, |sym| {
+                    let lhs = self.grammar.get_lhs(item.dot);
+                    if lhs.usize() >= self.grammar.num_syms() {
+                        return true;
+                    }
+                    self.grammar.lhs_lr_set(lhs)[sym.usize()]
+                });
+            if !will_be_useful {
+                trace!("recognizer.lookahead_rejected: MedLookaheadRejected {{ sym: {:?}, complete: Item {{ origin: {}, dot: {} }} }}", self.grammar.get_lhs(item.dot), item.origin, item.dot);
+            }
+            if !P::LOOKAHEAD || will_be_useful {
                 item.node = self.forest.product(item.node, rhs_link);
                 self.complete.heap_push(item);
             }
@@ -455,36 +461,42 @@ where
         let mut binary = self.medial.last().len();
         for trans in self.grammar.completions(sym) {
             let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
-            let will_be_useful = !P::LOOKAHEAD
-                || self
-                    .lookahead
-                    .mut_with_grammar(&self.grammar)
-                    .sym()
-                    .map_or(true, |sym| {
-                        self.grammar.lookahead_set(trans.dot)[sym.usize()]
-                    });
+            let will_be_useful = self
+                .lookahead
+                .mut_with_grammar(&self.grammar)
+                .sym()
+                .map_or(true, |sym| {
+                    if self.grammar.rhs1_or_lhs(trans.dot).usize() >= self.grammar.num_syms() {
+                        return true;
+                    }
+                    self.grammar.lookahead_set(trans.dot)[sym.usize()]
+                });
             if was_predicted && !will_be_useful {
                 #[derive(Debug)]
                 #[allow(dead_code)]
-                struct LookaheadRejected {
+                struct PredLookaheadRejected {
                     lookahead: Symbol,
                     trans: Symbol,
                     sym: Symbol,
+                    origin: Origin,
+                    dot: u32,
                 }
                 trace!(
                     "recognizer.lookahead_rejected: {:?}",
-                    LookaheadRejected {
+                    PredLookaheadRejected {
                         lookahead: self
                             .lookahead
                             .mut_with_grammar(&self.grammar)
                             .sym()
                             .unwrap(),
                         trans: trans.symbol,
-                        sym: self.grammar.rhs1_or_lhs(trans.dot)
+                        sym: self.grammar.rhs1_or_lhs(trans.dot),
+                        origin: set_id,
+                        dot: trans.dot,
                     }
                 );
             }
-            if was_predicted && will_be_useful {
+            if was_predicted && (!P::LOOKAHEAD || will_be_useful) {
                 // No checks for uniqueness, because completions are deduplicated.
                 // --- UNARY
                 // from A ::= • B

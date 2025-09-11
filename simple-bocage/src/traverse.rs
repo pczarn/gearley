@@ -37,8 +37,10 @@ impl Bocage {
                     }
                     right_factor
                 }
-                other => {
-                    panic!("unexpected sof non-rule node {:?}", other)
+                _ => {
+                    let mut start_results = vec![];
+                    eval.nulling(self.forest_info.start, &mut start_results);
+                    return start_results;
                 }
             },
             _ => root_node,

@@ -86,7 +86,7 @@ impl Evaluate for Evaluator {
 pub fn tokenize(input: &str) -> Vec<Symbol> {
     const CHARS: &'static str = "+-*/()0123456789";
     let syms = SymbolSource::<NonZero<u32>>::generate_fresh()
-        .take(CHARS.len())
+        .take(CHARS.len() + 4)
         .collect::<Vec<_>>();
     let mut result = vec![];
     for input_ch in input.chars() {

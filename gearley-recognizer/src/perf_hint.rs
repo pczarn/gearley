@@ -81,7 +81,7 @@ impl DefaultPerfHint {
 }
 
 impl PerfHint for DefaultPerfHint {
-    const LOOKAHEAD: bool = false;
+    const LOOKAHEAD: bool = true;
     type Symbol = Symbol;
 
     fn completion_capacity(&self) -> usize {

@@ -7,6 +7,11 @@ use gearley_forest::node_handle::NodeHandle;
 pub enum Node {
     BeginSum,
     EndSum,
+    Summand {
+        /// 8 bytes.
+        action: u32,
+        factors: NodeHandle,
+    },
     Product {
         /// 8 bytes.
         action: u32,

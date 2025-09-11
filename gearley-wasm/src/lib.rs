@@ -12,14 +12,14 @@ use gearley::{DefaultGrammar, Recognizer, Bocage, RecognizerParseExt, utils};
 use cfg_grammar::SymbolBitSet;
 use cfg_load::advanced::{AdvancedGrammar, LexerMap};
 
-use std::cell::RefCell;
+use std::cell::RefCell;wrapping_sub
 use std::sync::LazyLock;
 use std::sync::mpsc;
 use std::panic;
 use std::fmt::Write;
 use log::trace;
 
-static mut ARENA: [u8; 10_000_000] = [0; 10_000_000];
+static mut ARENA: [u8; 200_000_000] = [0; 200_000_000];
 
 #[global_allocator]
 static ALLOCATOR: Talck<spin::Mutex<()>, ClaimOnOom> = Talc::new(unsafe {
@@ -42,7 +42,7 @@ use log::{Record, Level, Metadata, SetLoggerError, LevelFilter};
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
 
-static LOG_BUFFER: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()));
+static LOG_BUFFER: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::with_capacity(100_000_000)));
 
 struct StringLogger;
 
@@ -70,9 +70,7 @@ pub fn init_logger() -> Result<(), SetLoggerError> {
 }
 
 pub fn get_logs() -> String {
-    let result = LOG_BUFFER.lock().unwrap().clone();
-    LOG_BUFFER.lock().unwrap().clear();
-    result
+    std::mem::replace(&mut LOG_BUFFER.lock().unwrap(), String::new())
 }
 
 fn load(grammar: &str) -> Result<(Cfg, DefaultGrammar), LoadError> {

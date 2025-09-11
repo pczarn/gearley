@@ -32,7 +32,7 @@ impl Bocage {
         // }
         // handle sof and eof
         let root_node = match self.get(root_node) {
-            Node::Product { factors, .. } => match self.get(factors) {
+            Node::Summand { factors, .. } => match self.get(factors) {
                 Node::Rule {
                     left_factor,
                     right_factor,
@@ -45,34 +45,28 @@ impl Bocage {
                     }
                     right_factor
                 }
-                other => {
-                    panic!("unexpected sof non-rule node {:?}", other)
-                }
+                _ => return vec![],
             },
-            Node::BeginSum => {
-                match self.get(NodeHandle(
-                    root_node.0 + self.graph.get_node_size(root_node.0 as usize),
-                )) {
-                    Node::Product { factors, .. } => match self.get(factors) {
-                        Node::Rule {
-                            left_factor,
-                            right_factor,
-                        } => {
-                            match self.get(left_factor) {
-                                Node::Leaf { symbol, .. } => {
-                                    assert_eq!(symbol, self.forest_info.sof);
-                                }
-                                other => panic!("unexpected sof non-leaf node {:?}", other),
+            Node::BeginSum => match self.get(NodeHandle(root_node.0 + 1)) {
+                Node::Summand { factors, .. } => match self.get(factors) {
+                    Node::Rule {
+                        left_factor,
+                        right_factor,
+                    } => {
+                        match self.get(left_factor) {
+                            Node::Leaf { symbol, .. } => {
+                                assert_eq!(symbol, self.forest_info.sof);
                             }
-                            right_factor
+                            other => panic!("unexpected sof non-leaf node {:?}", other),
                         }
-                        other => {
-                            panic!("unexpected sof non-rule node {:?}", other)
-                        }
-                    },
-                    _ => panic!("not found"),
-                }
-            }
+                        right_factor
+                    }
+                    other => {
+                        panic!("unexpected sof non-rule node {:?}", other)
+                    }
+                },
+                _ => panic!("not found"),
+            },
             _ => panic!("not found"),
         };
 
@@ -112,6 +106,7 @@ impl Bocage {
                     });
                 }
                 (Node::EndSum, _) => {
+                    println!("END_SUM");
                     // nothing to do
                 }
                 (Node::Rule { left_factor, .. }, 0) => {
@@ -146,7 +141,7 @@ impl Bocage {
                         .results
                         .push(results.len() as u32 - 1);
                 }
-                (Node::Product { factors, .. }, 0) => {
+                (Node::Product { factors, .. }, 0) | (Node::Summand { factors, .. }, 0) => {
                     work.child += 1;
                     work_stack.push(work);
                     work_stack.push(WorkNode {
@@ -156,7 +151,7 @@ impl Bocage {
                         results: AVec::new_in(&alloc),
                     });
                 }
-                (Node::Product { action, .. }, _) => {
+                (Node::Product { action, .. }, _) | (Node::Summand { action, .. }, _) => {
                     let external_origin_opt = if action == NULL_ACTION {
                         None
                     } else {
@@ -177,7 +172,8 @@ impl Bocage {
                             work_stack[work.parent].results.extend(work.results);
                         }
                     }
-                    if work.node.0 >= self.nulling_limit {
+                    if matches!(node, Node::Summand { .. }) {
+                        println!("SUMMAND");
                         let size = self.graph.get_node_size(work.node.0 as usize);
                         work_stack.push(WorkNode {
                             node: NodeHandle(work.node.0 + size),

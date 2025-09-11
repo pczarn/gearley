@@ -32,12 +32,13 @@ impl Graph {
                 return;
             }
             Node::Product { action, factors } => [2, action, factors.0],
+            Node::Summand { action, factors } => [3, action, factors.0],
             Node::Rule {
                 left_factor,
                 right_factor,
-            } => [3, left_factor.0, right_factor.0],
-            Node::Leaf { symbol, values } => [4, symbol.usize() as u32, values],
-            Node::NullingLeaf { symbol } => [5, symbol.usize() as u32, 0],
+            } => [4, left_factor.0, right_factor.0],
+            Node::Leaf { symbol, values } => [5, symbol.usize() as u32, values],
+            Node::NullingLeaf { symbol } => [6, symbol.usize() as u32, 0],
         };
         let f = |mut x: u32| {
             let slice = u32::to_le_bytes(x);
@@ -82,15 +83,19 @@ impl Graph {
                 action: left,
                 factors: NodeHandle(right),
             },
-            3 => Node::Rule {
+            3 => Node::Summand {
+                action: left,
+                factors: NodeHandle(right),
+            },
+            4 => Node::Rule {
                 left_factor: NodeHandle(left),
                 right_factor: NodeHandle(right),
             },
-            4 => Node::Leaf {
+            5 => Node::Leaf {
                 symbol: Symbol::from_raw(left),
                 values: right,
             },
-            5 => Node::NullingLeaf {
+            6 => Node::NullingLeaf {
                 symbol: Symbol::from_raw(left),
             },
             _ => unreachable!(),
@@ -119,12 +124,13 @@ impl Graph {
                 return;
             }
             Node::Product { action, factors } => [2, action, factors.0],
+            Node::Summand { action, factors } => [3, action, factors.0],
             Node::Rule {
                 left_factor,
                 right_factor,
-            } => [3, left_factor.0, right_factor.0],
-            Node::Leaf { symbol, values } => [4, symbol.usize() as u32, values],
-            Node::NullingLeaf { symbol } => [5, symbol.usize() as u32, 0],
+            } => [4, left_factor.0, right_factor.0],
+            Node::Leaf { symbol, values } => [5, symbol.usize() as u32, values],
+            Node::NullingLeaf { symbol } => [6, symbol.usize() as u32, 0],
         };
         self.vect.push(discr as u8 | 0b1111000);
         self.vect.extend(bytes_of(&left));

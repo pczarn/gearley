@@ -41,7 +41,7 @@ fn test_trivial_grammar() {
     let finished_node = rec.finished_node().unwrap();
     let results = rec
         .into_forest()
-        .evaluate(NullingEval(start), finished_node);
+        .evaluate(NullingEval(cfg.to_internal(start).unwrap()), finished_node);
     assert_eq!(results, &[true]);
 }
 
@@ -49,6 +49,9 @@ fn test_trivial_grammar() {
 fn test_grammar_with_nulling_intermediate() {
     struct NullingIntermediateEval {
         a: Symbol,
+        b: Symbol,
+        c: Symbol,
+        d: Symbol,
         foo: Symbol,
     }
 
@@ -56,10 +59,23 @@ fn test_grammar_with_nulling_intermediate() {
         type Elem = i32;
 
         fn leaf(&self, terminal: Symbol, _values: u32) -> Self::Elem {
-            println!("LEAF {:?}", terminal);
             if terminal == self.foo {
+                println!("sym: foo");
                 3
+            } else if terminal == self.a {
+                println!("sym: a");
+                panic!();
+            } else if terminal == self.b {
+                println!("sym: b");
+                panic!();
+            } else if terminal == self.c {
+                println!("sym: c");
+                panic!();
+            } else if terminal == self.d {
+                println!("sym: d");
+                panic!();
             } else {
+                println!("LEAF {:?}", terminal);
                 panic!("terminal {:?} is not {:?}", terminal, self.foo)
             }
         }
@@ -105,6 +121,9 @@ fn test_grammar_with_nulling_intermediate() {
     let results = rec.into_forest().evaluate(
         NullingIntermediateEval {
             a: cfg.to_internal(a).unwrap(),
+            b: cfg.to_internal(b).unwrap(),
+            c: cfg.to_internal(c).unwrap(),
+            d: cfg.to_internal(d).unwrap(),
             foo: cfg.to_internal(foo).unwrap(),
         },
         finished_node,
@@ -116,6 +135,9 @@ fn test_grammar_with_nulling_intermediate() {
 fn test_grammar_with_nulling_intermediate_compact() {
     struct NullingIntermediateEval {
         a: Symbol,
+        b: Symbol,
+        c: Symbol,
+        d: Symbol,
         foo: Symbol,
     }
 
@@ -126,6 +148,18 @@ fn test_grammar_with_nulling_intermediate_compact() {
             println!("LEAF {:?}", terminal);
             if terminal == self.foo {
                 3
+            } else if terminal == self.a {
+                println!("sym: a");
+                panic!();
+            } else if terminal == self.b {
+                println!("sym: b");
+                panic!();
+            } else if terminal == self.c {
+                println!("sym: c");
+                panic!();
+            } else if terminal == self.d {
+                println!("sym: d");
+                panic!();
             } else {
                 panic!("terminal {:?} is not {:?}", terminal, self.foo)
             }
@@ -140,7 +174,7 @@ fn test_grammar_with_nulling_intermediate_compact() {
         where
             Self::Elem: 'a,
         {
-            print!("PRODUCT {:?}", action);
+            println!("PRODUCT {:?}", action);
             if action == 0 {
                 args.cloned().fold(0, |a, e| a + e)
             } else {
@@ -172,6 +206,9 @@ fn test_grammar_with_nulling_intermediate_compact() {
     let results = rec.into_forest().evaluate(
         NullingIntermediateEval {
             a: cfg.to_internal(a).unwrap(),
+            b: cfg.to_internal(b).unwrap(),
+            c: cfg.to_internal(c).unwrap(),
+            d: cfg.to_internal(d).unwrap(),
             foo: cfg.to_internal(foo).unwrap(),
         },
         finished_node,

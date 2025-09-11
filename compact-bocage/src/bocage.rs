@@ -103,7 +103,7 @@ impl Bocage {
 
     #[inline]
     pub(crate) fn postprocess_product_tree_node(&mut self, node: Node) -> Node {
-        if let Node::Product { factors, action } = node {
+        if let Node::Product { factors, action } | Node::Summand { action, factors } = node {
             if let Node::Rule {
                 left_factor,
                 right_factor,
@@ -154,7 +154,7 @@ impl Forest for Bocage {
 
     #[inline]
     fn push_summand(&mut self, item: Item<Self::NodeRef>) {
-        self.graph.push(Node::Product {
+        self.graph.push(Node::Summand {
             action: item.dot,
             factors: item.node,
         });
@@ -179,10 +179,10 @@ impl Forest for Bocage {
     fn sum(&mut self, _lhs_sym: Symbol, _origin: u32) -> Self::NodeRef {
         let result = self.sum.unwrap();
         self.sum = None;
+        self.graph.push(Node::EndSum);
         if self.num_summands == 1 {
             NodeHandle(result + 1)
         } else {
-            self.graph.push(Node::EndSum);
             NodeHandle(result)
         }
     }

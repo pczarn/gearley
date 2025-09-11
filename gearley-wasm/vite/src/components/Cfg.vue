@@ -8,6 +8,11 @@
     </Header>
     <Header title="Rules" :level="2" :id="'rules' + op">
         <DataTable :value="rules">
+            <Column field="dot" header="dot">
+                <template #body="{ data }">
+                    {{ data.dot }}
+                </template>
+            </Column>
             <Column field="lhs" header="LHS">
                 <template #body="{ data }">
                     <Symbol :sym="data.lhs" :name="nameOf(data.lhs)" :active="active" />
@@ -42,7 +47,7 @@ const cfgInfo = computed(() => {
 })
 
 const rules = computed(() => {
-    return props.content.rules
+    return props.content.rules.map((val, index) => ({ dot: index, ...val }))
 })
 
 function nameOf(sym) {
