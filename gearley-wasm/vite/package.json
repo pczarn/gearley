@@ -12,7 +12,7 @@
     "@primeuix/themes": "^1.2.1",
     "@primevue/themes": "^4.3.6",
     "ace-code": "^1.43.2",
-    "axios": "^1.11.0",
+    "axios": "^1.12.0",
     "pinia": "^3.0.3",
     "primeicons": "^7.0.0",
     "primevue": "^4.3.6",
