@@ -224,31 +224,32 @@ where
     }
 
     fn add_leo_items(&mut self) {
-        let medial = self.medial.last();
-        for idx in 0 .. medial.len() {
-            let rhs1 = self.grammar.get_rhs1(medial[idx].dot).unwrap();
-            let last = self.grammar.get_rhs1(medial[idx.saturating_sub(1)].dot).unwrap();
-            let next = self.grammar.get_rhs1(medial[idx + (idx != medial.len() - 1) as usize].dot).unwrap();
-            if (rhs1 != last || idx == 0) && (rhs1 != next || idx == medial.len() - 1) {
-                // this item is unique
-                // this item has a node
-                let item = medial[idx];
-                if self.grammar.is_right_recursive(rhs1) {
-                    let leo_set = &self.leo[item.origin as usize];
-                    let leo_idx = leo_set.binary_search_by_key(&rhs1, |&leo_item| self.grammar.get_rhs1(leo_item.dot).unwrap());
-                    match leo_idx {
-                        Err(_) => {
-                            self.leo.push_item(item);
-                        }
-                        Ok(idx) => {
-                            let mut new_leo_item = leo_set[idx];
-                            new_leo_item.node = self.forest.leo_product(new_leo_item.node, item.node);
-                            self.leo.push_item(new_leo_item);
-                        }
-                    }
-                }
-            }
-        }
+        todo!("leo");
+        // let medial = self.medial.last();
+        // for idx in 0 .. medial.len() {
+        //     let rhs1 = self.grammar.get_rhs1(medial[idx].dot).unwrap();
+        //     let last = self.grammar.get_rhs1(medial[idx.saturating_sub(1)].dot).unwrap();
+        //     let next = self.grammar.get_rhs1(medial[idx + (idx != medial.len() - 1) as usize].dot).unwrap();
+        //     if (rhs1 != last || idx == 0) && (rhs1 != next || idx == medial.len() - 1) {
+        //         // this item is unique
+        //         // this item has a node
+        //         let item = medial[idx];
+        //         if self.grammar.is_right_recursive(rhs1) {
+        //             let leo_set = &self.leo[item.origin as usize];
+        //             let leo_idx = leo_set.binary_search_by_key(&rhs1, |&leo_item| self.grammar.get_rhs1(leo_item.dot).unwrap());
+        //             match leo_idx {
+        //                 Err(_) => {
+        //                     self.leo.push_item(item);
+        //                 }
+        //                 Ok(idx) => {
+        //                     let mut new_leo_item = leo_set[idx];
+        //                     new_leo_item.node = self.forest.leo_product(new_leo_item.node, item.node);
+        //                     self.leo.push_item(new_leo_item);
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     fn remove_unreachable_sets(&mut self) {
@@ -290,7 +291,9 @@ where
             // ------------------------------
             self.predicted.truncate(new_earleme + 1);
             self.medial.truncate(new_earleme + 1);
-            self.leo.truncate(new_earleme + 1);
+            if P::LEO {
+                self.leo.truncate(new_earleme + 1);
+            }
             debug_assert_eq!(self.medial.len(), new_earleme + 2);
             debug_assert_eq!(self.earleme(), new_earleme);
         }
@@ -565,9 +568,10 @@ where
     }
 
     fn complete_leo(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) -> bool {
-        if !self.grammar.is_right_recursive(sym) {
-            return false;
-        }
+        todo!("leo");
+        // if !self.grammar.is_right_recursive(sym) {
+        //     return false;
+        // }
         let leo_set = &self.leo[set_id as usize];
         let maybe_found = leo_set.binary_search_by_key(&Some(sym), |ei| {
             self.grammar.get_rhs1(ei.dot)
@@ -585,7 +589,7 @@ where
             //                 rep
             // 
             let mut leo_item = leo_set[idx];
-            leo_item.node = self.forest.leo_product(leo_item.node, rhs_link);
+            // leo_item.node = self.forest.leo_product(leo_item.node, rhs_link);
             self.complete.heap_push(leo_item);
             true
         } else {
