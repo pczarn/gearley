@@ -12,9 +12,19 @@ const FOREST_BYTES_PER_RECOGNIZER_BYTE: usize = 2;
 
 pub trait PerfHint {
     const LOOKAHEAD: bool;
+    const LEO: bool;
     type Symbol;
-    fn completion_capacity(&self) -> usize;
-    fn medial_capacity(&self) -> Vec2dCapacity;
+
+    fn completion_capacity(&self) -> usize {
+        32
+    }
+
+    fn medial_capacity(&self) -> Vec2dCapacity {
+        Vec2dCapacity {
+            chart_capacity: 512,
+            indices_capacity: 128,
+        }
+    }
 }
 
 pub struct DefaultPerfHint {
@@ -82,6 +92,7 @@ impl DefaultPerfHint {
 
 impl PerfHint for DefaultPerfHint {
     const LOOKAHEAD: bool = true;
+    const LEO: bool = true;
     type Symbol = Symbol;
 
     fn completion_capacity(&self) -> usize {

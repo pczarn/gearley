@@ -8,7 +8,7 @@ use gearley_default_grammar::DefaultGrammar;
 use gearley_forest::Forest;
 use gearley_forest::NullForest;
 use gearley_grammar::Grammar;
-use gearley_recognizer::{Recognizer, lookahead::Lookahead};
+use gearley_recognizer::{lookahead::Lookahead, perf_hint::PerfHint, Recognizer};
 
 pub trait RecognizerParseExt {
     fn parse(&mut self, tokens: &[Symbol]) -> Result<bool, ParseError>;
@@ -57,11 +57,12 @@ impl Display for ParseError {
     }
 }
 
-impl<G, F> RecognizerParseExt for Recognizer<G, F>
+impl<G, F, P> RecognizerParseExt for Recognizer<G, F, P>
 where
     Self: Debug,
     G: Grammar,
     F: Forest,
+    P: PerfHint,
 {
     #[inline]
     fn parse(&mut self, tokens: &[Symbol]) -> Result<bool, ParseError> {

@@ -12,7 +12,7 @@ use gearley::{DefaultGrammar, Recognizer, Bocage, RecognizerParseExt, utils};
 use cfg_grammar::SymbolBitSet;
 use cfg_load::advanced::{AdvancedGrammar, LexerMap};
 
-use std::cell::RefCell;wrapping_sub
+use std::cell::RefCell;
 use std::sync::LazyLock;
 use std::sync::mpsc;
 use std::panic;

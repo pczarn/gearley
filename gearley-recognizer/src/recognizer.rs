@@ -117,7 +117,9 @@ where
 
     pub fn begin_earleme(&mut self) {
         self.medial.next_set();
-        self.leo.next_set();
+        if P::LEO {
+            self.leo.next_set();
+        }
         if cfg!(feature = "log") {
             let earleme = self.earleme();
             let rows = format!("{:?}", self.predicted.sub_matrix(earleme..earleme + 1));
@@ -190,6 +192,9 @@ where
     pub fn advance_after_completion(&mut self) {
         self.sort_medial_items();
         self.remove_unreachable_sets();
+        if P::LEO {
+            self.add_leo_items();
+        }
         trace!("recognizer.medial: Vec {:?}", self.medial.last());
         // `earleme` is now at least 1.
         // Prediction pass.
@@ -216,6 +221,34 @@ where
                     item.origin,
                 )
             });
+    }
+
+    fn add_leo_items(&mut self) {
+        let medial = self.medial.last();
+        for idx in 0 .. medial.len() {
+            let rhs1 = self.grammar.get_rhs1(medial[idx].dot).unwrap();
+            let last = self.grammar.get_rhs1(medial[idx.saturating_sub(1)].dot).unwrap();
+            let next = self.grammar.get_rhs1(medial[idx + (idx != medial.len() - 1) as usize].dot).unwrap();
+            if (rhs1 != last || idx == 0) && (rhs1 != next || idx == medial.len() - 1) {
+                // this item is unique
+                // this item has a node
+                let item = medial[idx];
+                if self.grammar.is_right_recursive(rhs1) {
+                    let leo_set = &self.leo[item.origin as usize];
+                    let leo_idx = leo_set.binary_search_by_key(&rhs1, |&leo_item| self.grammar.get_rhs1(leo_item.dot).unwrap());
+                    match leo_idx {
+                        Err(_) => {
+                            self.leo.push_item(item);
+                        }
+                        Ok(idx) => {
+                            let mut new_leo_item = leo_set[idx];
+                            new_leo_item.node = self.forest.leo_product(new_leo_item.node, item.node);
+                            self.leo.push_item(new_leo_item);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fn remove_unreachable_sets(&mut self) {
@@ -257,6 +290,7 @@ where
             // ------------------------------
             self.predicted.truncate(new_earleme + 1);
             self.medial.truncate(new_earleme + 1);
+            self.leo.truncate(new_earleme + 1);
             debug_assert_eq!(self.medial.len(), new_earleme + 2);
             debug_assert_eq!(self.earleme(), new_earleme);
         }
@@ -395,14 +429,19 @@ where
             // to   A ::=   g42 • c
             self.complete_generated_binary_predictions(set_id, sym, rhs_link);
         } else if self.predicted[set_id as usize].get(sym.usize()) {
-            // New item, either completed or medial.
+            // New item, completed.
             // from A ::=   B • C
             // to   A ::=   B   C •
-            self.complete_medial_items(set_id, sym, rhs_link);
-            // New item, either completed or medial.
-            // from A ::= • B   c
-            // to   A ::=   B • c
-            self.complete_predictions(set_id, sym, rhs_link);
+            if !P::LEO || !self.complete_leo(set_id, sym, rhs_link) {
+                // New item, completed.
+                // from A ::=   B • C
+                // to   A ::=   B   C •
+                self.complete_medial_items(set_id, sym, rhs_link);
+                // New item, either completed or medial.
+                // from A ::= • B   c
+                // to   A ::=   B • c
+                self.complete_predictions(set_id, sym, rhs_link);
+            }
         }
     }
 
@@ -523,6 +562,35 @@ where
         }
         self.medial
             .truncate_chart(self.medial.item_count() - (self.medial.last().len() - binary));
+    }
+
+    fn complete_leo(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) -> bool {
+        if !self.grammar.is_right_recursive(sym) {
+            return false;
+        }
+        let leo_set = &self.leo[set_id as usize];
+        let maybe_found = leo_set.binary_search_by_key(&Some(sym), |ei| {
+            self.grammar.get_rhs1(ei.dot)
+        });
+        if let Ok(idx) = maybe_found {
+            // let medial_set = &self.medial[set_id as usize];
+            // let medial_idx = medial_set.binary_search_by_key(&sym, |ei| {
+            //     self.grammar.get_rhs1(ei.dot).unwrap()
+            // }).unwrap();
+            // medial_set[medial_idx].node
+            // LEO node
+            // rep • ----rr--
+            //       rep --rr--
+            //             rep • rr
+            //                 rep
+            // 
+            let mut leo_item = leo_set[idx];
+            leo_item.node = self.forest.leo_product(leo_item.node, rhs_link);
+            self.complete.heap_push(leo_item);
+            true
+        } else {
+            false
+        }
     }
 
     /// Attempt to complete a predicted item with a postdot gensym.
