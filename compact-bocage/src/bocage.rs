@@ -43,7 +43,7 @@ impl Bocage {
             .map(|symbol| Node::NullingLeaf { symbol })
             .collect();
         for &[lhs, rhs0, rhs1] in &self.forest_info.nulling_intermediate_rules {
-            println!("RULE_NULLING at {:?}", lhs);
+            // println!("RULE_NULLING at {:?}", lhs);
             nulling.push(Node::Rule {
                 left_factor: NodeHandle::nulling(rhs0),
                 right_factor: NodeHandle::nulling(rhs1),
@@ -104,11 +104,7 @@ impl Bocage {
     #[inline]
     pub(crate) fn postprocess_product_tree_node(&mut self, node: Node) -> Node {
         if let Node::Product { factors, action } | Node::Summand { action, factors } = node {
-            if let Node::Rule {
-                left_factor,
-                right_factor,
-            } = self.get(factors)
-            {
+            if let Node::Rule { .. } = self.get(factors) {
                 return node;
             }
             if action == NULL_ACTION {

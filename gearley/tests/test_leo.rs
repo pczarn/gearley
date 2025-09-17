@@ -1,5 +1,3 @@
-use core::panic;
-
 use cfg::Cfg;
 use gearley::utils::RecognizerParseExt;
 use gearley::{DefaultGrammar, Forest, Recognizer};

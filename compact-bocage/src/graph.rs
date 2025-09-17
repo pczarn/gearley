@@ -10,9 +10,9 @@ pub(crate) struct Graph {
 }
 
 impl Graph {
-    pub fn new() -> Self {
-        Default::default()
-    }
+    // pub fn new() -> Self {
+    //     Default::default()
+    // }
 
     pub fn with_capacity(cap: usize) -> Self {
         Self {

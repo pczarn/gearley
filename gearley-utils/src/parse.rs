@@ -6,7 +6,6 @@ use gearley_default_grammar::DefaultGrammar;
 
 #[cfg(feature = "simple-bocage")]
 use gearley_forest::Forest;
-use gearley_forest::NullForest;
 use gearley_grammar::Grammar;
 use gearley_recognizer::{lookahead::Lookahead, perf_hint::PerfHint, Recognizer};
 

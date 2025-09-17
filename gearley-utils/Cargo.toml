@@ -10,11 +10,11 @@ gearley-grammar = { path = "../gearley-grammar/" }
 gearley-recognizer = { path = "../gearley-recognizer/" }
 gearley-default-grammar = { path = "../gearley-default-grammar/" }
 cfg = { workspace = true }
-cfg-grammar = { version = "0.0.1", path = "../../cfg/cfg-grammar/" }
-cfg-sequence = { version = "0.0.1", path = "../../cfg/cfg-sequence/" }
+cfg-grammar = { version = "0.1.0", path = "../../cfg/cfg-grammar/" }
+cfg-sequence = { version = "0.1.0", path = "../../cfg/cfg-sequence/" }
 simple-bocage = { path = "../simple-bocage/", optional = true }
 compact-bocage = { path = "../compact-bocage/", optional = true }
-cfg-load = { path = "../../cfg/cfg-load/", version = "0.0.1" }
+cfg-load = { version = "0.1.0", path = "../../cfg/cfg-load/" }
 
 [dev-dependencies]
 gearley-default-grammar = { path = "../gearley-default-grammar/" }

@@ -159,7 +159,7 @@ where
 
     #[inline]
     pub fn lookahead(&mut self) -> impl Lookahead + '_ {
-        self.lookahead.mut_with_grammar(&self.grammar)
+        &mut self.lookahead
     }
 
     /// Advances the parse. Calling this method may set the finished node, which can be accessed
@@ -479,7 +479,6 @@ where
             // to   A ::= B   C •
             let will_be_useful = self
                 .lookahead
-                .mut_with_grammar(&self.grammar)
                 .sym()
                 .map_or(true, |sym| {
                     let lhs = self.grammar.get_lhs(item.dot);
@@ -505,7 +504,6 @@ where
             let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
             let will_be_useful = self
                 .lookahead
-                .mut_with_grammar(&self.grammar)
                 .sym()
                 .map_or(true, |sym| {
                     if self.grammar.rhs1_or_lhs(trans.dot).usize() >= self.grammar.num_syms() {
@@ -528,7 +526,6 @@ where
                     PredLookaheadRejected {
                         lookahead: self
                             .lookahead
-                            .mut_with_grammar(&self.grammar)
                             .sym()
                             .unwrap(),
                         trans: trans.symbol,
@@ -567,34 +564,34 @@ where
             .truncate_chart(self.medial.item_count() - (self.medial.last().len() - binary));
     }
 
-    fn complete_leo(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) -> bool {
+    fn complete_leo(&mut self, _set_id: Origin, _sym: Symbol, _rhs_link: F::NodeRef) -> bool {
         todo!("leo");
         // if !self.grammar.is_right_recursive(sym) {
         //     return false;
         // }
-        let leo_set = &self.leo[set_id as usize];
-        let maybe_found = leo_set.binary_search_by_key(&Some(sym), |ei| {
-            self.grammar.get_rhs1(ei.dot)
-        });
-        if let Ok(idx) = maybe_found {
-            // let medial_set = &self.medial[set_id as usize];
-            // let medial_idx = medial_set.binary_search_by_key(&sym, |ei| {
-            //     self.grammar.get_rhs1(ei.dot).unwrap()
-            // }).unwrap();
-            // medial_set[medial_idx].node
-            // LEO node
-            // rep • ----rr--
-            //       rep --rr--
-            //             rep • rr
-            //                 rep
-            // 
-            let mut leo_item = leo_set[idx];
-            // leo_item.node = self.forest.leo_product(leo_item.node, rhs_link);
-            self.complete.heap_push(leo_item);
-            true
-        } else {
-            false
-        }
+        // let leo_set = &self.leo[set_id as usize];
+        // let maybe_found = leo_set.binary_search_by_key(&Some(sym), |ei| {
+        //     self.grammar.get_rhs1(ei.dot)
+        // });
+        // if let Ok(idx) = maybe_found {
+        //     // let medial_set = &self.medial[set_id as usize];
+        //     // let medial_idx = medial_set.binary_search_by_key(&sym, |ei| {
+        //     //     self.grammar.get_rhs1(ei.dot).unwrap()
+        //     // }).unwrap();
+        //     // medial_set[medial_idx].node
+        //     // LEO node
+        //     // rep • ----rr--
+        //     //       rep --rr--
+        //     //             rep • rr
+        //     //                 rep
+        //     // 
+        //     let mut leo_item = leo_set[idx];
+        //     // leo_item.node = self.forest.leo_product(leo_item.node, rhs_link);
+        //     self.complete.heap_push(leo_item);
+        //     true
+        // } else {
+        //     false
+        // }
     }
 
     /// Attempt to complete a predicted item with a postdot gensym.
@@ -607,7 +604,7 @@ where
         let [binary_opt, unary_opt] = self.grammar.gen_completion(sym);
         if let Some(trans) = unary_opt {
             let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
-            // let will_be_useful = self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lr_set(trans.dot)[sym.usize()]);
+            // let will_be_useful = self.lookahead.sym().map_or(true, |sym| self.grammar.lr_set(trans.dot)[sym.usize()]);
             if was_predicted {
                 // No checks for uniqueness, because completions are deduplicated.
                 // --- UNARY
@@ -623,7 +620,7 @@ where
         }
         if let Some(trans) = binary_opt {
             let was_predicted = self.predicted[set_id as usize].get(trans.symbol.usize());
-            // let will_be_useful = self.lookahead.mut_with_grammar(&self.grammar).sym().map_or(true, |sym| self.grammar.lr_set(trans.dot)[sym.usize()]);
+            // let will_be_useful = self.lookahead.sym().map_or(true, |sym| self.grammar.lr_set(trans.dot)[sym.usize()]);
             if was_predicted {
                 // No checks for uniqueness, because completions are deduplicated.
                 // --- BINARY
@@ -652,7 +649,7 @@ where
             // Include all items in the completion.
             completion.complete_entire_sum();
         }
-        self.lookahead.mut_with_grammar(&self.grammar).clear_hint();
+        self.lookahead.clear_hint();
     }
 
     /// Allows iteration through groups of completions that have unique symbol and origin.
