@@ -144,6 +144,16 @@ impl Forest for Bocage {
     }
 
     #[inline]
+    fn leo_product(&mut self, left_factor: Self::NodeRef, right_factor: Self::NodeRef)
+            -> Self::NodeRef {
+        self.graph.push(Node::LeoRule {
+            left_factor,
+            right_factor,
+        });
+        NodeHandle(self.graph.len() as u32 - 1)
+    }
+
+    #[inline]
     fn sum(&mut self, lhs_sym: Symbol, _origin: u32) -> Self::NodeRef {
         let result = {
             match self.summand_count {

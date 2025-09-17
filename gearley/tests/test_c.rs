@@ -1,7 +1,7 @@
 use cfg::Cfg;
 use cfg_examples::c::grammar as c_grammar;
 use cfg_load::CfgLoadExt;
-use compact_bocage::Bocage;
+use simple_bocage::Bocage;
 use gearley::{DefaultGrammar, Recognizer, RecognizerParseExt};
 
 const SYM_NAMES: [Option<&'static str>; 176] = [

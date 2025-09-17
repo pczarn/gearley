@@ -176,6 +176,12 @@ impl Forest for Bocage {
     }
 
     #[inline]
+    fn leo_product(&mut self, left_factor: Self::NodeRef, right_factor: Self::NodeRef)
+            -> Self::NodeRef {
+        unimplemented!()
+    }
+
+    #[inline]
     fn sum(&mut self, _lhs_sym: Symbol, _origin: u32) -> Self::NodeRef {
         let result = self.sum.unwrap();
         self.sum = None;

@@ -19,6 +19,9 @@ pub trait Forest<S = Symbol> {
     fn product(&mut self, left_factor: Self::NodeRef, right_factor: Self::NodeRef)
         -> Self::NodeRef;
 
+    fn leo_product(&mut self, left_factor: Self::NodeRef, right_factor: Self::NodeRef)
+        -> Self::NodeRef;
+
     fn leaf(&mut self, token: S, pos: u32, value: u32) -> Self::NodeRef;
 
     fn nulling(&self, token: S) -> Self::NodeRef;

@@ -4,6 +4,8 @@ use std::{cmp, iter};
 
 use bit_matrix::row::BitSlice;
 use bit_matrix::BitMatrix;
+use bit_vec::BitVec;
+use cfg::classify::recursive::RecursionKind;
 use cfg::classify::CfgClassifyExt;
 use cfg::predict_sets::{FirstSets, FollowSets, PredictSets};
 use cfg::symbol_bit_matrix::{CfgSymbolBitMatrixExt, Remap};
@@ -66,6 +68,8 @@ pub struct DefaultGrammar {
     sym_maps: Mapping,
 
     scan_prediction_matrix: BitMatrix,
+
+    is_right_recursive: BitVec,
 
     // For the forest
     forest_info: ForestInfo,
@@ -311,6 +315,7 @@ impl DefaultGrammar {
         result.populate_maps(maps);
         result.populate_grammar(&grammar);
         result.populate_nulling(nulling);
+        result.populate_leo(&grammar);
         trace!("result: {:?}", result);
         result
     }
@@ -609,6 +614,15 @@ impl DefaultGrammar {
             .nulling_intermediate_rules
             .extend(iter_nulling_intermediate);
     }
+
+    fn populate_leo(&mut self, grammar: &Cfg) {
+        self.is_right_recursive = BitVec::from_elem(self.num_syms(), false);
+        for rule in grammar.recursion().recursive_rules() {
+            if rule.recursion == RecursionKind::Right && rule.rule.lhs.usize() < self.size.syms {
+                self.is_right_recursive.set(rule.rule.lhs.usize(), true);
+            }
+        }
+    }
 }
 
 impl Grammar for DefaultGrammar {
@@ -712,6 +726,11 @@ impl Grammar for DefaultGrammar {
     #[inline]
     fn get_lhs(&self, dot: Dot) -> Symbol {
         self.columns[0].syms[dot as usize].unwrap()
+    }
+
+    #[inline]
+    fn is_right_recursive(&self, sym: Symbol) -> bool {
+        self.is_right_recursive.get(sym.usize()).unwrap_or(false)
     }
 
     #[inline]

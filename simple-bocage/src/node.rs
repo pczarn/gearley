@@ -17,6 +17,10 @@ pub enum Node {
         action: u32,
         factors: NodeHandle,
     },
+    LeoRule {
+        left_factor: NodeHandle,
+        right_factor: NodeHandle,
+    },
     Rule {
         // 8 bytes.
         left_factor: NodeHandle,

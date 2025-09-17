@@ -55,6 +55,8 @@ pub trait Grammar {
 
     fn get_lhs(&self, dot: Dot) -> Symbol;
 
+    fn is_right_recursive(&self, sym: Symbol) -> bool;
+
     fn external_origin(&self, dot: Dot) -> ExternalOrigin;
 
     fn eliminated_nulling_intermediate(&self) -> &[NullingIntermediateRule];
@@ -148,6 +150,10 @@ where
 
     fn get_lhs(&self, dot: Dot) -> Symbol {
         (**self).get_lhs(dot)
+    }
+
+    fn is_right_recursive(&self, sym: Symbol) -> bool {
+        (**self).is_right_recursive(sym)
     }
 
     fn external_origin(&self, dot: Dot) -> ExternalOrigin {

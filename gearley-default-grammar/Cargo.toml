@@ -9,6 +9,7 @@ edition = "2021"
 gearley-grammar = { path = "../gearley-grammar/" }
 gearley-vec2d = { path = "../gearley-vec2d/" }
 cfg = { path = "../../cfg/cfg/" }
+bit-vec = "0.8"
 bit-matrix = { workspace = true }
 cfg-symbol = { workspace = true }
 miniserde = { workspace = true }

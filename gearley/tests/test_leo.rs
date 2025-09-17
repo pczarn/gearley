@@ -1,8 +1,44 @@
-use core::panic;
-
-use cfg::Cfg;
+use cfg::{Cfg, Symbol};
 use gearley::utils::RecognizerParseExt;
-use gearley::{DefaultGrammar, Forest, Recognizer};
+use gearley::{DefaultGrammar, Forest, PerfHint, Recognizer};
+
+struct NoLeoPerfHint;
+
+impl PerfHint for NoLeoPerfHint {
+    const LEO: bool = false;
+    const LOOKAHEAD: bool = true;
+    type Symbol = Symbol;
+}
+
+#[test]
+fn test_right_rec() {
+    let _ = env_logger::try_init();
+    let mut external = Cfg::new();
+    let [start, rep, rr, maybe] = external.sym();
+    external
+        .rule(start)
+        .rhs([rr, rep])
+        .rule(rr)
+        .rhs([rep, maybe])
+        .rhs([rep])
+        .rule(maybe)
+        .rhs([])
+        .rhs([rr]);
+    external.set_roots([start]);
+    let cfg = DefaultGrammar::from_grammar(external);
+    let mut rec = Recognizer::with_forest(&cfg, InstrBocage::new());
+    assert!(rec.parse(&[rep, rep, rep, rep, rep]).unwrap());
+    assert_eq!(
+        rec.into_forest(),
+        InstrBocage {
+            num_sums: 11,
+            num_leaves: 6,
+            num_products: 2,
+            num_leo_products: 8,
+            num_summands: 11
+        }
+    );
+}
 
 #[test]
 fn test_leo() {
@@ -11,21 +47,49 @@ fn test_leo() {
     let [start, rep, rr] = external.sym();
     external
         .rule(start)
-        .rhs([rr])
+        .rhs([rr, rep])
         .rule(rr)
         .rhs([rep, rr])
         .rhs([rep]);
     external.set_roots([start]);
     let cfg = DefaultGrammar::from_grammar(external);
     let mut rec = Recognizer::with_forest(&cfg, InstrBocage::new());
-    assert!(rec.parse(&[rep, rep, rep, rep]).unwrap());
+    assert!(rec.parse(&[rep, rep, rep, rep, rep]).unwrap());
     assert_eq!(
         rec.into_forest(),
         InstrBocage {
-            num_sums: 18,
-            num_leaves: 5,
-            num_products: 10,
-            num_summands: 18
+            num_sums: 11,
+            num_leaves: 6,
+            num_products: 2,
+            num_leo_products: 8,
+            num_summands: 11
+        }
+    );
+}
+
+#[test]
+fn test_no_leo() {
+    let _ = env_logger::try_init();
+    let mut external = Cfg::new();
+    let [start, rep, rr] = external.sym();
+    external
+        .rule(start)
+        .rhs([rr, rep])
+        .rule(rr)
+        .rhs([rep, rr])
+        .rhs([rep]);
+    external.set_roots([start]);
+    let cfg = DefaultGrammar::from_grammar(external);
+    let mut rec = Recognizer::with_forest_and_policy(&cfg, InstrBocage::new(), NoLeoPerfHint);
+    assert!(rec.parse(&[rep, rep, rep, rep, rep]).unwrap());
+    assert_eq!(
+        rec.into_forest(),
+        InstrBocage {
+            num_sums: 17,
+            num_leaves: 6,
+            num_products: 12,
+            num_leo_products: 0,
+            num_summands: 17
         }
     );
 }
@@ -35,6 +99,7 @@ struct InstrBocage {
     num_sums: usize,
     num_leaves: usize,
     num_products: usize,
+    num_leo_products: usize,
     num_summands: usize,
 }
 
@@ -66,6 +131,14 @@ impl Forest for InstrBocage {
         right_factor: Self::NodeRef,
     ) -> Self::NodeRef {
         self.num_products += 1;
+    }
+
+    fn leo_product(
+        &mut self,
+        left_factor: Self::NodeRef,
+        right_factor: Self::NodeRef,
+    ) -> Self::NodeRef {
+        self.num_leo_products += 1;
     }
 
     fn push_summand(&mut self, item: gearley::Item<Self::NodeRef>) {

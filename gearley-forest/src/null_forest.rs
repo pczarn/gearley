@@ -28,6 +28,13 @@ impl<S: Copy> Forest<S> for NullForest {
     ) -> Self::NodeRef {
     }
     #[inline(always)]
+    fn leo_product(
+        &mut self,
+        _left_factor: Self::NodeRef,
+        _right_factor: Self::NodeRef,
+    ) -> Self::NodeRef {
+    }
+    #[inline(always)]
     fn sum(&mut self, _lhs_sym: S, _origin: u32) -> Self::NodeRef {
         ()
     }

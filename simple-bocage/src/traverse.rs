@@ -81,6 +81,31 @@ impl Bocage {
                         results: AVec::new_in(&alloc),
                     });
                 }
+                (Node::LeoRule { left_factor, .. }, 0) => {
+                    work.child += 1;
+                    let parent = work.parent;
+                    work_stack.push(work);
+                    work_stack.push(WorkNode {
+                        node: left_factor,
+                        child: 0,
+                        parent,
+                        results: AVec::new_in(&alloc),
+                    });
+                }
+                (Node::LeoRule { right_factor, .. }, 1) => {
+                    work.child += 1;
+                    let parent = work.parent;
+                    work_stack.push(work);
+                    work_stack.push(WorkNode {
+                        node: right_factor,
+                        child: 0,
+                        parent,
+                        results: AVec::new_in(&alloc),
+                    });
+                }
+                (Node::LeoRule { .. }, _) => {
+                    // nothing to do
+                }
                 (Node::Rule { left_factor, .. }, 0) => {
                     work.child += 1;
                     let parent = work.parent;
