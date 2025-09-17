@@ -1,6 +1,6 @@
 [package]
 name = "gearley-wasm"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["peterb"]
 edition = "2018"
 
