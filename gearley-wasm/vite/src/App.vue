@@ -40,40 +40,42 @@
                 <div id="full-editor"></div>
             </div>
             <div class="right-box">
+                <ProgressSpinner v-show="isLoading"></ProgressSpinner>
                 <Result />
             </div>
         </div>
     </div>
     <Dialog v-model:visible="helpVisible" modal header="Help" class="help-dialog">
         <p>
-            With the two dropdowns visible in the bar,
-            you may load any of the builtin examples.
-            Each example is available only for the chosen
-            lexer listed as "mode". The "basic" lexer is
-            a crude mode for accepting input as a space-separated
-            list of terminal symbol names. The "advanced" lexer
-            permits regexps and strings, so that the grammar
-            is in so-called "scannerless mode".
+            With the two dropdowns in the top bar, you can load any of the
+            built-in examples. Each example is available only for the lexer
+            selected as <i>mode</i>. The <i>basic</i> lexer accepts input as a
+            space-separated list of terminal symbol names. The <i>advanced</i>
+            lexer supports regular expressions and strings, allowing the grammar
+            to run in scannerless mode.
         </p>
+
         <p>
-            The purpose of limiting lines is to avoid having too many components
-            to process and display for huge inputs. The default limit is 10000 lines.
+            Line limits are used to prevent excessive processing and rendering
+            for very large inputs. The default limit is 10,000 lines.
         </p>
+
         <p>
-            To the left, you can see an editor. This editor provides the string
-            to parse within the HTML-like "input" tag
-            (keep in mind - it does not trim whitespace).
-            Likewise, the grammar is provided within the "grammar" tag.
-            Check out our examples for more.
+            On the left, you’ll see an editor. This editor provides the string
+            to be parsed inside the HTML-like input tag (note that whitespace is
+            not trimmed). Similarly, the grammar is defined inside the grammar
+            tag. See the examples for more details.
         </p>
+
         <p>
-            To the right, you have a number of tabs to choose from.
-            Each tab is named after a grammar transformation or parsing step.
-            It shows all the information logged by that step.
-            That way, you can see the inner workings of gearley.
+            On the right, several tabs are available. Each tab corresponds to a
+            grammar transformation or parsing step and displays the information
+            logged at that stage. This makes it possible to explore the internal
+            workings of Gearley.
         </p>
+
         <p>
-            In the top bar, you may also click on the links to visit our github repositories.
+            Finally, the top bar also contains links to our GitHub repositories.
         </p>
     </Dialog>
 </template>
@@ -82,18 +84,22 @@
 import Result from './Result.vue'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
+import ProgressSpinner from 'primevue/progressspinner'
 import '@/assets/ace-builds'
 import { ref, computed, onMounted, watch } from 'vue'
-import { getGrammars, getExamples, parse } from "@/assets/pkg/gearley_wasm.js";
+import { getGrammars, getExamples } from "@/assets/pkg/gearley_wasm.js";
 import { useParse } from '@/stores/parse'
+import Worker from '@/worker/parse?worker'
 
 const parseStore = useParse()
+const ParseWorker = new Worker()
 ace.config.set('basePath', 'ace-builds/src-noconflict/')
 
 let editor = null
 const selectedMode = ref('advanced')
 const typingTimer = ref(null)
 const typing = ref(false)
+const isLoading = ref(false)
 const loadModes = [
     'advanced',
     'basic',
@@ -158,22 +164,13 @@ function processInput(input) {
         return
     }
 
-    function parseWithWasm(input, grammar, mode) {
-        if (loadModes.find((m) => m === mode)) {
-            return parse(input, grammar, mode)
-        } else {
-            return 'Unknown mode'
-        }
-    }
+    isLoading.value = true
+    ParseWorker.postMessage([matchedInput[1], matchedGrammar[1], selectedMode.value])
+}
 
-    let result = ''
-    try {
-        result = parseWithWasm(matchedInput[1], matchedGrammar[1], selectedMode.value);
-    } catch (e) {
-        console.error(e)
-        result = "Caught\n" + e.message;
-    }
-    parseStore.setResult(result)
+ParseWorker.onmessage = (event) => {
+    isLoading.value = false
+    parseStore.setResult(event.data)
 }
 
 watch(selectedExample, () => {
