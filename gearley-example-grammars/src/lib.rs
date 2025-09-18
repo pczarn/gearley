@@ -1,6 +1,7 @@
 pub mod ambiguous_math;
 pub mod c;
 pub mod precedenced_math;
+mod antlr4;
 
 pub static BNFS: &'static [[&'static str; 4]] = &[
     [
