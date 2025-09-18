@@ -4,3 +4,6 @@
 [submodule "gearley-wasm/vite/src/assets/ace-builds"]
 	path = gearley-wasm/vite/src/assets/ace-builds
 	url = git@github.com:ajaxorg/ace-builds.git
+[submodule "gearley-example-grammars/grammars-v4"]
+	path = gearley-example-grammars/grammars-v4
+	url = git@github.com:antlr/grammars-v4.git

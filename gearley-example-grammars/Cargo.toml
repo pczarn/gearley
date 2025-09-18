@@ -8,3 +8,7 @@ gearley-forest = { path = "../gearley-forest/" }
 cfg-load = { path = "../../cfg/cfg-load/" }
 cfg = { path = "../../cfg/cfg/" }
 cfg-examples = { path = "../../cfg/cfg-examples/" }
+lalrpop-util = { version = "0.22.2", features = ["lexer", "unicode"] }
+
+[build-dependencies]
+lalrpop = "0.22.2"
