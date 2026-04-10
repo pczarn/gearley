@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 pub mod evaluate;
 pub mod forest;
 pub mod item;

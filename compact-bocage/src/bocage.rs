@@ -194,8 +194,17 @@ impl Forest for Bocage {
     }
 
     #[inline]
-    fn nulling(&self, token: Symbol) -> Self::NodeRef {
+    fn nulling(&mut self, token: Symbol) -> Self::NodeRef {
         NodeHandle((token.usize() * 9) as u32)
+    }
+
+    fn leo_product(&mut self, left_factor: Self::NodeRef, right_factor: Self::NodeRef) -> Self::NodeRef {
+        let result = NodeHandle(self.graph.len());
+        self.graph.push(Node::LeoProduct {
+            left_factor,
+            right_factor,
+        });
+        result
     }
 }
 

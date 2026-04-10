@@ -11,7 +11,7 @@ cfg_if! {
             // #[wasm_bindgen(js_namespace = console)]
             // fn warn(msg: String);
 
-            #[wasm_bindgen(js_namespace = window)]
+            #[wasm_bindgen(js_namespace = self)]
             fn log_error(msg: String);
 
             type Error;

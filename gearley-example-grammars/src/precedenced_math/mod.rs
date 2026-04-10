@@ -10,6 +10,7 @@ pub(crate) static INPUTS: &'static [&'static str] =
     &[include_str!("example.txt"), include_str!("example2.txt")];
 
 pub fn grammar() -> Cfg {
+    use cfg::precedenced_rule::Associativity;
     let mut bnf = Cfg::new();
     let [
         sum,
@@ -23,17 +24,16 @@ pub fn grammar() -> Cfg {
         lparen,
         rparen,
     ] = bnf.sym();
-    bnf.rule(sum)
-        .rhs([sum, plus, product])
-        .rhs([sum, minus, product])
-        .rhs([product])
-        .rule(product)
-        .rhs([product, mul, factor])
-        .rhs([product, div, factor])
-        .rhs([factor])
-        .rule(factor)
+    bnf.precedenced_rule(sum)
+        .rhs([number])
+        .associativity(Associativity::Group)
         .rhs([lparen, sum, rparen])
-        .rhs([number]);
+        .lower_precedence()
+        .rhs([sum, mul, sum])
+        .rhs([sum, div, sum])
+        .lower_precedence()
+        .rhs([sum, plus, sum])
+        .rhs([sum, minus, sum]);
     for _ in 0..10 {
         let [sym] = bnf.sym();
         bnf.rule(number).rhs([sym, number]).rhs(&[sym]);

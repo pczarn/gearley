@@ -114,12 +114,6 @@ const loadExamples = computed(() => {
 })
 
 onMounted(() => {
-    if (typeof window.log_error === 'undefined') {
-        window.log_error = function(text) {
-            parseStore.setResult("Logged:\n" + text)
-        }
-    }
-
     editor = ace.edit("full-editor");
     editor.setTheme("ace/theme/monokai");
     editor.setOptions({
@@ -137,6 +131,7 @@ onMounted(() => {
     allLoadExamples.value = each_slice(getGrammars(), 4)
     selectedExample.value = allLoadExamples.value.find((val) => val.mode === selectedMode.value).id
     editor.getSession().on('change', update);
+    update()
 })
 
 function update() {

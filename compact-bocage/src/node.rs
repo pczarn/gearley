@@ -31,6 +31,10 @@ pub enum Node {
         /// 4 bytes.
         symbol: Symbol,
     },
+    LeoProduct {
+        left_factor: NodeHandle,
+        right_factor: NodeHandle,
+    }
 }
 
 pub const NULL_ACTION: u32 = u32::MAX;

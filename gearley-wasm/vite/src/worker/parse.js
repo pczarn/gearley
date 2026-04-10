@@ -6,6 +6,8 @@ const loadModes = [
     'c-lexer'
 ]
 
+self.log_error = null;
+
 function parseWithWasm(input, grammar, mode) {
     if (loadModes.find((m) => m === mode)) {
         return parse(input, grammar, mode)
@@ -16,6 +18,12 @@ function parseWithWasm(input, grammar, mode) {
 
 async function init_wasm_in_worker() {
   console.log('Initializing worker');
+
+    if (typeof self.log_error !== 'function') {
+        self.log_error = function(text) {
+            postMessage("Logged:\n" + text)
+        }
+    }
 
   // Load the wasm file by awaiting the Promise returned by `wasm_bindgen`.
   await init();

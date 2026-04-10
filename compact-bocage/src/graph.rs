@@ -1,5 +1,5 @@
 use bytemuck::{bytes_of, from_bytes};
-use cfg_symbol::Symbol;
+use cfg_symbol::{Symbol, SymbolSource};
 use gearley_forest::node_handle::NodeHandle;
 
 use crate::node::Node;
@@ -39,6 +39,7 @@ impl Graph {
             } => [4, left_factor.0, right_factor.0],
             Node::Leaf { symbol, values } => [5, symbol.usize() as u32, values],
             Node::NullingLeaf { symbol } => [6, symbol.usize() as u32, 0],
+            Node::LeoProduct { left_factor, right_factor } => [7, left_factor.0, right_factor.0]
         };
         let f = |mut x: u32| {
             let slice = u32::to_le_bytes(x);
@@ -92,11 +93,15 @@ impl Graph {
                 right_factor: NodeHandle(right),
             },
             5 => Node::Leaf {
-                symbol: Symbol::from_raw(left),
+                symbol: SymbolSource::generate_fresh().nth(left as usize).unwrap(),
                 values: right,
             },
             6 => Node::NullingLeaf {
-                symbol: Symbol::from_raw(left),
+                symbol: SymbolSource::generate_fresh().nth(left as usize).unwrap(),
+            },
+            7 => Node::LeoProduct {
+                left_factor: NodeHandle(left),
+                right_factor: NodeHandle(right),
             },
             _ => unreachable!(),
         }
@@ -131,6 +136,7 @@ impl Graph {
             } => [4, left_factor.0, right_factor.0],
             Node::Leaf { symbol, values } => [5, symbol.usize() as u32, values],
             Node::NullingLeaf { symbol } => [6, symbol.usize() as u32, 0],
+            Node::LeoProduct { left_factor, right_factor } => [7, left_factor.0, right_factor.0]
         };
         self.vect.push(discr as u8 | 0b1111000);
         self.vect.extend(bytes_of(&left));
