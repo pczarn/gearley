@@ -1,6 +1,8 @@
 pub mod ambiguous_math;
 pub mod c;
 pub mod precedenced_math;
+pub mod leo;
+// mod antlr4;
 
 pub static BNFS: &'static [[&'static str; 4]] = &[
     [
@@ -15,6 +17,12 @@ pub static BNFS: &'static [[&'static str; 4]] = &[
         "advanced",
         crate::precedenced_math::BNF,
     ],
+    [
+        "leo",
+        "Leo's",
+        "basic",
+        crate::leo::BNF,
+    ],
     ["c", "C with lexer", "c-lexer", crate::c::BNF],
 ];
 
@@ -22,6 +30,7 @@ pub fn get_examples(id: &str) -> Option<&'static [&'static str]> {
     match id {
         "precedenced_math" => Some(crate::precedenced_math::INPUTS),
         "ambiguous_math" => Some(crate::ambiguous_math::INPUTS),
+        "leo" => Some(crate::leo::INPUTS),
         "c" => Some(crate::c::INPUTS),
         _ => None,
     }

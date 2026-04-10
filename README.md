@@ -151,7 +151,7 @@ Yet another interface gives
 You may reject completed rules or modify their parse forests as the
 parse progresses.
 
-Gearley is perfectly extensible on every level.
+Gearley is perfectly extensible on every level,
 
 ## Glossary
 
@@ -234,6 +234,10 @@ Root node — a node that is used as a parse result.
 > I would be very eager to see this.
 
  — mydoghasticks
+
+> I do have a great personal interest; I think Earley is a great technology, I'm interested in your optimizations, and if I ever write another parser, I'd love to be able to use gearley.
+
+ — Dave Abrahams
 
 ## Thanks
 

@@ -224,32 +224,37 @@ where
     }
 
     fn add_leo_items(&mut self) {
-        todo!("leo");
-        // let medial = self.medial.last();
-        // for idx in 0 .. medial.len() {
-        //     let rhs1 = self.grammar.get_rhs1(medial[idx].dot).unwrap();
-        //     let last = self.grammar.get_rhs1(medial[idx.saturating_sub(1)].dot).unwrap();
-        //     let next = self.grammar.get_rhs1(medial[idx + (idx != medial.len() - 1) as usize].dot).unwrap();
-        //     if (rhs1 != last || idx == 0) && (rhs1 != next || idx == medial.len() - 1) {
-        //         // this item is unique
-        //         // this item has a node
-        //         let item = medial[idx];
-        //         if self.grammar.is_right_recursive(rhs1) {
-        //             let leo_set = &self.leo[item.origin as usize];
-        //             let leo_idx = leo_set.binary_search_by_key(&rhs1, |&leo_item| self.grammar.get_rhs1(leo_item.dot).unwrap());
-        //             match leo_idx {
-        //                 Err(_) => {
-        //                     self.leo.push_item(item);
-        //                 }
-        //                 Ok(idx) => {
-        //                     let mut new_leo_item = leo_set[idx];
-        //                     new_leo_item.node = self.forest.leo_product(new_leo_item.node, item.node);
-        //                     self.leo.push_item(new_leo_item);
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        // todo!("leo");
+        let medial = self.medial.last();
+        for idx in 0 .. medial.len() {
+            let rhs1 = self.grammar.get_rhs1(medial[idx].dot).unwrap();
+            let last = self.grammar.get_rhs1(medial[idx.saturating_sub(1)].dot).unwrap();
+            let next = self.grammar.get_rhs1(medial[idx + (idx != medial.len() - 1) as usize].dot).unwrap();
+            if (rhs1 != last || idx == 0) && (rhs1 != next || idx == medial.len() - 1) {
+                // this item is unique
+                // this item has a node
+                let item = medial[idx];
+                if self.grammar.is_right_recursive(rhs1) {
+                    let leo_set = &self.leo[item.origin as usize];
+                    let leo_idx = leo_set.binary_search_by_key(&rhs1, |&leo_item| self.grammar.get_rhs1(leo_item.dot).unwrap());
+                    match leo_idx {
+                        Err(_) => {
+                            self.leo.push_item(item);
+                        }
+                        Ok(idx) => {
+                            let mut new_leo_item = leo_set[idx];
+                            new_leo_item.node = self.forest.leo_product(new_leo_item.node, item.node);
+                            self.leo.push_item(new_leo_item);
+                        }
+                    }
+                    trace!("recognizer.leo: Uniqueness {{ rhs1: {:?}, unique: 'yes', chain: {:?} }}", rhs1, leo_idx);
+                } else {
+                    trace!("recognizer.leo: Uniqueness {{ rhs1: {:?}, unique: 'non-recursive' }}", rhs1);
+                }
+            } else {
+                trace!("recognizer.leo: Uniqueness {{ rhs1: {:?}, unique: 'no' }}", rhs1);
+            }
+        }
     }
 
     fn remove_unreachable_sets(&mut self) {
@@ -333,7 +338,7 @@ where
 
     /// Checks whether there is a valid parse that ends at the current
     /// position.
-    pub fn is_finished(&self) -> bool {
+    pub fn is_finished(&mut self) -> bool {
         self.finished_node().is_some()
     }
 
@@ -343,7 +348,7 @@ where
     /// # Panics
     ///
     /// Panics when the parse has not finished at the current location.
-    pub fn finished_node(&self) -> Option<F::NodeRef> {
+    pub fn finished_node(&mut self) -> Option<F::NodeRef> {
         if self.grammar.has_trivial_derivation() && self.earleme() == !0 {
             Some(self.forest.nulling(self.grammar.externalized_start_sym()))
         } else {
@@ -564,34 +569,37 @@ where
             .truncate_chart(self.medial.item_count() - (self.medial.last().len() - binary));
     }
 
-    fn complete_leo(&mut self, _set_id: Origin, _sym: Symbol, _rhs_link: F::NodeRef) -> bool {
-        todo!("leo");
-        // if !self.grammar.is_right_recursive(sym) {
-        //     return false;
-        // }
-        // let leo_set = &self.leo[set_id as usize];
-        // let maybe_found = leo_set.binary_search_by_key(&Some(sym), |ei| {
-        //     self.grammar.get_rhs1(ei.dot)
-        // });
-        // if let Ok(idx) = maybe_found {
-        //     // let medial_set = &self.medial[set_id as usize];
-        //     // let medial_idx = medial_set.binary_search_by_key(&sym, |ei| {
-        //     //     self.grammar.get_rhs1(ei.dot).unwrap()
-        //     // }).unwrap();
-        //     // medial_set[medial_idx].node
-        //     // LEO node
-        //     // rep • ----rr--
-        //     //       rep --rr--
-        //     //             rep • rr
-        //     //                 rep
-        //     // 
-        //     let mut leo_item = leo_set[idx];
-        //     // leo_item.node = self.forest.leo_product(leo_item.node, rhs_link);
-        //     self.complete.heap_push(leo_item);
-        //     true
-        // } else {
-        //     false
-        // }
+    fn complete_leo(&mut self, set_id: Origin, sym: Symbol, rhs_link: F::NodeRef) -> bool {
+        if !self.grammar.is_right_recursive(sym) {
+            trace!("recognizer.complete_leo: CompleteLeo {{ right_recursive: false }}");
+            return false;
+        }
+        let leo_set = &self.leo[set_id as usize];
+        let maybe_found = leo_set.binary_search_by_key(&Some(sym), |ei| {
+            self.grammar.get_rhs1(ei.dot)
+        });
+        if let Ok(idx) = maybe_found {
+            // let medial_set = &self.medial[set_id as usize];
+            // let medial_idx = medial_set.binary_search_by_key(&sym, |ei| {
+            //     self.grammar.get_rhs1(ei.dot).unwrap()
+            // }).unwrap();
+            // medial_set[medial_idx].node
+            // LEO node
+            // rep • ----rr--
+            //       rep --rr--
+            //             rep • rr
+            //                 rep
+            // 
+            let leo_item = leo_set[idx];
+            // leo_item.node = self.forest.leo_product(leo_item.node, rhs_link);
+            // leo_item.node = self.forest.leo_product(leo_item.node, );
+            self.complete.heap_push(leo_item);
+            trace!("recognizer.complete_leo: CompleteLeo {{ found: {:?} }}", leo_item);
+            true
+        } else {
+            trace!("recognizer.complete_leo: CompleteLeo {{ not_found: {} }}", set_id);
+            false
+        }
     }
 
     /// Attempt to complete a predicted item with a postdot gensym.

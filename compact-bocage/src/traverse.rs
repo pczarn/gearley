@@ -188,6 +188,31 @@ impl Bocage {
                     eval.nulling(symbol, &mut results);
                     work_stack[work.parent].results.push(values);
                 }
+                (Node::LeoProduct { left_factor, .. }, 0) => {
+                    work.child += 1;
+                    let parent = work.parent;
+                    work_stack.push(work);
+                    work_stack.push(WorkNode {
+                        node: left_factor,
+                        child: 0,
+                        parent,
+                        results: AVec::new_in(&alloc),
+                    });
+                }
+                (Node::LeoProduct { right_factor, .. }, 1) => {
+                    work.child += 1;
+                    let parent = work.parent;
+                    work_stack.push(work);
+                    work_stack.push(WorkNode {
+                        node: right_factor,
+                        child: 0,
+                        parent,
+                        results: AVec::new_in(&alloc),
+                    });
+                }
+                (Node::LeoProduct { .. }, _) => {
+                    // nothing to do
+                }
             }
         }
         work_stack[0]

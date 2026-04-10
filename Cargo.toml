@@ -9,7 +9,7 @@ members = [
     "compact-bocage",
     "simple-bocage",
     "gearley-utils",
-    "gearley-example-grammars",
+    "gearley-example-grammars", "gearley-from-antlr4", "gearley-lua", "eager-bocage",
 ]
 
 exclude = [

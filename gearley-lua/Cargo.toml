@@ -1,0 +1,14 @@
+[package]
+name = "gearley-lua"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+mlua = { version = "0.11", features = ["lua54", "module"] }
+cfg = { path = "../../cfg/cfg/" }
+cfg-load = { path = "../../cfg/cfg-load/" }
+gearley-default-grammar = { path = "../gearley-default-grammar/" }
+miniserde = { workspace = true }

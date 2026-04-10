@@ -172,8 +172,17 @@ impl Forest for Bocage {
     }
 
     #[inline]
-    fn nulling(&self, token: Symbol) -> Self::NodeRef {
+    fn nulling(&mut self, token: Symbol) -> Self::NodeRef {
         NodeHandle::nulling(token)
+    }
+
+    fn leo_product(&mut self, left_factor: Self::NodeRef, right_factor: Self::NodeRef) -> Self::NodeRef {
+        // TODO: rule or product???
+        self.graph.push(Node::LeoProduct {
+            left_factor,
+            right_factor,
+        });
+        NodeHandle(self.graph.len() as u32 - 1)
     }
 }
 

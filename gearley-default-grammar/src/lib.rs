@@ -5,6 +5,7 @@ use std::{cmp, iter};
 use bit_matrix::row::BitSlice;
 use bit_matrix::BitMatrix;
 use cfg::classify::CfgClassifyExt;
+use cfg::classify::recursive::RecursionKind;
 use cfg::predict_sets::{FirstSets, FollowSets, PredictSets};
 use cfg::symbol_bit_matrix::{CfgSymbolBitMatrixExt, Remap};
 use cfg_symbol::intern::Mapping;
@@ -66,6 +67,8 @@ pub struct DefaultGrammar {
     sym_maps: Mapping,
 
     scan_prediction_matrix: BitMatrix,
+
+    right_recursive: SymbolBitSet,
 
     // For the forest
     forest_info: ForestInfo,
@@ -338,6 +341,7 @@ impl DefaultGrammar {
         self.populate_grammar_with_rhs(grammar);
         self.populate_grammar_with_history(grammar);
         self.populate_predictions(grammar);
+        self.populate_right_recursive(grammar);
     }
 
     fn populate_start_sym(&mut self, grammar: &Cfg) {
@@ -609,6 +613,15 @@ impl DefaultGrammar {
             .nulling_intermediate_rules
             .extend(iter_nulling_intermediate);
     }
+
+    fn populate_right_recursive(&mut self, grammar: &Cfg) {
+        self.right_recursive.reset(grammar.sym_source());
+        for rule in grammar.recursion().recursive_rules() {
+            if rule.recursion.right {
+                self.right_recursive.set(rule.rule.lhs, true);
+            }
+        }
+    }
 }
 
 impl Grammar for DefaultGrammar {
@@ -752,6 +765,10 @@ impl Grammar for DefaultGrammar {
 
     fn dot_before_eof(&self) -> Dot {
         self.dot_before_eof
+    }
+
+    fn is_right_recursive(&self, symbol: Symbol) -> bool {
+        self.right_recursive[symbol]
     }
 
     fn forest_info(&self) -> ForestInfo {

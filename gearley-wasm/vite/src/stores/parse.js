@@ -20,6 +20,7 @@ export const useParse = defineStore('parse', {
             var Root = function(x) { return x };
             var NodeHandle = function(x) { return x };
             var BinaryHeap = function(x) { return x };
+            var Err = function(num) { return 'Err: ' + num }
             return (${textExpression})`)
             return fn.bind(contextData)();
         }
@@ -78,6 +79,13 @@ export const useParse = defineStore('parse', {
             return []
         }
         return cfg.rules
+    },
+    err: (state) => {
+        if (state.result.startsWith("Failed to parse")) {
+            return state.result.split("\n")[1]
+        } else {
+            return null
+        }
     }
   }
 })

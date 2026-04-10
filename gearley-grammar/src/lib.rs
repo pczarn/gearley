@@ -72,6 +72,8 @@ pub trait Grammar {
     fn useless_symbol(&self) -> Symbol;
 
     fn forest_info(&self) -> ForestInfo;
+
+    fn is_right_recursive(&self, sym: Symbol) -> bool;
 }
 
 impl<'a, G> Grammar for &'a G
@@ -184,6 +186,10 @@ where
 
     fn forest_info(&self) -> ForestInfo {
         (**self).forest_info()
+    }
+
+    fn is_right_recursive(&self, symbol: Symbol) -> bool {
+        (**self).is_right_recursive(symbol)
     }
 }
 
